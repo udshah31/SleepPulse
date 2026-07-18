@@ -78,7 +78,7 @@ fun SleepScoreGauge(
     }
 }
 
-private fun scoreColor(fraction: Float): Color = when {
+internal fun scoreColor(fraction: Float): Color = when {
     fraction < 0.4f -> lerp(AlertCoral, CautionAmber, fraction / 0.4f)
     fraction < 0.75f -> lerp(CautionAmber, RecoveryGreen, (fraction - 0.4f) / 0.35f)
     else -> RecoveryGreen
