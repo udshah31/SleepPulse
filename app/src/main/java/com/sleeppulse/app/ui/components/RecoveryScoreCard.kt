@@ -29,6 +29,7 @@ fun RecoveryScoreCard(
                 Text(
                     text = "Recovery: ${recoveryResult.score}",
                     style = MaterialTheme.typography.titleLarge,
+                    color = scoreColor(recoveryResult.score / 100f),
                 )
                 Text(
                     text = recoveryResult.tier.name.lowercase().replaceFirstChar { it.uppercase() },
