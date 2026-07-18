@@ -39,6 +39,7 @@ class SleepRepositoryImplTest {
         assertEquals(410, stored.totalSleepMinutes)
         assertEquals(95, stored.deepSleepMinutes)
         assertEquals(105, stored.remSleepMinutes)
+        assertEquals(listOf("upsert", "trimToLast30Days"), dao.recordedCalls)
     }
 
     @Test
