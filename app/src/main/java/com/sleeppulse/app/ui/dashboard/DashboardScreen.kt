@@ -3,6 +3,7 @@ package com.sleeppulse.app.ui.dashboard
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -19,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.sleeppulse.app.ui.components.LiveMetricChart
+import com.sleeppulse.app.ui.components.RecoveryScoreCard
 import com.sleeppulse.app.ui.components.SleepScoreGauge
 import com.sleeppulse.app.ui.theme.RecoveryGreen
 import com.sleeppulse.app.ui.theme.SleepIndigo
@@ -44,6 +46,12 @@ fun DashboardScreen(
         Text(text = "Tonight", style = MaterialTheme.typography.headlineMedium)
 
         SleepScoreGauge(score = state.sleepScore)
+
+        RecoveryScoreCard(
+            recoveryResult = state.recoveryResult,
+            recordedNightsCount = state.recordedNightsCount,
+            modifier = Modifier.fillMaxWidth(),
+        )
 
         Text(
             text = connectionLabel(state),
