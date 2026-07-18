@@ -22,6 +22,8 @@ data class DashboardState(
     val latestReading: SensorReading? = null,
     val recentReadings: List<SensorReading> = emptyList(),
     val windDownStep: WindDownStep? = null,
+    val recoveryResult: RecoveryResult? = null,
+    val recordedNightsCount: Int = 0,
 ) {
     val isConnected: Boolean
         get() = connectionState is SensorConnectionState.Connected

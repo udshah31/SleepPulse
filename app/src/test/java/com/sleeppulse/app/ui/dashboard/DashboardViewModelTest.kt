@@ -1,11 +1,13 @@
 package com.sleeppulse.app.ui.dashboard
 
 import app.cash.turbine.test
+import com.sleeppulse.app.data.model.NightlySummary
 import com.sleeppulse.app.data.model.SensorConnectionState
 import com.sleeppulse.app.data.model.SensorReading
 import com.sleeppulse.app.data.model.SleepStage
 import com.sleeppulse.app.testutil.FakeSleepRepository
 import com.sleeppulse.app.testutil.MainDispatcherRule
+import java.time.LocalDate
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -141,5 +143,104 @@ class DashboardViewModelTest {
 
         viewModel.onIntent(DashboardIntent.CancelWindDown)
         assertNull(viewModel.state.value.windDownStep)
+    }
+
+    @Test
+    fun `disconnecting after readings accumulated records a nightly summary`() = runTest {
+        val repository = FakeSleepRepository()
+        val viewModel = DashboardViewModel(repository)
+
+        viewModel.onIntent(DashboardIntent.Start)
+        advanceUntilIdle()
+
+        repository.readingsFlow.emit(reading(bpm = 58, hrv = 60.0))
+        advanceUntilIdle()
+        repository.readingsFlow.emit(reading(bpm = 62, hrv = 55.0))
+        advanceUntilIdle()
+
+        repository.connectionStateFlow.value = SensorConnectionState.Connected("fake-device")
+        advanceUntilIdle()
+
+        viewModel.onIntent(DashboardIntent.ToggleSensorConnection)
+        advanceUntilIdle()
+
+        assertEquals(1, repository.recordedSummaries.size)
+        val summary = repository.recordedSummaries.single()
+        assertEquals(60, summary.avgHeartRateBpm)
+        assertEquals(57.5, summary.avgHrvMillis, 0.0001)
+        assertEquals(LocalDate.now(), summary.date)
+    }
+
+    @Test
+    fun `disconnecting with no readings does not record a summary`() = runTest {
+        val repository = FakeSleepRepository()
+        val viewModel = DashboardViewModel(repository)
+
+        viewModel.onIntent(DashboardIntent.Start)
+        advanceUntilIdle()
+        repository.connectionStateFlow.value = SensorConnectionState.Connected("fake-device")
+        advanceUntilIdle()
+
+        viewModel.onIntent(DashboardIntent.ToggleSensorConnection)
+        advanceUntilIdle()
+
+        assertEquals(0, repository.recordedSummaries.size)
+    }
+
+    @Test
+    fun `recoveryResult is null until enough baseline nights are recorded`() = runTest {
+        val repository = FakeSleepRepository()
+        val viewModel = DashboardViewModel(repository)
+
+        viewModel.onIntent(DashboardIntent.Start)
+        advanceUntilIdle()
+
+        assertNull(viewModel.state.value.recoveryResult)
+        assertEquals(0, viewModel.state.value.recordedNightsCount)
+
+        val night = NightlySummary(
+            date = LocalDate.now(),
+            sleepScore = 70,
+            avgHeartRateBpm = 60,
+            avgHrvMillis = 50.0,
+            totalSleepMinutes = 420,
+            deepSleepMinutes = 90,
+            remSleepMinutes = 100,
+        )
+        // Only 2 baseline nights after dropping the first (last night) entry — below the
+        // RecoveryScoreCalculator minimum of 3.
+        repository.nightsFlow.value = listOf(night, night, night)
+        advanceUntilIdle()
+
+        assertNull(viewModel.state.value.recoveryResult)
+        assertEquals(3, viewModel.state.value.recordedNightsCount)
+    }
+
+    @Test
+    fun `recoveryResult is computed once enough baseline nights exist`() = runTest {
+        val repository = FakeSleepRepository()
+        val viewModel = DashboardViewModel(repository)
+
+        viewModel.onIntent(DashboardIntent.Start)
+        advanceUntilIdle()
+
+        fun night(hrv: Double, hr: Int) = NightlySummary(
+            date = LocalDate.now(),
+            sleepScore = 70,
+            avgHeartRateBpm = hr,
+            avgHrvMillis = hrv,
+            totalSleepMinutes = 420,
+            deepSleepMinutes = 90,
+            remSleepMinutes = 100,
+        )
+
+        val lastNight = night(hrv = 62.5, hr = 54) // well-recovered vs. the baseline below
+        val baseline = listOf(night(50.0, 60), night(50.0, 60), night(50.0, 60))
+        repository.nightsFlow.value = listOf(lastNight) + baseline
+        advanceUntilIdle()
+
+        val result = viewModel.state.value.recoveryResult
+        assertEquals(RecoveryTier.OPTIMAL, result?.tier)
+        assertEquals(4, viewModel.state.value.recordedNightsCount)
     }
 }
