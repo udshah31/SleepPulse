@@ -3,11 +3,19 @@ package com.sleeppulse.app.data.repository
 import app.cash.turbine.test
 import com.sleeppulse.app.data.local.NightlySummaryEntity
 import com.sleeppulse.app.data.model.NightlySummary
+import com.sleeppulse.app.data.model.SensorReading
+import com.sleeppulse.app.data.model.SleepStage
 import com.sleeppulse.app.testutil.FakeNightlySummaryDao
 import com.sleeppulse.app.testutil.FakeSensorDataSource
+import com.sleeppulse.app.testutil.FakeSleepSessionDao
 import java.time.LocalDate
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SleepRepositoryImplTest {
@@ -22,11 +30,19 @@ class SleepRepositoryImplTest {
         remSleepMinutes = 105,
     )
 
+    private fun reading(timestampMillis: Long, heartRateBpm: Int = 60) = SensorReading(
+        timestampMillis = timestampMillis,
+        heartRateBpm = heartRateBpm,
+        hrvMillis = 60.0,
+        sleepStage = SleepStage.LIGHT,
+    )
+
     @Test
     fun `recordNightlySummary upserts then trims`() = runTest {
         val sensorDataSource = FakeSensorDataSource()
         val dao = FakeNightlySummaryDao()
-        val repository = SleepRepositoryImpl(sensorDataSource, dao)
+        val sessionDao = FakeSleepSessionDao()
+        val repository = SleepRepositoryImpl(sensorDataSource, dao, sessionDao, backgroundScope) { 0L }
 
         val date = LocalDate.of(2026, 7, 17)
         repository.recordNightlySummary(summary(date, score = 88))
@@ -46,7 +62,8 @@ class SleepRepositoryImplTest {
     fun `recentNights maps entities to domain objects with date round-trip`() = runTest {
         val sensorDataSource = FakeSensorDataSource()
         val dao = FakeNightlySummaryDao()
-        val repository = SleepRepositoryImpl(sensorDataSource, dao)
+        val sessionDao = FakeSleepSessionDao()
+        val repository = SleepRepositoryImpl(sensorDataSource, dao, sessionDao, backgroundScope) { 0L }
 
         val date = LocalDate.of(2026, 7, 10)
         dao.entitiesFlow.value = listOf(
@@ -76,10 +93,61 @@ class SleepRepositoryImplTest {
     }
 
     @Test
+    fun `connectSensor creates a session and disconnectSensor delegates to the data source`() = runTest {
+        val sensorDataSource = FakeSensorDataSource()
+        val dao = FakeNightlySummaryDao()
+        val sessionDao = FakeSleepSessionDao()
+        val repository = SleepRepositoryImpl(sensorDataSource, dao, sessionDao, backgroundScope) { 1_000L }
+
+        repository.connectSensor()
+        assertEquals(1, sensorDataSource.connectCallCount)
+        assertEquals(1, sessionDao.sessions.size)
+        assertEquals(1_000L, sessionDao.sessions.single().startEpochMillis)
+        assertTrue(!sessionDao.sessions.single().finalized)
+
+        repository.disconnectSensor()
+        assertEquals(1, sensorDataSource.disconnectCallCount)
+    }
+
+    @Test
+    fun `readings flush to the session dao every 20 readings`() = runTest {
+        val sensorDataSource = FakeSensorDataSource()
+        val dao = FakeNightlySummaryDao()
+        val sessionDao = FakeSleepSessionDao()
+        val repository = SleepRepositoryImpl(sensorDataSource, dao, sessionDao, backgroundScope) { 0L }
+
+        repository.connectSensor()
+        runCurrent()
+        repeat(20) { i -> sensorDataSource.readingsFlow.emit(reading(timestampMillis = i.toLong())) }
+        advanceTimeBy(1)
+
+        assertEquals(20, sessionDao.readings.size)
+    }
+
+    @Test
+    fun `readings flush after 30 seconds even under the batch size`() = runTest {
+        val sensorDataSource = FakeSensorDataSource()
+        val dao = FakeNightlySummaryDao()
+        val sessionDao = FakeSleepSessionDao()
+        val repository = SleepRepositoryImpl(sensorDataSource, dao, sessionDao, backgroundScope) { 0L }
+
+        repository.connectSensor()
+        runCurrent()
+        sensorDataSource.readingsFlow.emit(reading(timestampMillis = 1L))
+        sensorDataSource.readingsFlow.emit(reading(timestampMillis = 2L))
+        assertEquals(0, sessionDao.readings.size)
+
+        advanceTimeBy(30_001)
+
+        assertEquals(2, sessionDao.readings.size)
+    }
+
+    @Test
     fun `liveReadings and connectionState pass through from the data source`() = runTest {
         val sensorDataSource = FakeSensorDataSource()
         val dao = FakeNightlySummaryDao()
-        val repository = SleepRepositoryImpl(sensorDataSource, dao)
+        val sessionDao = FakeSleepSessionDao()
+        val repository = SleepRepositoryImpl(sensorDataSource, dao, sessionDao, backgroundScope) { 0L }
 
         repository.connectSensor()
         assertEquals(1, sensorDataSource.connectCallCount)
@@ -88,16 +156,9 @@ class SleepRepositoryImplTest {
         assertEquals(1, sensorDataSource.disconnectCallCount)
 
         repository.liveReadings().test {
-            sensorDataSource.readingsFlow.emit(
-                com.sleeppulse.app.data.model.SensorReading(
-                    timestampMillis = 1L,
-                    heartRateBpm = 62,
-                    hrvMillis = 55.0,
-                    sleepStage = com.sleeppulse.app.data.model.SleepStage.DEEP,
-                )
-            )
-            val reading = awaitItem()
-            assertEquals(62, reading.heartRateBpm)
+            sensorDataSource.readingsFlow.emit(reading(timestampMillis = 1L, heartRateBpm = 62))
+            val received = awaitItem()
+            assertEquals(62, received.heartRateBpm)
             cancelAndIgnoreRemainingEvents()
         }
     }
