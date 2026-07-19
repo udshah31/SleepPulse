@@ -21,6 +21,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 private const val FLUSH_BATCH_SIZE = 20
 private const val FLUSH_INTERVAL_MILLIS = 30_000L
@@ -43,6 +45,7 @@ class SleepRepositoryImpl @Inject constructor(
     private var activeSessionId: Long? = null
     private var collectionJob: Job? = null
     private var flushTimerJob: Job? = null
+    private val pendingReadingsMutex = Mutex()
     private val pendingReadings = mutableListOf<SessionReadingEntity>()
 
     init {
@@ -58,8 +61,11 @@ class SleepRepositoryImpl @Inject constructor(
 
         collectionJob = appScope.launch {
             sensorDataSource.readings().collect { reading ->
-                pendingReadings.add(reading.toSessionEntity(sessionId))
-                if (pendingReadings.size >= FLUSH_BATCH_SIZE) flush()
+                val shouldFlush = pendingReadingsMutex.withLock {
+                    pendingReadings.add(reading.toSessionEntity(sessionId))
+                    pendingReadings.size >= FLUSH_BATCH_SIZE
+                }
+                if (shouldFlush) flush()
             }
         }
         flushTimerJob = appScope.launch {
@@ -82,9 +88,13 @@ class SleepRepositoryImpl @Inject constructor(
     }
 
     private suspend fun flush() {
-        if (pendingReadings.isEmpty()) return
-        sessionDao.insertReadings(pendingReadings.toList())
-        pendingReadings.clear()
+        val toInsert = pendingReadingsMutex.withLock {
+            if (pendingReadings.isEmpty()) return@withLock null
+            val snapshot = pendingReadings.toList()
+            pendingReadings.clear()
+            snapshot
+        }
+        if (toInsert != null) sessionDao.insertReadings(toInsert)
     }
 
     override suspend fun recordNightlySummary(summary: NightlySummary) {
