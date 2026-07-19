@@ -177,4 +177,59 @@ class SleepRepositoryImplTest {
         assertTrue(sessionDao.sessions.single().finalized)
         assertEquals(0, sessionDao.readings.size)
     }
+
+    @Test
+    fun `recoverUnfinalizedSessions rebuilds and records a summary for a leftover session`() = runTest {
+        val sensorDataSource = FakeSensorDataSource()
+        val dao = FakeNightlySummaryDao()
+        val sessionDao = FakeSleepSessionDao()
+        val startMillis = LocalDate.of(2026, 7, 18).atStartOfDay(java.time.ZoneId.systemDefault())
+            .toInstant().toEpochMilli()
+        sessionDao.sessions.add(
+            com.sleeppulse.app.data.local.SleepSessionEntity(
+                sessionId = 5L,
+                startEpochMillis = startMillis,
+                finalized = false,
+            )
+        )
+        sessionDao.readings.addAll(
+            listOf(
+                com.sleeppulse.app.data.local.SessionReadingEntity(
+                    id = 1L, sessionId = 5L, timestampMillis = startMillis,
+                    heartRateBpm = 58, hrvMillis = 70.0, sleepStage = SleepStage.LIGHT,
+                ),
+                com.sleeppulse.app.data.local.SessionReadingEntity(
+                    id = 2L, sessionId = 5L, timestampMillis = startMillis + 60_000,
+                    heartRateBpm = 56, hrvMillis = 72.0, sleepStage = SleepStage.DEEP,
+                ),
+            )
+        )
+        val repository = SleepRepositoryImpl(sensorDataSource, dao, sessionDao, backgroundScope) { startMillis }
+
+        repository.recoverUnfinalizedSessions()
+
+        assertEquals(listOf("upsert", "trimToLast30Days"), dao.recordedCalls)
+        val stored = dao.entitiesFlow.value.single()
+        assertEquals(LocalDate.of(2026, 7, 18).toEpochDay(), stored.dateEpochDay)
+        assertTrue(sessionDao.sessions.single().finalized)
+        assertEquals(0, sessionDao.readings.size)
+    }
+
+    @Test
+    fun `recoverUnfinalizedSessions drops an empty leftover session without recording anything`() = runTest {
+        val sensorDataSource = FakeSensorDataSource()
+        val dao = FakeNightlySummaryDao()
+        val sessionDao = FakeSleepSessionDao()
+        sessionDao.sessions.add(
+            com.sleeppulse.app.data.local.SleepSessionEntity(
+                sessionId = 9L, startEpochMillis = 0L, finalized = false,
+            )
+        )
+        val repository = SleepRepositoryImpl(sensorDataSource, dao, sessionDao, backgroundScope) { 0L }
+
+        repository.recoverUnfinalizedSessions()
+
+        assertTrue(dao.recordedCalls.isEmpty())
+        assertTrue(sessionDao.sessions.single().finalized)
+    }
 }

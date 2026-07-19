@@ -1,5 +1,6 @@
 package com.sleeppulse.app.data.repository
 
+import com.sleeppulse.app.data.NightSummaryBuilder
 import com.sleeppulse.app.data.local.NightlySummaryDao
 import com.sleeppulse.app.data.local.NightlySummaryEntity
 import com.sleeppulse.app.data.local.SessionReadingEntity
@@ -43,6 +44,10 @@ class SleepRepositoryImpl @Inject constructor(
     private var flushTimerJob: Job? = null
     private val pendingReadings = mutableListOf<SessionReadingEntity>()
 
+    init {
+        appScope.launch { recoverUnfinalizedSessions() }
+    }
+
     override suspend fun connectSensor() {
         sensorDataSource.connect()
         val sessionId = sessionDao.createSession(
@@ -85,6 +90,26 @@ class SleepRepositoryImpl @Inject constructor(
         dao.upsert(summary.toEntity())
         dao.trimToLast30Days()
     }
+
+    suspend fun recoverUnfinalizedSessions() {
+        sessionDao.unfinalizedSessions().forEach { session ->
+            val readings = sessionDao.readingsFor(session.sessionId).map { it.toDomainReading() }
+            if (readings.isNotEmpty()) {
+                val date = java.time.Instant.ofEpochMilli(session.startEpochMillis)
+                    .atZone(java.time.ZoneId.systemDefault())
+                    .toLocalDate()
+                recordNightlySummary(NightSummaryBuilder.build(readings, date))
+            }
+            sessionDao.finalizeAndClear(session.sessionId)
+        }
+    }
+
+    private fun SessionReadingEntity.toDomainReading() = SensorReading(
+        timestampMillis = timestampMillis,
+        heartRateBpm = heartRateBpm,
+        hrvMillis = hrvMillis,
+        sleepStage = sleepStage,
+    )
 
     private fun SensorReading.toSessionEntity(sessionId: Long) = SessionReadingEntity(
         sessionId = sessionId,
