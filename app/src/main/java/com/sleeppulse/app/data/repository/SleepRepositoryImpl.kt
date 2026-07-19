@@ -13,6 +13,7 @@ import java.time.LocalDate
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -64,8 +65,8 @@ class SleepRepositoryImpl @Inject constructor(
     }
 
     override suspend fun disconnectSensor() {
-        collectionJob?.cancel()
-        flushTimerJob?.cancel()
+        collectionJob?.cancelAndJoin()
+        flushTimerJob?.cancelAndJoin()
         collectionJob = null
         flushTimerJob = null
         flush()
