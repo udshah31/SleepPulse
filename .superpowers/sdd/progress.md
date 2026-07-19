@@ -6,3 +6,4 @@ Note: Task 1 implementer worked in the main checkout instead of the worktree; co
 Task 2: complete (commit 240b525, review clean)
 Task 3: complete (commits e9bcca8..35be0c1, review clean after one Important fix — cancelAndJoin race in disconnectSensor; DI wiring for CoroutineScope/nowMillis pulled forward from Task 6 to keep the build green, per plan ordering gap)
 Task 4: complete (commit 92b0aa1, review clean)
+Task 5: complete (commits d591243..8ca23ea, review clean after one Important fix — per-session try/catch isolation in recoverUnfinalizedSessions)
