@@ -162,4 +162,19 @@ class SleepRepositoryImplTest {
             cancelAndIgnoreRemainingEvents()
         }
     }
+
+    @Test
+    fun `disconnecting with no readings collected does not call insertReadings`() = runTest {
+        val sensorDataSource = FakeSensorDataSource()
+        val dao = FakeNightlySummaryDao()
+        val sessionDao = FakeSleepSessionDao()
+        val repository = SleepRepositoryImpl(sensorDataSource, dao, sessionDao, backgroundScope) { 0L }
+
+        repository.connectSensor()
+        repository.disconnectSensor()
+
+        assertTrue(sessionDao.recordedCalls.none { it.startsWith("insertReadings") })
+        assertTrue(sessionDao.sessions.single().finalized)
+        assertEquals(0, sessionDao.readings.size)
+    }
 }
