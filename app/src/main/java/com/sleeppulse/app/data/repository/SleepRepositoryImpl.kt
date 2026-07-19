@@ -12,6 +12,7 @@ import com.sleeppulse.app.data.model.SensorReading
 import com.sleeppulse.app.data.source.SensorDataSource
 import java.time.LocalDate
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
@@ -93,14 +94,21 @@ class SleepRepositoryImpl @Inject constructor(
 
     suspend fun recoverUnfinalizedSessions() {
         sessionDao.unfinalizedSessions().forEach { session ->
-            val readings = sessionDao.readingsFor(session.sessionId).map { it.toDomainReading() }
-            if (readings.isNotEmpty()) {
-                val date = java.time.Instant.ofEpochMilli(session.startEpochMillis)
-                    .atZone(java.time.ZoneId.systemDefault())
-                    .toLocalDate()
-                recordNightlySummary(NightSummaryBuilder.build(readings, date))
+            try {
+                val readings = sessionDao.readingsFor(session.sessionId).map { it.toDomainReading() }
+                if (readings.isNotEmpty()) {
+                    val date = java.time.Instant.ofEpochMilli(session.startEpochMillis)
+                        .atZone(java.time.ZoneId.systemDefault())
+                        .toLocalDate()
+                    recordNightlySummary(NightSummaryBuilder.build(readings, date))
+                }
+                sessionDao.finalizeAndClear(session.sessionId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Leave this session unfinalized so it's retried on the next launch rather than
+                // silently discarding real reading data from a single bad session.
             }
-            sessionDao.finalizeAndClear(session.sessionId)
         }
     }
 

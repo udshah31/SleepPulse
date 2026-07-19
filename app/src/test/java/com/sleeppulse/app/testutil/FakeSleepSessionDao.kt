@@ -9,6 +9,9 @@ class FakeSleepSessionDao : SleepSessionDao {
     val readings: MutableList<SessionReadingEntity> = mutableListOf()
     val recordedCalls: MutableList<String> = mutableListOf()
 
+    /** Session ids for which [readingsFor] should throw, simulating a corrupt/unreadable session. */
+    val readingsForFailures: MutableSet<Long> = mutableSetOf()
+
     private var nextSessionId = 1L
     private var nextReadingId = 1L
 
@@ -27,8 +30,12 @@ class FakeSleepSessionDao : SleepSessionDao {
     override suspend fun unfinalizedSessions(): List<SleepSessionEntity> =
         sessions.filter { !it.finalized }
 
-    override suspend fun readingsFor(sessionId: Long): List<SessionReadingEntity> =
-        readings.filter { it.sessionId == sessionId }.sortedBy { it.timestampMillis }
+    override suspend fun readingsFor(sessionId: Long): List<SessionReadingEntity> {
+        if (sessionId in readingsForFailures) {
+            error("Simulated failure reading session $sessionId")
+        }
+        return readings.filter { it.sessionId == sessionId }.sortedBy { it.timestampMillis }
+    }
 
     override suspend fun markFinalized(sessionId: Long) {
         recordedCalls.add("markFinalized")
