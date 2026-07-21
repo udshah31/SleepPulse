@@ -17,6 +17,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.Manifest
+import android.os.Build
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,18 +45,27 @@ fun DashboardScreen(
     val haptic = LocalHapticFeedback.current
 
     val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission(),
-        onResult = { isGranted ->
-            if (!isGranted) {
-                // We'll log or silently fail if they deny, we won't record noise
-                android.util.Log.w("SleepPulse", "RECORD_AUDIO permission denied")
+        contract = ActivityResultContracts.RequestMultiplePermissions(),
+        onResult = { results ->
+            results.forEach { (permission, granted) ->
+                if (!granted) {
+                    // We'll log or silently fail if they deny — noise monitoring/notifications
+                    // just won't happen, no blocking UI for either.
+                    android.util.Log.w("SleepPulse", "$permission denied")
+                }
             }
         }
     )
 
     LaunchedEffect(Unit) {
         viewModel.onIntent(DashboardIntent.Start)
-        permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+        val permissions = buildList {
+            add(Manifest.permission.RECORD_AUDIO)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                add(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+        permissionLauncher.launch(permissions.toTypedArray())
     }
 
     Column(
