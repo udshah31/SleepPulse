@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.sleeppulse.app.data.local.NightlySummaryDao
 import com.sleeppulse.app.data.local.SleepPulseDatabase
+import com.sleeppulse.app.data.local.SleepSessionDao
 import com.sleeppulse.app.data.repository.SleepRepository
 import com.sleeppulse.app.data.repository.SleepRepositoryImpl
 import com.sleeppulse.app.data.source.SensorDataSource
@@ -15,6 +16,9 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -38,9 +42,22 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): SleepPulseDatabase =
-        Room.databaseBuilder(context, SleepPulseDatabase::class.java, "sleeppulse.db").build()
+        Room.databaseBuilder(context, SleepPulseDatabase::class.java, "sleeppulse.db")
+            .fallbackToDestructiveMigration()
+            .build()
 
     @Provides
     fun provideNightlySummaryDao(database: SleepPulseDatabase): NightlySummaryDao =
         database.nightlySummaryDao()
+
+    @Provides
+    fun provideSleepSessionDao(database: SleepPulseDatabase): SleepSessionDao =
+        database.sleepSessionDao()
+
+    @Provides
+    @Singleton
+    fun provideApplicationScope(): CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    @Provides
+    fun provideNowMillis(): () -> Long = System::currentTimeMillis
 }
