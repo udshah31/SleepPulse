@@ -28,8 +28,11 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.health.connect.client.PermissionController
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.sleeppulse.app.tracking.HealthConnectManager
 import com.sleeppulse.app.ui.components.LiveMetricChart
 import com.sleeppulse.app.ui.components.RecoveryScoreCard
 import com.sleeppulse.app.ui.components.SleepScoreGauge
@@ -43,6 +46,7 @@ fun DashboardScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val haptic = LocalHapticFeedback.current
+    val context = LocalContext.current
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions(),
@@ -57,6 +61,16 @@ fun DashboardScreen(
         }
     )
 
+    val healthConnectPermissionLauncher = rememberLauncherForActivityResult(
+        contract = PermissionController.createRequestPermissionResultContract(),
+        onResult = { granted ->
+            if (!granted.containsAll(HealthConnectManager.REQUIRED_PERMISSIONS)) {
+                // Nightly summaries just won't sync to Health Connect — no blocking UI.
+                android.util.Log.w("SleepPulse", "Health Connect permission not fully granted")
+            }
+        }
+    )
+
     LaunchedEffect(Unit) {
         viewModel.onIntent(DashboardIntent.Start)
         val permissions = buildList {
@@ -66,6 +80,11 @@ fun DashboardScreen(
             }
         }
         permissionLauncher.launch(permissions.toTypedArray())
+
+        val healthConnectManager = HealthConnectManager(context)
+        if (healthConnectManager.isAvailable() && !healthConnectManager.hasRequiredPermissions()) {
+            healthConnectPermissionLauncher.launch(HealthConnectManager.REQUIRED_PERMISSIONS)
+        }
     }
 
     Column(
