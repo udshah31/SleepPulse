@@ -14,6 +14,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+private const val MAX_RECORDED_NIGHTS_DISPLAY = 4
+
 @HiltViewModel
 class RecoveryViewModel @Inject constructor(
     private val repository: SleepRepository,
@@ -48,7 +50,8 @@ class RecoveryViewModel @Inject constructor(
                         sleepDebt = debt,
                         consistencyScore = consistencyScore,
                         latestNight = latest,
-                        personalizedAdvice = advice
+                        personalizedAdvice = advice,
+                        recordedNightsCount = nights.size.coerceAtMost(MAX_RECORDED_NIGHTS_DISPLAY),
                     )
                 }
             }

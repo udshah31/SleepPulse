@@ -10,7 +10,8 @@ data class RecoveryState(
     val sleepDebt: SleepDebt? = null,
     val consistencyScore: Int = 0,
     val latestNight: NightlySummary? = null,
-    val personalizedAdvice: String? = null
+    val personalizedAdvice: String? = null,
+    val recordedNightsCount: Int = 0,
 )
 
 sealed interface RecoveryIntent {

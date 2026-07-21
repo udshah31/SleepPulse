@@ -43,7 +43,7 @@ fun RecoveryScreen(
         if (state.recoveryResult != null) {
             RecoveryScoreCard(
                 recoveryResult = state.recoveryResult,
-                recordedNightsCount = 5, // We can just pass a dummy or calculate from list
+                recordedNightsCount = state.recordedNightsCount,
                 modifier = Modifier.fillMaxWidth()
             )
         } else if (!state.isLoading) {
