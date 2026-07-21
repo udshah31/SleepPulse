@@ -7,6 +7,7 @@ import com.sleeppulse.app.data.source.BleTargetDeviceSink
 import com.sleeppulse.app.data.source.ScannedDevice
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,6 +30,8 @@ class ScanViewModel @Inject constructor(
     private val _deviceSelected = Channel<ScannedDevice>(Channel.BUFFERED)
     val deviceSelected: Flow<ScannedDevice> = _deviceSelected.receiveAsFlow()
 
+    private var scanJob: Job? = null
+
     fun onIntent(intent: ScanIntent) {
         when (intent) {
             ScanIntent.StartScan -> startScan()
@@ -39,8 +42,12 @@ class ScanViewModel @Inject constructor(
     }
 
     private fun startScan() {
+        // Cancel any scan already in flight so a repeated StartScan (e.g. Retry tapped while
+        // a scan is still running) doesn't leave two concurrent BluetoothLeScanner sessions
+        // running against the same callback-less state.
+        scanJob?.cancel()
         _state.update { it.copy(isScanning = true, error = null) }
-        viewModelScope.launch {
+        scanJob = viewModelScope.launch {
             scanSource.scan()
                 .catch { e ->
                     _state.update { it.copy(isScanning = false, error = e.message ?: "Scan failed") }

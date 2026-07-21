@@ -64,6 +64,25 @@ class ScanViewModelTest {
     }
 
     @Test
+    fun `StartScan called twice cancels the prior scan instead of running concurrently`() = runTest {
+        val scanSource = FakeBleScanSource()
+        val viewModel = ScanViewModel(scanSource, FakeBleTargetDeviceSink())
+
+        viewModel.onIntent(ScanIntent.StartScan)
+        advanceUntilIdle()
+        assertEquals(1, scanSource.scanCallCount)
+        assertEquals(1, scanSource.activeCollectorCount)
+
+        viewModel.onIntent(ScanIntent.StartScan)
+        advanceUntilIdle()
+
+        assertEquals(2, scanSource.scanCallCount)
+        // Only the second scan's collector should still be active — the first must have
+        // been cancelled, not left running concurrently.
+        assertEquals(1, scanSource.activeCollectorCount)
+    }
+
+    @Test
     fun `scan failure surfaces as error and stops scanning`() = runTest {
         val scanSource = FakeBleScanSource().apply {
             errorToThrow = IllegalStateException("Bluetooth is turned off")

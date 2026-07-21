@@ -60,6 +60,12 @@ class BleDeviceScanner @Inject constructor(
             return@callbackFlow
         }
 
-        awaitClose { scanner.stopScan(callback) }
+        awaitClose {
+            try {
+                scanner.stopScan(callback)
+            } catch (e: SecurityException) {
+                // Permission was revoked mid-scan — already tearing down, nothing to do.
+            }
+        }
     }
 }
