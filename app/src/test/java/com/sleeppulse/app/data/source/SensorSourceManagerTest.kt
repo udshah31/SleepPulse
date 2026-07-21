@@ -6,6 +6,7 @@ import com.sleeppulse.app.data.model.SensorReading
 import com.sleeppulse.app.data.model.SleepStage
 import com.sleeppulse.app.data.repository.SettingsRepository
 import com.sleeppulse.app.testutil.MainDispatcherRule
+import com.sleeppulse.app.tracking.SleepStagePredictor
 import com.sleeppulse.app.ui.settings.DataSourceMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
@@ -27,8 +28,8 @@ class SensorSourceManagerTest {
     fun `connectionState routes to Simulated by default and switches when mode changes`() = runTest {
         val repo = SettingsRepository()
         val mockContext = mock<android.content.Context>()
-        val simulated = SimulatedSensorDataSource()
-        val ble = BleSensorDataSource(mockContext)
+        val simulated = SimulatedSensorDataSource(mock<SleepStagePredictor>())
+        val ble = BleSensorDataSource(mockContext, mock<SleepStagePredictor>())
         val manager = SensorSourceManager(repo, simulated, ble)
 
         manager.connectionState.test {
@@ -59,8 +60,8 @@ class SensorSourceManagerTest {
     fun `connect routes to active source`() = runTest {
         val repo = SettingsRepository()
         val mockContext = mock<android.content.Context>()
-        val simulated = SimulatedSensorDataSource()
-        val ble = BleSensorDataSource(mockContext)
+        val simulated = SimulatedSensorDataSource(mock<SleepStagePredictor>())
+        val ble = BleSensorDataSource(mockContext, mock<SleepStagePredictor>())
         val manager = SensorSourceManager(repo, simulated, ble)
 
         // Default is SIMULATED
@@ -89,8 +90,8 @@ class SensorSourceManagerTest {
     fun `disconnect disconnects both sources`() = runTest {
         val repo = SettingsRepository()
         val mockContext = mock<android.content.Context>()
-        val simulated = SimulatedSensorDataSource()
-        val ble = BleSensorDataSource(mockContext)
+        val simulated = SimulatedSensorDataSource(mock<SleepStagePredictor>())
+        val ble = BleSensorDataSource(mockContext, mock<SleepStagePredictor>())
         val manager = SensorSourceManager(repo, simulated, ble)
 
         manager.connect()

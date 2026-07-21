@@ -1,6 +1,7 @@
 package com.sleeppulse.app.ui.history
 
 import app.cash.turbine.test
+import com.sleeppulse.app.data.export.DataExporter
 import com.sleeppulse.app.data.model.NightlySummary
 import com.sleeppulse.app.testutil.FakeSleepRepository
 import com.sleeppulse.app.testutil.MainDispatcherRule
@@ -10,6 +11,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import org.mockito.kotlin.mock
 
 class HistoryViewModelTest {
 
@@ -29,7 +31,7 @@ class HistoryViewModelTest {
     @Test
     fun `Load with no nights produces empty non-loading state`() = runTest {
         val repository = FakeSleepRepository()
-        val viewModel = HistoryViewModel(repository)
+        val viewModel = HistoryViewModel(repository, mock<DataExporter>())
 
         viewModel.state.test {
             assertEquals(HistoryState(), awaitItem())
@@ -54,7 +56,7 @@ class HistoryViewModelTest {
         val dayBefore = summary(LocalDate.of(2026, 7, 15), score = 63)
         repository.nightsFlow.value = listOf(today, yesterday, dayBefore)
 
-        val viewModel = HistoryViewModel(repository)
+        val viewModel = HistoryViewModel(repository, mock<DataExporter>())
 
         viewModel.state.test {
             awaitItem() // initial empty state
@@ -75,7 +77,7 @@ class HistoryViewModelTest {
     @Test
     fun `Load with no nights produces null sleepDebt`() = runTest {
         val repository = FakeSleepRepository()
-        val viewModel = HistoryViewModel(repository)
+        val viewModel = HistoryViewModel(repository, mock<DataExporter>())
 
         viewModel.state.test {
             awaitItem() // initial loading state
@@ -96,7 +98,7 @@ class HistoryViewModelTest {
             .copy(totalSleepMinutes = 420)
         repository.nightsFlow.value = List(3) { shortNight }
 
-        val viewModel = HistoryViewModel(repository)
+        val viewModel = HistoryViewModel(repository, mock<DataExporter>())
 
         viewModel.state.test {
             awaitItem() // initial state
@@ -119,7 +121,7 @@ class HistoryViewModelTest {
         val nights = List(3) { summary(LocalDate.of(2026, 7, 21 - it), score = 70).copy(bedtimeEpochMillis = 0L) }
         repository.nightsFlow.value = nights
 
-        val viewModel = HistoryViewModel(repository)
+        val viewModel = HistoryViewModel(repository, mock<DataExporter>())
 
         viewModel.state.test {
             awaitItem() // initial state
