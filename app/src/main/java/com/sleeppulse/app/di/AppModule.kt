@@ -13,6 +13,8 @@ import com.sleeppulse.app.data.source.BleSensorDataSource
 import com.sleeppulse.app.data.source.BleTargetDeviceSink
 import com.sleeppulse.app.data.source.SensorDataSource
 import com.sleeppulse.app.data.source.SimulatedSensorDataSource
+import com.sleeppulse.app.notifications.SleepSummaryNotifier
+import com.sleeppulse.app.notifications.SleepSummaryNotifierImpl
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -43,6 +45,10 @@ abstract class BindingsModule {
     @Binds
     @Singleton
     abstract fun bindSleepRepository(impl: SleepRepositoryImpl): SleepRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindSleepSummaryNotifier(impl: SleepSummaryNotifierImpl): SleepSummaryNotifier
 }
 
 @Module

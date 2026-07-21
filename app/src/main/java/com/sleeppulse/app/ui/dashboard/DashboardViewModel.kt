@@ -6,6 +6,7 @@ import com.sleeppulse.app.data.NightSummaryBuilder
 import com.sleeppulse.app.data.model.NightlySummary
 import com.sleeppulse.app.data.model.SensorReading
 import com.sleeppulse.app.data.repository.SleepRepository
+import com.sleeppulse.app.notifications.SleepSummaryNotifier
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,6 +22,7 @@ private const val MAX_RECORDED_NIGHTS_DISPLAY = 4
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     private val repository: SleepRepository,
+    private val notifier: SleepSummaryNotifier,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(DashboardState())
@@ -83,9 +85,9 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             if (_state.value.isConnected) {
                 if (sessionReadings.isNotEmpty()) {
-                    repository.recordNightlySummary(
-                        NightSummaryBuilder.build(sessionReadings.toList(), LocalDate.now())
-                    )
+                    val summary = NightSummaryBuilder.build(sessionReadings.toList(), LocalDate.now())
+                    repository.recordNightlySummary(summary)
+                    notifier.notify(summary, _state.value.recoveryResult)
                     sessionReadings.clear()
                 }
                 repository.disconnectSensor()
