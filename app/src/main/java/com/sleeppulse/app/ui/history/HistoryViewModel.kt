@@ -34,7 +34,13 @@ class HistoryViewModel @Inject constructor(
                     val previous = nights.getOrNull(index + 1)
                     NightWithTrend(night, night.trendAgainst(previous))
                 }
-                _state.update { it.copy(nights = withTrend, isLoading = false) }
+                _state.update {
+                    it.copy(
+                        nights = withTrend,
+                        sleepDebt = SleepDebtCalculator.calculate(nights),
+                        isLoading = false,
+                    )
+                }
             }
         }
     }

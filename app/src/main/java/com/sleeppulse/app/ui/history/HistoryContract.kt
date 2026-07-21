@@ -9,6 +9,7 @@ sealed class HistoryIntent {
 data class HistoryState(
     val isLoading: Boolean = true,
     val nights: List<NightWithTrend> = emptyList(),
+    val sleepDebt: SleepDebt? = null,
 )
 
 data class NightWithTrend(

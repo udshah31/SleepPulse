@@ -71,4 +71,44 @@ class HistoryViewModelTest {
             cancelAndIgnoreRemainingEvents()
         }
     }
+
+    @Test
+    fun `Load with no nights produces null sleepDebt`() = runTest {
+        val repository = FakeSleepRepository()
+        val viewModel = HistoryViewModel(repository)
+
+        viewModel.state.test {
+            awaitItem() // initial loading state
+
+            viewModel.onIntent(HistoryIntent.Load)
+            val loaded = awaitItem()
+
+            assertEquals(null, loaded.sleepDebt)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `Load computes sleepDebt from recentNights`() = runTest {
+        val repository = FakeSleepRepository()
+        // Three nights each 60 min short of the 480-min target → 180 min total → MODERATE
+        val shortNight = summary(LocalDate.of(2026, 7, 21), score = 70)
+            .copy(totalSleepMinutes = 420)
+        repository.nightsFlow.value = List(3) { shortNight }
+
+        val viewModel = HistoryViewModel(repository)
+
+        viewModel.state.test {
+            awaitItem() // initial state
+
+            viewModel.onIntent(HistoryIntent.Load)
+            val loaded = awaitItem()
+
+            val debt = loaded.sleepDebt!!
+            assertEquals(180, debt.deficitMinutes)
+            assertEquals(3, debt.nightsInWindow)
+            assertEquals(DebtLevel.MODERATE, debt.level)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
 }
