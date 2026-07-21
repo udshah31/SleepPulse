@@ -1,5 +1,7 @@
 # SleepPulse
 
+![CI](https://github.com/udshah31/SleepPulse/actions/workflows/ci.yml/badge.svg)
+
 A native Android sleep/recovery tracking companion app (Kotlin, Jetpack Compose), in the
 spirit of Eight Sleep or Whoop. This is **Phase 1** of the build: a working single-module
 app with the core architecture, screens, and animations in place. BLE hardware
