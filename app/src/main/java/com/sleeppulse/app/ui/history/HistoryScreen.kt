@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -17,8 +18,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.sleeppulse.app.data.model.NightlySummary
+import com.sleeppulse.app.ui.components.SleepDebtBadge
 import java.time.format.DateTimeFormatter
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HistoryScreen(
     viewModel: HistoryViewModel = hiltViewModel(),
@@ -30,6 +33,12 @@ fun HistoryScreen(
     }
 
     LazyColumn(modifier = Modifier.padding(16.dp)) {
+        stickyHeader(key = "debt_badge") {
+            SleepDebtBadge(
+                sleepDebt = state.sleepDebt,
+                modifier = Modifier.padding(bottom = 8.dp),
+            )
+        }
         items(state.nights, key = { it.summary.date }) { night ->
             NightRow(night)
         }
