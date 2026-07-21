@@ -37,10 +37,18 @@ class AlarmViewModel @Inject constructor(
     }
 
     fun updateWakeupTime(hour: Int, minute: Int) {
-        settingsRepository.setTargetWakeup(hour, minute, _state.value.wakeWindowMinutes)
+        // Read the unchanged field straight from the repository's own StateFlow, not
+        // _state.value — the latter is only updated asynchronously by the combine
+        // collector above, so it can be stale for a beat after a rapid prior update
+        // (e.g. quick slider drags), silently reverting the field being read here.
+        settingsRepository.setTargetWakeup(hour, minute, settingsRepository.wakeWindowMinutes.value)
     }
 
     fun updateWakeWindow(minutes: Int) {
-        settingsRepository.setTargetWakeup(_state.value.wakeupHour, _state.value.wakeupMinute, minutes)
+        settingsRepository.setTargetWakeup(
+            settingsRepository.targetWakeupHour.value,
+            settingsRepository.targetWakeupMinute.value,
+            minutes,
+        )
     }
 }
