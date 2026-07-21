@@ -20,6 +20,11 @@ import kotlinx.coroutines.flow.callbackFlow
 import java.util.UUID
 import javax.inject.Inject
 
+/** Testable seam over [BleSensorDataSource.setTargetDevice] so [com.sleeppulse.app.ui.scan.ScanViewModel] can be unit-tested with a fake. */
+interface BleTargetDeviceSink {
+    fun setTargetDevice(address: String)
+}
+
 /**
  * Real BLE implementation, structured around Android's GATT client APIs so a physical
  * heart-rate/HRV peripheral (e.g. a chest strap or ring exposing the standard Heart Rate
@@ -32,7 +37,7 @@ import javax.inject.Inject
  */
 class BleSensorDataSource @Inject constructor(
     @ApplicationContext private val context: Context,
-) : SensorDataSource {
+) : SensorDataSource, BleTargetDeviceSink {
 
     private val _connectionState =
         MutableStateFlow<SensorConnectionState>(SensorConnectionState.Disconnected)
@@ -48,7 +53,7 @@ class BleSensorDataSource @Inject constructor(
         val CLIENT_CONFIG_DESCRIPTOR: UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
     }
 
-    fun setTargetDevice(address: String) {
+    override fun setTargetDevice(address: String) {
         targetDeviceAddress = address
     }
 

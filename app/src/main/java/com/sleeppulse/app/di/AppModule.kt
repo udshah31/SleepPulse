@@ -7,6 +7,10 @@ import com.sleeppulse.app.data.local.SleepPulseDatabase
 import com.sleeppulse.app.data.local.SleepSessionDao
 import com.sleeppulse.app.data.repository.SleepRepository
 import com.sleeppulse.app.data.repository.SleepRepositoryImpl
+import com.sleeppulse.app.data.source.BleDeviceScanner
+import com.sleeppulse.app.data.source.BleScanSource
+import com.sleeppulse.app.data.source.BleSensorDataSource
+import com.sleeppulse.app.data.source.BleTargetDeviceSink
 import com.sleeppulse.app.data.source.SensorDataSource
 import com.sleeppulse.app.data.source.SimulatedSensorDataSource
 import dagger.Binds
@@ -29,6 +33,12 @@ abstract class BindingsModule {
     @Binds
     @Singleton
     abstract fun bindSensorDataSource(impl: SimulatedSensorDataSource): SensorDataSource
+
+    @Binds
+    abstract fun bindBleScanSource(impl: BleDeviceScanner): BleScanSource
+
+    @Binds
+    abstract fun bindBleTargetDeviceSink(impl: BleSensorDataSource): BleTargetDeviceSink
 
     @Binds
     @Singleton
