@@ -7,10 +7,12 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "nightly_summary")
 data class NightlySummaryEntity(
     @PrimaryKey val dateEpochDay: Long,
+    val bedtimeEpochMillis: Long = 0L,
     val sleepScore: Int,
     val avgHeartRateBpm: Int,
     val avgHrvMillis: Double,
     val totalSleepMinutes: Int,
     val deepSleepMinutes: Int,
     val remSleepMinutes: Int,
+    val tags: List<String> = emptyList(),
 )

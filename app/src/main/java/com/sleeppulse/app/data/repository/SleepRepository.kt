@@ -4,6 +4,7 @@ import com.sleeppulse.app.data.model.NightlySummary
 import com.sleeppulse.app.data.model.SensorConnectionState
 import com.sleeppulse.app.data.model.SensorReading
 import kotlinx.coroutines.flow.Flow
+import java.time.LocalDate
 
 /**
  * Sits between whichever [com.sleeppulse.app.data.source.SensorDataSource] is bound (simulated
@@ -22,4 +23,6 @@ interface SleepRepository {
     suspend fun disconnectSensor()
 
     suspend fun recordNightlySummary(summary: NightlySummary)
+
+    suspend fun updateTags(date: LocalDate, tags: List<String>)
 }

@@ -19,3 +19,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "SleepPulse"
 include(":app")
+include(":wear")

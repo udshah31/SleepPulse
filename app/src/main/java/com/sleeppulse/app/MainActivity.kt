@@ -8,14 +8,22 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import com.sleeppulse.app.ui.SleepPulseApp
 import com.sleeppulse.app.ui.theme.SleepPulseTheme
+import com.sleeppulse.app.data.repository.SettingsRepository
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    @Inject
+    lateinit var settingsRepository: SettingsRepository
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            SleepPulseTheme {
+            val amoledBlack by settingsRepository.amoledBlack.collectAsState()
+            SleepPulseTheme(amoledBlack = amoledBlack) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     SleepPulseApp()
                 }

@@ -23,4 +23,14 @@ class FakeNightlySummaryDao : NightlySummaryDao {
             .sortedByDescending { it.dateEpochDay }
             .take(30)
     }
+
+    override suspend fun updateTags(dateEpochDay: Long, tags: List<String>) {
+        recordedCalls.add("updateTags")
+        val current = entitiesFlow.value
+        val entity = current.find { it.dateEpochDay == dateEpochDay }
+        if (entity != null) {
+            val updated = entity.copy(tags = tags)
+            entitiesFlow.value = current.filterNot { it.dateEpochDay == dateEpochDay } + updated
+        }
+    }
 }

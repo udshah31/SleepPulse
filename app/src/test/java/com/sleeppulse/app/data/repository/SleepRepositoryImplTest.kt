@@ -17,6 +17,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.mockito.kotlin.mock
 
 class SleepRepositoryImplTest {
 
@@ -42,7 +43,7 @@ class SleepRepositoryImplTest {
         val sensorDataSource = FakeSensorDataSource()
         val dao = FakeNightlySummaryDao()
         val sessionDao = FakeSleepSessionDao()
-        val repository = SleepRepositoryImpl(sensorDataSource, dao, sessionDao, backgroundScope) { 0L }
+        val repository = SleepRepositoryImpl(sensorDataSource, dao, sessionDao, backgroundScope, mock()) { 0L }
 
         val date = LocalDate.of(2026, 7, 17)
         repository.recordNightlySummary(summary(date, score = 88))
@@ -63,7 +64,7 @@ class SleepRepositoryImplTest {
         val sensorDataSource = FakeSensorDataSource()
         val dao = FakeNightlySummaryDao()
         val sessionDao = FakeSleepSessionDao()
-        val repository = SleepRepositoryImpl(sensorDataSource, dao, sessionDao, backgroundScope) { 0L }
+        val repository = SleepRepositoryImpl(sensorDataSource, dao, sessionDao, backgroundScope, mock()) { 0L }
 
         val date = LocalDate.of(2026, 7, 10)
         dao.entitiesFlow.value = listOf(
@@ -97,7 +98,7 @@ class SleepRepositoryImplTest {
         val sensorDataSource = FakeSensorDataSource()
         val dao = FakeNightlySummaryDao()
         val sessionDao = FakeSleepSessionDao()
-        val repository = SleepRepositoryImpl(sensorDataSource, dao, sessionDao, backgroundScope) { 1_000L }
+        val repository = SleepRepositoryImpl(sensorDataSource, dao, sessionDao, backgroundScope, mock()) { 1_000L }
 
         repository.connectSensor()
         assertEquals(1, sensorDataSource.connectCallCount)
@@ -114,7 +115,7 @@ class SleepRepositoryImplTest {
         val sensorDataSource = FakeSensorDataSource()
         val dao = FakeNightlySummaryDao()
         val sessionDao = FakeSleepSessionDao()
-        val repository = SleepRepositoryImpl(sensorDataSource, dao, sessionDao, backgroundScope) { 0L }
+        val repository = SleepRepositoryImpl(sensorDataSource, dao, sessionDao, backgroundScope, mock()) { 0L }
 
         repository.connectSensor()
         runCurrent()
@@ -129,7 +130,7 @@ class SleepRepositoryImplTest {
         val sensorDataSource = FakeSensorDataSource()
         val dao = FakeNightlySummaryDao()
         val sessionDao = FakeSleepSessionDao()
-        val repository = SleepRepositoryImpl(sensorDataSource, dao, sessionDao, backgroundScope) { 0L }
+        val repository = SleepRepositoryImpl(sensorDataSource, dao, sessionDao, backgroundScope, mock()) { 0L }
 
         repository.connectSensor()
         runCurrent()
@@ -147,7 +148,7 @@ class SleepRepositoryImplTest {
         val sensorDataSource = FakeSensorDataSource()
         val dao = FakeNightlySummaryDao()
         val sessionDao = FakeSleepSessionDao()
-        val repository = SleepRepositoryImpl(sensorDataSource, dao, sessionDao, backgroundScope) { 0L }
+        val repository = SleepRepositoryImpl(sensorDataSource, dao, sessionDao, backgroundScope, mock()) { 0L }
 
         repository.connectSensor()
         assertEquals(1, sensorDataSource.connectCallCount)
@@ -168,7 +169,7 @@ class SleepRepositoryImplTest {
         val sensorDataSource = FakeSensorDataSource()
         val dao = FakeNightlySummaryDao()
         val sessionDao = FakeSleepSessionDao()
-        val repository = SleepRepositoryImpl(sensorDataSource, dao, sessionDao, backgroundScope) { 0L }
+        val repository = SleepRepositoryImpl(sensorDataSource, dao, sessionDao, backgroundScope, mock()) { 0L }
 
         repository.connectSensor()
         repository.disconnectSensor()
@@ -204,7 +205,7 @@ class SleepRepositoryImplTest {
                 ),
             )
         )
-        val repository = SleepRepositoryImpl(sensorDataSource, dao, sessionDao, backgroundScope) { startMillis }
+        val repository = SleepRepositoryImpl(sensorDataSource, dao, sessionDao, backgroundScope, mock()) { startMillis }
 
         repository.recoverUnfinalizedSessions()
 
@@ -225,7 +226,7 @@ class SleepRepositoryImplTest {
                 sessionId = 9L, startEpochMillis = 0L, finalized = false,
             )
         )
-        val repository = SleepRepositoryImpl(sensorDataSource, dao, sessionDao, backgroundScope) { 0L }
+        val repository = SleepRepositoryImpl(sensorDataSource, dao, sessionDao, backgroundScope, mock()) { 0L }
 
         repository.recoverUnfinalizedSessions()
 
@@ -271,7 +272,7 @@ class SleepRepositoryImplTest {
                 ),
             )
         )
-        val repository = SleepRepositoryImpl(sensorDataSource, dao, sessionDao, backgroundScope) { startMillis }
+        val repository = SleepRepositoryImpl(sensorDataSource, dao, sessionDao, backgroundScope, mock()) { startMillis }
 
         repository.recoverUnfinalizedSessions()
 

@@ -1,4 +1,11 @@
-# Progress ledger: session-recovery plan
+# Progress ledger: ble-scan-flow plan
+Plan: docs/superpowers/plans/2026-07-21-ble-scan-flow.md
+Task 1: complete (commit e1668a6 — feat: add BLE scan source and target-device sink interfaces)
+Task 2: complete (commit c7af27d — feat: add ScanViewModel with permission-aware scan/select flow; 4/4 tests pass)
+Task 3: complete (commit 99c13da — feat: add ScanScreen with runtime Bluetooth permission handling)
+Task 4: complete (commit 2342e8e — feat: wire ScanScreen into nav, pass BLE device result back to Settings; 5/5 SettingsViewModelTest pass; assembleDebug BUILD SUCCESSFUL)
+Note: Task 4 required an else branch in ScanScreen icon() because Kotlin sealed when-expressions are exhaustive; Scan is not in the bottom-nav destinations list.
+
 Plan: docs/superpowers/plans/2026-07-19-session-recovery.md
 Worktree: /Users/udaysah/StudioProjects/SleepPulse/.claude/worktrees/session-recovery (branch worktree-session-recovery)
 Task 1: complete (commits 180719e..f5a1f90, review clean — content verified identical to reviewed diff after recovering from an implementer working-directory mistake, see note below)

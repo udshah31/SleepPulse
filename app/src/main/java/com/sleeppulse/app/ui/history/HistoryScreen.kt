@@ -1,24 +1,52 @@
 package com.sleeppulse.app.ui.history
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.SuggestionChip
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.LottieConstants
+import com.airbnb.lottie.compose.rememberLottieComposition
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.height
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.sleeppulse.app.data.model.NightlySummary
 import com.sleeppulse.app.ui.components.SleepDebtBadge
+import com.sleeppulse.app.ui.components.SleepConsistencyBadge
+import com.sleeppulse.app.ui.components.SleepStagesBar
+import com.sleeppulse.app.ui.components.WeeklyTrendsChart
 import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -33,33 +61,170 @@ fun HistoryScreen(
     }
 
     LazyColumn(modifier = Modifier.padding(16.dp)) {
-        stickyHeader(key = "debt_badge") {
-            SleepDebtBadge(
-                sleepDebt = state.sleepDebt,
-                modifier = Modifier.padding(bottom = 8.dp),
-            )
+        stickyHeader(key = "badges") {
+            Column(modifier = Modifier.padding(bottom = 8.dp)) {
+                SleepDebtBadge(
+                    sleepDebt = state.sleepDebt,
+                    modifier = Modifier.padding(bottom = 8.dp),
+                )
+                SleepConsistencyBadge(
+                    score = state.consistencyScore,
+                    modifier = Modifier.padding(bottom = 8.dp),
+                )
+                
+                TabRow(selectedTabIndex = state.selectedTab.ordinal) {
+                    HistoryTab.entries.forEach { tab ->
+                        Tab(
+                            selected = state.selectedTab == tab,
+                            onClick = { viewModel.onIntent(HistoryIntent.SelectTab(tab)) },
+                            text = { Text(tab.name.lowercase().replaceFirstChar { it.uppercase() }) }
+                        )
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = { viewModel.onIntent(HistoryIntent.ExportData) }) {
+                        Text("Export CSV")
+                    }
+                }
+            }
         }
-        items(state.nights, key = { it.summary.date }) { night ->
-            NightRow(night)
+        
+        when (state.selectedTab) {
+            HistoryTab.LIST -> {
+                if (state.nights.isEmpty() && !state.isLoading) {
+                    item {
+                        EmptyHistoryState()
+                    }
+                } else {
+                    items(state.nights, key = { it.summary.date }) { night ->
+                        NightRow(night)
+                    }
+                }
+            }
+            HistoryTab.TRENDS -> {
+                item {
+                    if (state.nights.isEmpty() && !state.isLoading) {
+                        EmptyHistoryState()
+                    } else {
+                        WeeklyTrendsChart(nights = state.nights)
+                    }
+                }
+            }
         }
+    }
+}
+
+@Composable
+private fun EmptyHistoryState() {
+    val composition by rememberLottieComposition(
+        LottieCompositionSpec.Url("https://assets3.lottiefiles.com/packages/lf20_kxwjmexb.json")
+    )
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(top = 48.dp),
+        horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
+    ) {
+        LottieAnimation(
+            composition = composition,
+            iterations = LottieConstants.IterateForever,
+            modifier = Modifier.fillMaxWidth(0.6f)
+        )
+        Text(
+            text = "No sleep data yet. Time to get some rest!",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 16.dp)
+        )
     }
 }
 
 @Composable
 private fun NightRow(night: NightWithTrend) {
     Card(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text(
-                text = night.summary.date.format(DateTimeFormatter.ofPattern("MMM d")),
-                style = MaterialTheme.typography.bodyLarge,
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    text = night.summary.date.format(DateTimeFormatter.ofPattern("MMM d")),
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                Text(
+                    text = "Score ${night.summary.sleepScore} ${trendArrow(night.trend)}",
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+            }
+            SleepStagesBar(
+                totalMinutes = night.summary.totalSleepMinutes,
+                deepMinutes = night.summary.deepSleepMinutes,
+                remMinutes = night.summary.remSleepMinutes,
             )
-            Text(
-                text = "Score ${night.summary.sleepScore} ${trendArrow(night.trend)}",
-                style = MaterialTheme.typography.bodyLarge,
+            
+            if (night.summary.tags.isNotEmpty()) {
+                @OptIn(ExperimentalLayoutApi::class)
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    night.summary.tags.forEach { tag ->
+                        SuggestionChip(
+                            onClick = { },
+                            label = { Text(text = tag, style = MaterialTheme.typography.labelSmall) }
+                        )
+                    }
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            SleepChart()
+        }
+    }
+}
+
+@Composable
+fun SleepChart() {
+    val animationProgress = remember { Animatable(0f) }
+    
+    LaunchedEffect(Unit) {
+        animationProgress.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(durationMillis = 1500, easing = LinearEasing)
+        )
+    }
+    
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val secondaryColor = MaterialTheme.colorScheme.secondary
+
+    Canvas(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(60.dp)
+            .padding(vertical = 8.dp)
+    ) {
+        val width = size.width
+        val height = size.height
+        
+        val path = Path().apply {
+            moveTo(0f, height * 0.2f)
+            lineTo(width * 0.2f, height * 0.8f) // Deep
+            lineTo(width * 0.4f, height * 0.5f) // Light
+            lineTo(width * 0.5f, height * 0.1f) // Awake
+            lineTo(width * 0.7f, height * 0.3f) // REM
+            lineTo(width * 0.85f, height * 0.9f) // Deep
+            lineTo(width, height * 0.4f) // Light
+        }
+        
+        clipRect(right = width * animationProgress.value) {
+            drawPath(
+                path = path,
+                color = primaryColor,
+                style = Stroke(width = 6f)
             )
+            // Draw gradient/fill under path for a more advanced look could go here
         }
     }
 }

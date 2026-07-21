@@ -12,13 +12,17 @@ import javax.inject.Inject
 import kotlin.math.sin
 import kotlin.random.Random
 
+import com.sleeppulse.app.tracking.SleepStagePredictor
+
 /**
  * Emits plausible heart-rate/HRV/sleep-stage data on a coroutine ticker, walking each
  * value smoothly (rather than pure random jitter) and cycling through sleep stages the
  * way a real night roughly does. Stands in for [BleSensorDataSource] until real hardware
  * is wired up.
  */
-class SimulatedSensorDataSource @Inject constructor() : SensorDataSource {
+class SimulatedSensorDataSource @Inject constructor(
+    private val predictor: SleepStagePredictor
+) : SensorDataSource {
 
     private val _connectionState =
         MutableStateFlow<SensorConnectionState>(SensorConnectionState.Disconnected)
@@ -54,13 +58,19 @@ class SimulatedSensorDataSource @Inject constructor() : SensorDataSource {
 
             val hrvTarget = 55.0 + stageHrvBias + sin(tick / 22.0) * 4.0
             hrv += (hrvTarget - hrv) * 0.05 + Random.nextDouble(-0.2, 0.2)
+            
+            val predictedStage = predictor.predict(
+                heartRateBpm = heartRate.toInt(),
+                hrvMillis = hrv.toLong(),
+                movement = if (stage == SleepStage.AWAKE) 1.0f else 0.1f
+            )
 
             emit(
                 SensorReading(
                     timestampMillis = System.currentTimeMillis(),
                     heartRateBpm = heartRate.toInt().coerceIn(38, 140),
                     hrvMillis = hrv.coerceIn(15.0, 120.0),
-                    sleepStage = stage,
+                    sleepStage = predictedStage,
                 )
             )
 

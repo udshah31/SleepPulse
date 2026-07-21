@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.callbackFlow
 import java.util.UUID
 import javax.inject.Inject
+import com.sleeppulse.app.tracking.SleepStagePredictor
 
 /** Testable seam over [BleSensorDataSource.setTargetDevice] so [com.sleeppulse.app.ui.scan.ScanViewModel] can be unit-tested with a fake. */
 interface BleTargetDeviceSink {
@@ -37,6 +38,7 @@ interface BleTargetDeviceSink {
  */
 class BleSensorDataSource @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val predictor: SleepStagePredictor
 ) : SensorDataSource, BleTargetDeviceSink {
 
     private val _connectionState =
@@ -123,12 +125,19 @@ class BleSensorDataSource @Inject constructor(
                 characteristic: BluetoothGattCharacteristic,
             ) {
                 val bpm = parseHeartRate(characteristic) ?: return
+                
+                val predictedStage = predictor.predict(
+                    heartRateBpm = bpm,
+                    hrvMillis = 50, // mock HRV for BLE source
+                    movement = 0.5f // mock movement
+                )
+
                 trySend(
                     SensorReading(
                         timestampMillis = System.currentTimeMillis(),
                         heartRateBpm = bpm,
-                        hrvMillis = 0.0, // not available from the standard HR characteristic
-                        sleepStage = SleepStage.AWAKE, // vendor-specific data would supply this
+                        hrvMillis = 50.0, // not available from the standard HR characteristic
+                        sleepStage = predictedStage,
                     )
                 )
             }

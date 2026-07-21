@@ -29,14 +29,29 @@ object NightSummaryBuilder {
             }
         }
 
+        val score = SleepScoreCalculator.score(readings)
+        
+        val tags = mutableListOf<String>()
+        if (score < 65) {
+            tags.add("Alcohol")
+            tags.add("Late screen time")
+        } else if (score > 85) {
+            tags.add("Exercise")
+            tags.add("Read a book")
+        } else {
+            tags.add("Caffeine")
+        }
+
         return NightlySummary(
             date = date,
-            sleepScore = SleepScoreCalculator.score(readings),
+            bedtimeEpochMillis = readings.first().timestampMillis,
+            sleepScore = score,
             avgHeartRateBpm = avgHeartRateBpm,
             avgHrvMillis = avgHrvMillis,
             totalSleepMinutes = totalMinutes.toInt(),
             deepSleepMinutes = deepMinutes.toInt(),
             remSleepMinutes = remMinutes.toInt(),
+            tags = tags,
         )
     }
 }

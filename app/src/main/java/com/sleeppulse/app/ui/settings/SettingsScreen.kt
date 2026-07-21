@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.Switch
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -65,6 +66,57 @@ fun SettingsScreen(
                 )
                 Text(text = unit.label())
             }
+        }
+
+        Text(text = "Target bedtime", style = MaterialTheme.typography.titleMedium)
+        val bedtimeOptions = listOf(
+            Pair(21, 30) to "9:30 PM",
+            Pair(22, 30) to "10:30 PM",
+            Pair(23, 30) to "11:30 PM"
+        )
+        bedtimeOptions.forEach { (time, label) ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                RadioButton(
+                    selected = state.targetBedtimeHour == time.first && state.targetBedtimeMinute == time.second,
+                    onClick = { viewModel.onIntent(SettingsIntent.SetTargetBedtime(time.first, time.second)) },
+                )
+                Text(text = label)
+            }
+        }
+
+        Text(text = "Smart wake-up alarm", style = MaterialTheme.typography.titleMedium)
+        val wakeupOptions = listOf(
+            Triple(6, 30, 30) to "6:30 AM (30m window)",
+            Triple(7, 0, 30) to "7:00 AM (30m window)",
+            Triple(7, 30, 30) to "7:30 AM (30m window)"
+        )
+        wakeupOptions.forEach { (time, label) ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                RadioButton(
+                    selected = state.targetWakeupHour == time.first && state.targetWakeupMinute == time.second,
+                    onClick = { viewModel.onIntent(SettingsIntent.SetTargetWakeup(time.first, time.second, time.third)) },
+                )
+                Text(text = label)
+            }
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(text = "AMOLED Dark Mode", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = "Pure black background to save battery",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Switch(
+                checked = state.amoledBlack,
+                onCheckedChange = { viewModel.onIntent(SettingsIntent.SetAmoledBlack(it)) }
+            )
         }
     }
 }

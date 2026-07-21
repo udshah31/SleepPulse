@@ -37,9 +37,16 @@ android {
     buildFeatures {
         compose = true
     }
+    androidResources {
+        noCompress.add("tflite")
+    }
 
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.14"
+    }
+
+    testOptions {
+        unitTests.isReturnDefaultValues = true
     }
 
     packaging {
@@ -75,6 +82,18 @@ dependencies {
     ksp("androidx.room:room-compiler:2.6.1")
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+    
+    implementation("androidx.glance:glance-appwidget:1.1.0")
+    implementation("androidx.glance:glance-material3:1.1.0")
+    
+    implementation("androidx.health.connect:connect-client:1.1.0-alpha07")
+    
+    implementation("com.airbnb.android:lottie-compose:6.4.0")
+    
+    implementation("org.tensorflow:tensorflow-lite:2.14.0")
+    implementation("org.tensorflow:tensorflow-lite-support:0.4.4")
+    
+    implementation("com.google.android.gms:play-services-wearable:18.1.0")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")

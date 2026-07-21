@@ -14,9 +14,19 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.Manifest
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.sleeppulse.app.ui.components.LiveMetricChart
@@ -28,11 +38,24 @@ import com.sleeppulse.app.ui.theme.SleepIndigo
 @Composable
 fun DashboardScreen(
     viewModel: DashboardViewModel = hiltViewModel(),
+    onNavigateToBreathe: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
+    val haptic = LocalHapticFeedback.current
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { isGranted ->
+            if (!isGranted) {
+                // We'll log or silently fail if they deny, we won't record noise
+                android.util.Log.w("SleepPulse", "RECORD_AUDIO permission denied")
+            }
+        }
+    )
 
     LaunchedEffect(Unit) {
         viewModel.onIntent(DashboardIntent.Start)
+        permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
     }
 
     Column(
@@ -74,20 +97,48 @@ fun DashboardScreen(
             color = RecoveryGreen,
         )
 
-        OutlinedButton(onClick = { viewModel.onIntent(DashboardIntent.ToggleSensorConnection) }) {
+        OutlinedButton(onClick = { 
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            viewModel.onIntent(DashboardIntent.ToggleSensorConnection) 
+        }) {
             Text(if (state.isConnected) "Disconnect sensor" else "Connect sensor")
         }
+        
+        Button(
+            onClick = {
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                onNavigateToBreathe()
+            },
+            modifier = Modifier.fillMaxWidth(0.6f)
+        ) {
+            Text("Breathe to Sleep")
+        }
 
-        if (state.windDownStep == null) {
-            Button(onClick = { viewModel.onIntent(DashboardIntent.BeginWindDown) }) {
+        AnimatedVisibility(
+            visible = state.windDownStep == null,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
+            Button(onClick = { 
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                viewModel.onIntent(DashboardIntent.BeginWindDown) 
+            }) {
                 Text("Start wind-down")
             }
-        } else {
-            WindDownFlow(
-                step = state.windDownStep!!,
-                onAdvance = { viewModel.onIntent(DashboardIntent.AdvanceWindDownStep) },
-                onCancel = { viewModel.onIntent(DashboardIntent.CancelWindDown) },
-            )
+        }
+
+        AnimatedVisibility(
+            visible = state.windDownStep != null,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
+            state.windDownStep?.let { step ->
+                WindDownFlow(
+                    step = step,
+                    onAdvance = { viewModel.onIntent(DashboardIntent.AdvanceWindDownStep) },
+                    onCancel = { viewModel.onIntent(DashboardIntent.CancelWindDown) },
+                )
+            }
         }
     }
 }

@@ -13,6 +13,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import android.content.Context
+import android.content.Intent
+import com.sleeppulse.app.services.SleepTrackingService
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.LocalDate
 import javax.inject.Inject
 
@@ -21,6 +25,7 @@ private const val MAX_RECORDED_NIGHTS_DISPLAY = 4
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val repository: SleepRepository,
     private val notifier: SleepSummaryNotifier,
 ) : ViewModel() {
@@ -47,7 +52,10 @@ class DashboardViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
-            repository.connectSensor()
+            // Note: We used to call repository.connectSensor() here,
+            // but now we'll wait for the user to explicitly start tracking,
+            // or the user might already be tracking.
+            // We just observe the live readings.
         }
         viewModelScope.launch {
             repository.liveReadings().collect { reading ->
@@ -90,9 +98,13 @@ class DashboardViewModel @Inject constructor(
                     notifier.notify(summary, _state.value.recoveryResult)
                     sessionReadings.clear()
                 }
-                repository.disconnectSensor()
+                val stopIntent = Intent(context, SleepTrackingService::class.java).apply {
+                    action = SleepTrackingService.ACTION_STOP_TRACKING
+                }
+                context.startService(stopIntent)
             } else {
-                repository.connectSensor()
+                val startIntent = Intent(context, SleepTrackingService::class.java)
+                context.startForegroundService(startIntent)
             }
         }
     }

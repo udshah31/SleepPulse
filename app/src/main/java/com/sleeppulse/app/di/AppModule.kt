@@ -12,9 +12,16 @@ import com.sleeppulse.app.data.source.BleScanSource
 import com.sleeppulse.app.data.source.BleSensorDataSource
 import com.sleeppulse.app.data.source.BleTargetDeviceSink
 import com.sleeppulse.app.data.source.SensorDataSource
+import com.sleeppulse.app.data.source.SensorSourceManager
 import com.sleeppulse.app.data.source.SimulatedSensorDataSource
 import com.sleeppulse.app.notifications.SleepSummaryNotifier
 import com.sleeppulse.app.notifications.SleepSummaryNotifierImpl
+import com.sleeppulse.app.notifications.WindDownScheduler
+import com.sleeppulse.app.notifications.WindDownSchedulerImpl
+import com.sleeppulse.app.notifications.SmartAlarmScheduler
+import com.sleeppulse.app.notifications.SmartAlarmSchedulerImpl
+import com.sleeppulse.app.tracking.HealthConnectManager
+import com.sleeppulse.app.tracking.SleepStagePredictor
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -30,11 +37,11 @@ import kotlinx.coroutines.SupervisorJob
 @InstallIn(SingletonComponent::class)
 abstract class BindingsModule {
 
-    // Bound to the simulator for now; swap to BleSensorDataSource once a real
-    // peripheral scan/connect flow is wired up. See README for the swap steps.
+    // Bound to the SensorSourceManager, which delegates dynamically between the simulated
+    // and real BLE source based on the user's preference in Settings.
     @Binds
     @Singleton
-    abstract fun bindSensorDataSource(impl: SimulatedSensorDataSource): SensorDataSource
+    abstract fun bindSensorDataSource(impl: SensorSourceManager): SensorDataSource
 
     @Binds
     abstract fun bindBleScanSource(impl: BleDeviceScanner): BleScanSource
@@ -49,6 +56,14 @@ abstract class BindingsModule {
     @Binds
     @Singleton
     abstract fun bindSleepSummaryNotifier(impl: SleepSummaryNotifierImpl): SleepSummaryNotifier
+
+    @Binds
+    @Singleton
+    abstract fun bindWindDownScheduler(impl: WindDownSchedulerImpl): WindDownScheduler
+
+    @Binds
+    @Singleton
+    abstract fun bindSmartAlarmScheduler(impl: SmartAlarmSchedulerImpl): SmartAlarmScheduler
 }
 
 @Module
@@ -76,4 +91,14 @@ object DatabaseModule {
 
     @Provides
     fun provideNowMillis(): () -> Long = System::currentTimeMillis
+
+    @Provides
+    @Singleton
+    fun provideHealthConnectManager(@ApplicationContext context: Context): HealthConnectManager =
+        HealthConnectManager(context)
+
+    @Provides
+    @Singleton
+    fun provideSleepStagePredictor(@ApplicationContext context: Context): SleepStagePredictor =
+        SleepStagePredictor(context)
 }

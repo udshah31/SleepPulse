@@ -3,6 +3,11 @@
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_HEALTH" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.health.WRITE_SLEEP" />
 
     <application
         android:name=".SleepPulseApp"
@@ -20,6 +25,33 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- Health Connect Permissions Rationale -->
+            <intent-filter>
+                <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+            </intent-filter>
         </activity>
+        
+        <receiver
+            android:name=".notifications.WindDownReceiver"
+            android:exported="false" />
+        <receiver
+            android:name=".notifications.SmartAlarmReceiver"
+            android:exported="false" />
+        
+        <service
+            android:name=".services.SleepTrackingService"
+            android:exported="false"
+            android:foregroundServiceType="health|microphone" />
+            
+        <receiver
+            android:name=".widget.SleepPulseWidgetReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/sleep_pulse_widget_info" />
+        </receiver>
     </application>
 </manifest>

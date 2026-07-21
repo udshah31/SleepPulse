@@ -38,4 +38,12 @@ class FakeSleepRepository : SleepRepository {
     override suspend fun recordNightlySummary(summary: NightlySummary) {
         recordedSummaries.add(summary)
     }
+
+    override suspend fun updateTags(date: java.time.LocalDate, tags: List<String>) {
+        val index = recordedSummaries.indexOfFirst { it.date == date }
+        if (index != -1) {
+            recordedSummaries[index] = recordedSummaries[index].copy(tags = tags)
+            nightsFlow.value = recordedSummaries.toList()
+        }
+    }
 }

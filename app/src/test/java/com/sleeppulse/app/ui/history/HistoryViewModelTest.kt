@@ -111,4 +111,24 @@ class HistoryViewModelTest {
             cancelAndIgnoreRemainingEvents()
         }
     }
+
+    @Test
+    fun `Load computes consistencyScore from recentNights`() = runTest {
+        val repository = FakeSleepRepository()
+        // Three nights with same bedtime should give score 100
+        val nights = List(3) { summary(LocalDate.of(2026, 7, 21 - it), score = 70).copy(bedtimeEpochMillis = 0L) }
+        repository.nightsFlow.value = nights
+
+        val viewModel = HistoryViewModel(repository)
+
+        viewModel.state.test {
+            awaitItem() // initial state
+
+            viewModel.onIntent(HistoryIntent.Load)
+            val loaded = awaitItem()
+
+            assertEquals(100, loaded.consistencyScore)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
 }

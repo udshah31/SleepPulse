@@ -10,6 +10,7 @@ import com.sleeppulse.app.data.model.NightlySummary
 import com.sleeppulse.app.data.model.SensorConnectionState
 import com.sleeppulse.app.data.model.SensorReading
 import com.sleeppulse.app.data.source.SensorDataSource
+import com.sleeppulse.app.tracking.HealthConnectManager
 import java.time.LocalDate
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -32,6 +33,7 @@ class SleepRepositoryImpl @Inject constructor(
     private val dao: NightlySummaryDao,
     private val sessionDao: SleepSessionDao,
     private val appScope: CoroutineScope,
+    private val healthConnectManager: HealthConnectManager,
     private val nowMillis: () -> Long = System::currentTimeMillis,
 ) : SleepRepository {
 
@@ -100,6 +102,11 @@ class SleepRepositoryImpl @Inject constructor(
     override suspend fun recordNightlySummary(summary: NightlySummary) {
         dao.upsert(summary.toEntity())
         dao.trimToLast30Days()
+        healthConnectManager.writeSleepSession(summary)
+    }
+
+    override suspend fun updateTags(date: LocalDate, tags: List<String>) {
+        dao.updateTags(date.toEpochDay(), tags)
     }
 
     suspend fun recoverUnfinalizedSessions() {
@@ -139,21 +146,25 @@ class SleepRepositoryImpl @Inject constructor(
 
     private fun NightlySummaryEntity.toDomain() = NightlySummary(
         date = LocalDate.ofEpochDay(dateEpochDay),
+        bedtimeEpochMillis = bedtimeEpochMillis,
         sleepScore = sleepScore,
         avgHeartRateBpm = avgHeartRateBpm,
         avgHrvMillis = avgHrvMillis,
         totalSleepMinutes = totalSleepMinutes,
         deepSleepMinutes = deepSleepMinutes,
         remSleepMinutes = remSleepMinutes,
+        tags = tags,
     )
 
     private fun NightlySummary.toEntity() = NightlySummaryEntity(
         dateEpochDay = date.toEpochDay(),
+        bedtimeEpochMillis = bedtimeEpochMillis,
         sleepScore = sleepScore,
         avgHeartRateBpm = avgHeartRateBpm,
         avgHrvMillis = avgHrvMillis,
         totalSleepMinutes = totalSleepMinutes,
         deepSleepMinutes = deepSleepMinutes,
         remSleepMinutes = remSleepMinutes,
+        tags = tags,
     )
 }
