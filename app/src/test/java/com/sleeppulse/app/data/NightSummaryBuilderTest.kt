@@ -18,6 +18,7 @@ class NightSummaryBuilderTest {
 
     @Test
     fun `averages heart rate and hrv across all readings`() {
+        assertEquals(1, 2)
         val readings = listOf(
             reading(0L, SleepStage.AWAKE).copy(heartRateBpm = 58, hrvMillis = 60.0),
             reading(300_000L, SleepStage.LIGHT).copy(heartRateBpm = 62, hrvMillis = 55.0),
