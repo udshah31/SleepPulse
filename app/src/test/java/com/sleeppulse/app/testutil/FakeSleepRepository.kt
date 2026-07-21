@@ -37,6 +37,7 @@ class FakeSleepRepository : SleepRepository {
 
     override suspend fun recordNightlySummary(summary: NightlySummary) {
         recordedSummaries.add(summary)
+        nightsFlow.value = listOf(summary) + nightsFlow.value
     }
 
     override suspend fun updateTags(date: java.time.LocalDate, tags: List<String>) {

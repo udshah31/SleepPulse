@@ -11,6 +11,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import android.content.Context
@@ -52,12 +53,6 @@ class DashboardViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
-            // Note: We used to call repository.connectSensor() here,
-            // but now we'll wait for the user to explicitly start tracking,
-            // or the user might already be tracking.
-            // We just observe the live readings.
-        }
-        viewModelScope.launch {
             repository.liveReadings().collect { reading ->
                 sessionReadings.add(reading)
                 _state.update { current ->
@@ -95,7 +90,8 @@ class DashboardViewModel @Inject constructor(
                 if (sessionReadings.isNotEmpty()) {
                     val summary = NightSummaryBuilder.build(sessionReadings.toList(), LocalDate.now())
                     repository.recordNightlySummary(summary)
-                    notifier.notify(summary, _state.value.recoveryResult)
+                    val recovery = computeRecovery(repository.recentNights().first())
+                    notifier.notify(summary, recovery)
                     sessionReadings.clear()
                 }
                 val stopIntent = Intent(context, SleepTrackingService::class.java).apply {

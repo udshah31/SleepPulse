@@ -314,4 +314,46 @@ class DashboardViewModelTest {
 
         assertEquals(0, notifier.notifiedSummaries.size)
     }
+
+    @Test
+    fun `disconnecting notifies with recovery computed against the just-recorded summary, not stale state`() = runTest {
+        val repository = FakeSleepRepository()
+        val notifier = FakeSleepSummaryNotifier()
+        val context: Context = mock()
+        val viewModel = DashboardViewModel(context, repository, notifier)
+
+        fun night(hrv: Double, hr: Int) = NightlySummary(
+            date = LocalDate.now().minusDays(1),
+            sleepScore = 70,
+            avgHeartRateBpm = hr,
+            avgHrvMillis = hrv,
+            totalSleepMinutes = 420,
+            deepSleepMinutes = 90,
+            remSleepMinutes = 100,
+        )
+
+        // Baseline present before Start, so recoveryResult would be null at disconnect time
+        // if the notifier read state captured before tonight's summary was recorded.
+        repository.nightsFlow.value = listOf(night(50.0, 60), night(50.0, 60), night(50.0, 60))
+
+        viewModel.onIntent(DashboardIntent.Start)
+        advanceUntilIdle()
+
+        // recoveryResult is null here: only 3 baseline nights exist, no "last night" yet.
+        assertNull(viewModel.state.value.recoveryResult)
+
+        repository.readingsFlow.emit(reading(bpm = 54, hrv = 62.5)) // well-recovered reading
+        advanceUntilIdle()
+        repository.connectionStateFlow.value = SensorConnectionState.Connected("fake-device")
+        advanceUntilIdle()
+
+        viewModel.onIntent(DashboardIntent.ToggleSensorConnection)
+        advanceUntilIdle()
+
+        // The notifier must see recovery computed AFTER tonight's summary was recorded
+        // (tonight becomes "last night", the pre-existing 3 nights become baseline) —
+        // not the null value that was in _state.value.recoveryResult before disconnect.
+        assertEquals(1, notifier.notifiedRecoveryResults.size)
+        assertEquals(RecoveryTier.OPTIMAL, notifier.notifiedRecoveryResults.single()?.tier)
+    }
 }
