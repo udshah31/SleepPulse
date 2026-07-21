@@ -24,6 +24,7 @@ class SettingsViewModel @Inject constructor() : ViewModel() {
         when (intent) {
             is SettingsIntent.SetDataSource -> _state.update { it.copy(dataSourceMode = intent.mode) }
             is SettingsIntent.SetTemperatureUnit -> _state.update { it.copy(temperatureUnit = intent.unit) }
+            is SettingsIntent.SetSelectedBleDevice -> _state.update { it.copy(selectedBleDeviceLabel = intent.label) }
         }
     }
 }

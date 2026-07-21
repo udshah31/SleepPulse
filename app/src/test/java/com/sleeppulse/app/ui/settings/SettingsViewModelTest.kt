@@ -39,4 +39,13 @@ class SettingsViewModelTest {
         assertEquals(DataSourceMode.BLE, viewModel.state.value.dataSourceMode)
         assertEquals(TemperatureUnit.FAHRENHEIT, viewModel.state.value.temperatureUnit)
     }
+
+    @Test
+    fun `SetSelectedBleDevice updates only selectedBleDeviceLabel`() {
+        val viewModel = SettingsViewModel()
+        viewModel.onIntent(SettingsIntent.SetSelectedBleDevice("Fake HR Strap (AA:BB)"))
+
+        assertEquals("Fake HR Strap (AA:BB)", viewModel.state.value.selectedBleDeviceLabel)
+        assertEquals(DataSourceMode.SIMULATED, viewModel.state.value.dataSourceMode)
+    }
 }

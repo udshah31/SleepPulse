@@ -16,11 +16,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 
+import androidx.compose.material3.Button
+import androidx.compose.runtime.LaunchedEffect
+
 @Composable
 fun SettingsScreen(
+    onNavigateToScan: () -> Unit = {},
+    selectedBleDeviceLabel: String? = null,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
+
+    LaunchedEffect(selectedBleDeviceLabel) {
+        selectedBleDeviceLabel?.let {
+            viewModel.onIntent(SettingsIntent.SetSelectedBleDevice(it))
+        }
+    }
 
     Column(
         modifier = Modifier.fillMaxWidth().padding(24.dp),
@@ -34,6 +45,14 @@ fun SettingsScreen(
                     onClick = { viewModel.onIntent(SettingsIntent.SetDataSource(mode)) },
                 )
                 Text(text = mode.label())
+            }
+        }
+        if (state.dataSourceMode == DataSourceMode.BLE) {
+            Button(onClick = onNavigateToScan) {
+                Text("Scan for device")
+            }
+            state.selectedBleDeviceLabel?.let { label ->
+                Text(text = "Selected: $label")
             }
         }
 
