@@ -356,4 +356,46 @@ class DashboardViewModelTest {
         assertEquals(1, notifier.notifiedRecoveryResults.size)
         assertEquals(RecoveryTier.OPTIMAL, notifier.notifiedRecoveryResults.single()?.tier)
     }
+
+    @Test
+    fun `metricBaseline is null until recentNights emits`() = runTest {
+        val repository = FakeSleepRepository()
+        val notifier = FakeSleepSummaryNotifier()
+        val context: Context = mock()
+        val viewModel = DashboardViewModel(context, repository, notifier)
+
+        assertNull(viewModel.state.value.metricBaseline)
+
+        viewModel.onIntent(DashboardIntent.Start)
+        advanceUntilIdle()
+
+        assertNull(viewModel.state.value.metricBaseline)
+    }
+
+    @Test
+    fun `metricBaseline is computed from recentNights once enough nights are recorded`() = runTest {
+        val repository = FakeSleepRepository()
+        val notifier = FakeSleepSummaryNotifier()
+        val context: Context = mock()
+        val viewModel = DashboardViewModel(context, repository, notifier)
+
+        viewModel.onIntent(DashboardIntent.Start)
+        advanceUntilIdle()
+
+        fun night(hrv: Double, hr: Int) = NightlySummary(
+            date = LocalDate.now(),
+            sleepScore = 70,
+            avgHeartRateBpm = hr,
+            avgHrvMillis = hrv,
+            totalSleepMinutes = 420,
+            deepSleepMinutes = 90,
+            remSleepMinutes = 100,
+        )
+
+        repository.nightsFlow.value = listOf(night(50.0, 60), night(50.0, 60), night(50.0, 60))
+        advanceUntilIdle()
+
+        val baseline = viewModel.state.value.metricBaseline
+        assertEquals(50.0, baseline?.avgHrvMillis ?: 0.0, 0.0001)
+    }
 }

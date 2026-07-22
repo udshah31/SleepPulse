@@ -72,6 +72,7 @@ class DashboardViewModel @Inject constructor(
                     it.copy(
                         recoveryResult = computeRecovery(nights),
                         recordedNightsCount = nights.size.coerceAtMost(MAX_RECORDED_NIGHTS_DISPLAY),
+                        metricBaseline = MetricBaselineCalculator.compute(nights),
                     )
                 }
             }
