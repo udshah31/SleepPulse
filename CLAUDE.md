@@ -1,5 +1,14 @@
 # CLAUDE.md
 
+CRITICAL GIT RULES:
+1. Never stage, commit, or push any of the following local configuration or secret files:
+    - .claude/settings.local.json
+    - CLAUDE.local.md
+    - .env, .env.local, or any file ending in .env
+    - Any files containing API keys, private tokens, or credentials.
+2. If you need to use Git, always stage files explicitly by their exact path (e.g., `git add src/index.js`). Do NOT use `git add .` or `git add -A`.
+3. If you detect that any of these forbidden files are untracked or modified, explicitly ignore them and warn me. Do not include them in any git operations.
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project
