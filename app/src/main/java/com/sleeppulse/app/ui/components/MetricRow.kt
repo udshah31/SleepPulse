@@ -19,7 +19,7 @@ import kotlin.math.abs
  * One metric line: label, current value, and — once a baseline exists — a small
  * colored trend arrow with the percent delta versus that baseline. Deliberately has no
  * card/background/border, sitting directly on the screen so several rows read as one
- * continuous list (divided by [CalmNightDivider], not boxed).
+ * continuous list (divided by a thin low-alpha divider, not boxed).
  */
 @Composable
 fun MetricRow(

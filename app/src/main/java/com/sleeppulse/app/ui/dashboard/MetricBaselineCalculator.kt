@@ -17,6 +17,13 @@ data class MetricBaselineResult(
  */
 object MetricBaselineCalculator {
 
+    /**
+     * Computes the 7-night rolling average. Deliberately includes the most recent
+     * completed night in the window (unlike [RecoveryScoreCalculator], whose baseline
+     * excludes the last night since it compares that night against the baseline) — here
+     * the comparison target is a live in-progress reading, which is never itself in
+     * [nights], so there's no night to hold out.
+     */
     fun compute(nights: List<NightlySummary>): MetricBaselineResult? {
         if (nights.size < MIN_NIGHTS_FOR_BASELINE) return null
 

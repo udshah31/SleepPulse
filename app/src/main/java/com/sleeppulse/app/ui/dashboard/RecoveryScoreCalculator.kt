@@ -74,20 +74,18 @@ object RecoveryScoreCalculator {
         }
 
         val percentText = { deviation: Double -> "${(abs(deviation) * 100).toInt()}%" }
+        val isFavorableTier = tier == RecoveryTier.OPTIMAL || tier == RecoveryTier.ADEQUATE
+        val recommendationClause = if (isFavorableTier) "suggesting strong recovery." else "— consider an easier day."
 
         return if (hrvMagnitude >= rhrMagnitude) {
-            if (hrvDeviation >= 0) {
-                "Your HRV is ${percentText(hrvDeviation)} above your weekly average, suggesting strong recovery."
-            } else {
-                "Your HRV is ${percentText(hrvDeviation)} below your weekly average — consider an easier day."
-            }
+            val direction = if (hrvDeviation >= 0) "above" else "below"
+            "Your HRV is ${percentText(hrvDeviation)} $direction your weekly average, $recommendationClause"
         } else {
-            // rhrDeviation >= 0 means resting HR is LOWER than baseline (favorable).
-            if (rhrDeviation >= 0) {
-                "Your resting heart rate is ${percentText(rhrDeviation)} below your weekly average, suggesting strong recovery."
-            } else {
-                "Your resting heart rate is ${percentText(rhrDeviation)} above your weekly average — consider an easier day."
-            }
+            // rhrDeviation >= 0 means resting HR is LOWER than baseline (favorable direction for RHR itself);
+            // "above"/"below" here describes the deviation's raw direction, not favorability — the
+            // recommendationClause's favorability comes from the TIER, not from this sign.
+            val direction = if (rhrDeviation >= 0) "below" else "above"
+            "Your resting heart rate is ${percentText(rhrDeviation)} $direction your weekly average, $recommendationClause"
         }
     }
 

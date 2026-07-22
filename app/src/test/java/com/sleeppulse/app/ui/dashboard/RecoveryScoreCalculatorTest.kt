@@ -93,9 +93,12 @@ class RecoveryScoreCalculatorTest {
 
         val result = RecoveryScoreCalculator.score(lastNight, baseline)!!
 
-        assertTrue(
-            "expected guidance to mention HRV, was: ${result.guidance}",
-            result.guidance.contains("HRV", ignoreCase = true),
+        // hrvDeviation=0.25, rhrDeviation=(60-63)/60=-0.05, hrvComponent=100, rhrComponent=40
+        // score=100*0.6+40*0.4=76 -> ADEQUATE (favorable tier)
+        assertEquals(RecoveryTier.ADEQUATE, result.tier)
+        assertEquals(
+            "Your HRV is 25% above your weekly average, suggesting strong recovery.",
+            result.guidance,
         )
     }
 
@@ -107,9 +110,12 @@ class RecoveryScoreCalculatorTest {
 
         val result = RecoveryScoreCalculator.score(lastNight, baseline)!!
 
-        assertTrue(
-            "expected guidance to mention resting heart rate, was: ${result.guidance}",
-            result.guidance.contains("resting heart rate", ignoreCase = true),
+        // hrvDeviation=0.02, rhrDeviation=(60-72)/60=-0.20, hrvComponent=54, rhrComponent=10
+        // score=54*0.6+10*0.4=36.4->36 -> POOR (unfavorable tier)
+        assertEquals(RecoveryTier.POOR, result.tier)
+        assertEquals(
+            "Your resting heart rate is 20% above your weekly average, — consider an easier day.",
+            result.guidance,
         )
     }
 
