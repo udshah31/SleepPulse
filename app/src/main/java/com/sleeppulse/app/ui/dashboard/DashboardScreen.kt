@@ -102,6 +102,8 @@ fun DashboardScreen(
         RecoveryScoreCard(
             recoveryResult = state.recoveryResult,
             recordedNightsCount = state.recordedNightsCount,
+            latestReading = state.latestReading,
+            metricBaseline = state.metricBaseline,
             modifier = Modifier.fillMaxWidth(),
         )
 
@@ -110,8 +112,10 @@ fun DashboardScreen(
             style = MaterialTheme.typography.bodyMedium,
         )
 
-        state.latestReading?.let { reading ->
-            Text(text = "Heart rate ${reading.heartRateBpm} bpm  ·  HRV ${reading.hrvMillis.toInt()} ms")
+        if (state.metricBaseline == null) {
+            state.latestReading?.let { reading ->
+                Text(text = "Heart rate ${reading.heartRateBpm} bpm  ·  HRV ${reading.hrvMillis.toInt()} ms")
+            }
         }
 
         Text(text = "Heart rate", style = MaterialTheme.typography.titleSmall)
