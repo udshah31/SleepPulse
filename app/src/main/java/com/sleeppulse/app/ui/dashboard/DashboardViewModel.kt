@@ -92,6 +92,7 @@ class DashboardViewModel @Inject constructor(
                     repository.recordNightlySummary(summary)
                     val recovery = computeRecovery(repository.recentNights().first())
                     notifier.notify(summary, recovery)
+                    com.sleeppulse.app.widget.SleepPulseWidget.refresh(context)
                     sessionReadings.clear()
                 }
                 val stopIntent = Intent(context, SleepTrackingService::class.java).apply {

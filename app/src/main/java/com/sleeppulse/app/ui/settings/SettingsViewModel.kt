@@ -1,11 +1,14 @@
 package com.sleeppulse.app.ui.settings
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sleeppulse.app.data.repository.SettingsRepository
 import com.sleeppulse.app.notifications.SmartAlarmScheduler
 import com.sleeppulse.app.notifications.WindDownScheduler
+import com.sleeppulse.app.widget.SleepPulseWidget
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,6 +23,7 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val repository: SettingsRepository,
     private val windDownScheduler: WindDownScheduler,
     private val smartAlarmScheduler: SmartAlarmScheduler,
@@ -74,6 +78,7 @@ class SettingsViewModel @Inject constructor(
             is SettingsIntent.SetTargetBedtime -> {
                 repository.setTargetBedtime(intent.hour, intent.minute)
                 windDownScheduler.scheduleWindDown(intent.hour, intent.minute)
+                viewModelScope.launch { SleepPulseWidget.refresh(context) }
             }
             is SettingsIntent.SetTargetWakeup -> {
                 repository.setTargetWakeup(intent.hour, intent.minute, intent.windowMinutes)

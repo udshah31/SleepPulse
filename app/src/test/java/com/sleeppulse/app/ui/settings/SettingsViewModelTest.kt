@@ -1,5 +1,6 @@
 package com.sleeppulse.app.ui.settings
 
+import android.content.Context
 import com.sleeppulse.app.data.repository.SettingsRepository
 import com.sleeppulse.app.notifications.WindDownScheduler
 import com.sleeppulse.app.testutil.MainDispatcherRule
@@ -17,12 +18,13 @@ class SettingsViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
+    private val mockContext = mock<Context>()
     private val mockWindDownScheduler = mock<WindDownScheduler>()
     private val mockSmartAlarmScheduler = mock<SmartAlarmScheduler>()
 
     @Test
     fun `default state is simulated, celsius, and 22_30 bedtime`() = runTest {
-        val viewModel = SettingsViewModel(SettingsRepository(), mockWindDownScheduler, mockSmartAlarmScheduler)
+        val viewModel = SettingsViewModel(mockContext, SettingsRepository(), mockWindDownScheduler, mockSmartAlarmScheduler)
         advanceUntilIdle()
         assertEquals(DataSourceMode.SIMULATED, viewModel.state.value.dataSourceMode)
         assertEquals(TemperatureUnit.CELSIUS, viewModel.state.value.temperatureUnit)
@@ -32,7 +34,7 @@ class SettingsViewModelTest {
 
     @Test
     fun `SetDataSource updates only dataSourceMode`() = runTest {
-        val viewModel = SettingsViewModel(SettingsRepository(), mockWindDownScheduler, mockSmartAlarmScheduler)
+        val viewModel = SettingsViewModel(mockContext, SettingsRepository(), mockWindDownScheduler, mockSmartAlarmScheduler)
         viewModel.onIntent(SettingsIntent.SetDataSource(DataSourceMode.BLE))
         advanceUntilIdle()
 
@@ -42,7 +44,7 @@ class SettingsViewModelTest {
 
     @Test
     fun `SetTemperatureUnit updates only temperatureUnit`() = runTest {
-        val viewModel = SettingsViewModel(SettingsRepository(), mockWindDownScheduler, mockSmartAlarmScheduler)
+        val viewModel = SettingsViewModel(mockContext, SettingsRepository(), mockWindDownScheduler, mockSmartAlarmScheduler)
         viewModel.onIntent(SettingsIntent.SetTemperatureUnit(TemperatureUnit.FAHRENHEIT))
         advanceUntilIdle()
 
@@ -52,7 +54,7 @@ class SettingsViewModelTest {
 
     @Test
     fun `both intents applied in sequence do not clobber each other`() = runTest {
-        val viewModel = SettingsViewModel(SettingsRepository(), mockWindDownScheduler, mockSmartAlarmScheduler)
+        val viewModel = SettingsViewModel(mockContext, SettingsRepository(), mockWindDownScheduler, mockSmartAlarmScheduler)
         viewModel.onIntent(SettingsIntent.SetDataSource(DataSourceMode.BLE))
         viewModel.onIntent(SettingsIntent.SetTemperatureUnit(TemperatureUnit.FAHRENHEIT))
         advanceUntilIdle()
@@ -63,7 +65,7 @@ class SettingsViewModelTest {
 
     @Test
     fun `SetSelectedBleDevice updates only selectedBleDeviceLabel`() = runTest {
-        val viewModel = SettingsViewModel(SettingsRepository(), mockWindDownScheduler, mockSmartAlarmScheduler)
+        val viewModel = SettingsViewModel(mockContext, SettingsRepository(), mockWindDownScheduler, mockSmartAlarmScheduler)
         viewModel.onIntent(SettingsIntent.SetSelectedBleDevice("Fake HR Strap (AA:BB)"))
         advanceUntilIdle()
 
@@ -73,7 +75,7 @@ class SettingsViewModelTest {
 
     @Test
     fun `SetTargetBedtime updates only targetBedtime and schedules reminder`() = runTest {
-        val viewModel = SettingsViewModel(SettingsRepository(), mockWindDownScheduler, mockSmartAlarmScheduler)
+        val viewModel = SettingsViewModel(mockContext, SettingsRepository(), mockWindDownScheduler, mockSmartAlarmScheduler)
         viewModel.onIntent(SettingsIntent.SetTargetBedtime(23, 15))
         advanceUntilIdle()
 
@@ -86,7 +88,7 @@ class SettingsViewModelTest {
 
     @Test
     fun `SetTargetWakeup updates targetWakeup and schedules smart alarm`() = runTest {
-        val viewModel = SettingsViewModel(SettingsRepository(), mockWindDownScheduler, mockSmartAlarmScheduler)
+        val viewModel = SettingsViewModel(mockContext, SettingsRepository(), mockWindDownScheduler, mockSmartAlarmScheduler)
         viewModel.onIntent(SettingsIntent.SetTargetWakeup(6, 30, 30))
         advanceUntilIdle()
 
