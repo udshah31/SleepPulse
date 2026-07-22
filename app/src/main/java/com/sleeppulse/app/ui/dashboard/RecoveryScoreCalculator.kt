@@ -75,7 +75,7 @@ object RecoveryScoreCalculator {
 
         val percentText = { deviation: Double -> "${(abs(deviation) * 100).toInt()}%" }
         val isFavorableTier = tier == RecoveryTier.OPTIMAL || tier == RecoveryTier.ADEQUATE
-        val recommendationClause = if (isFavorableTier) "suggesting strong recovery." else "— consider an easier day."
+        val recommendationClause = if (isFavorableTier) "suggesting strong recovery." else "consider an easier day."
 
         return if (hrvMagnitude >= rhrMagnitude) {
             val direction = if (hrvDeviation >= 0) "above" else "below"

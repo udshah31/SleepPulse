@@ -114,7 +114,7 @@ class RecoveryScoreCalculatorTest {
         // score=54*0.6+10*0.4=36.4->36 -> POOR (unfavorable tier)
         assertEquals(RecoveryTier.POOR, result.tier)
         assertEquals(
-            "Your resting heart rate is 20% above your weekly average, — consider an easier day.",
+            "Your resting heart rate is 20% above your weekly average, consider an easier day.",
             result.guidance,
         )
     }
