@@ -3,9 +3,19 @@ package com.sleeppulse.app.ui.recovery
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sleeppulse.app.data.repository.SleepRepository
+import com.sleeppulse.app.ui.dashboard.HrvTrendCalculator
+import com.sleeppulse.app.ui.dashboard.HrvTrendResult
 import com.sleeppulse.app.ui.dashboard.RecoveryScoreCalculator
+import com.sleeppulse.app.ui.dashboard.RestingHeartRateTrendCalculator
+import com.sleeppulse.app.ui.dashboard.RestingHeartRateTrendResult
+import com.sleeppulse.app.ui.dashboard.TrendDirection
 import com.sleeppulse.app.ui.history.SleepConsistencyCalculator
 import com.sleeppulse.app.ui.history.SleepDebtCalculator
+import com.sleeppulse.app.ui.history.SleepVariabilityCalculator
+import com.sleeppulse.app.ui.history.SleepVariabilityResult
+import com.sleeppulse.app.ui.history.TagCorrelation
+import com.sleeppulse.app.ui.history.TagCorrelationCalculator
+import com.sleeppulse.app.ui.history.VariabilityLevel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -40,8 +50,26 @@ class RecoveryViewModel @Inject constructor(
                 
                 val debt = SleepDebtCalculator.calculate(nights)
                 val consistencyScore = SleepConsistencyCalculator.calculateScore(nights) ?: 0
+                val hrvTrend = HrvTrendCalculator.analyze(nights)
+                val rhrTrend = RestingHeartRateTrendCalculator.analyze(nights)
+                val variability = SleepVariabilityCalculator.analyze(nights)
+                val tagCorrelations = TagCorrelationCalculator.analyze(nights)
+                val readiness = RecoveryReadinessCalculator.compute(
+                    recoveryScore = recoveryResult?.score,
+                    hrvTrend = hrvTrend,
+                    rhrTrend = rhrTrend,
+                    sleepDebt = debt,
+                )
 
-                val advice = generateAdvice(debt?.deficitMinutes ?: 0, consistencyScore, recoveryResult?.score ?: 0)
+                val advice = generateAdvice(
+                    debtMinutes = debt?.deficitMinutes ?: 0,
+                    consistency = consistencyScore,
+                    recoveryScore = recoveryResult?.score ?: 0,
+                    hrvTrend = hrvTrend,
+                    rhrTrend = rhrTrend,
+                    variability = variability,
+                    tagCorrelations = tagCorrelations,
+                )
 
                 _state.update {
                     it.copy(
@@ -52,15 +80,28 @@ class RecoveryViewModel @Inject constructor(
                         latestNight = latest,
                         personalizedAdvice = advice,
                         recordedNightsCount = nights.size.coerceAtMost(MAX_RECORDED_NIGHTS_DISPLAY),
+                        hrvTrend = hrvTrend,
+                        restingHeartRateTrend = rhrTrend,
+                        variability = variability,
+                        tagCorrelations = tagCorrelations,
+                        readiness = readiness,
                     )
                 }
             }
         }
     }
 
-    private fun generateAdvice(debtMinutes: Int, consistency: Int, recoveryScore: Int): String {
+    private fun generateAdvice(
+        debtMinutes: Int,
+        consistency: Int,
+        recoveryScore: Int,
+        hrvTrend: HrvTrendResult?,
+        rhrTrend: RestingHeartRateTrendResult?,
+        variability: SleepVariabilityResult?,
+        tagCorrelations: List<TagCorrelation>,
+    ): String {
         val parts = mutableListOf<String>()
-        
+
         if (debtMinutes > 60) {
             val hours = debtMinutes / 60
             parts.add("You have $hours hour(s) of sleep debt. Target an extra 30m of sleep tonight.")
@@ -76,6 +117,22 @@ class RecoveryViewModel @Inject constructor(
             parts.add("You are well recovered, a great day for a workout.")
         } else if (recoveryScore in 1..50) {
             parts.add("Your body is stressed. Prioritize rest today.")
+        }
+
+        if (hrvTrend?.direction == TrendDirection.FALLING) {
+            parts.add("Your HRV has been trending down over the past two weeks — worth watching for early signs of overtraining or illness.")
+        }
+
+        if (rhrTrend?.direction == TrendDirection.RISING) {
+            parts.add("Your resting heart rate has crept up over the past two weeks, even on nights that looked fine individually.")
+        }
+
+        if (variability?.level == VariabilityLevel.HIGH) {
+            parts.add("Your recovery signals have been erratic night to night this week, not just low on average.")
+        }
+
+        tagCorrelations.firstOrNull { it.scoreDelta < -5 }?.let { worst ->
+            parts.add("Nights tagged \"${worst.tag}\" average ${worst.avgScoreWithTag.toInt()} vs ${worst.avgScoreWithoutTag.toInt()} otherwise — worth cutting back.")
         }
 
         return parts.joinToString(" ")
