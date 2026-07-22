@@ -1,110 +1,52 @@
 package com.sleeppulse.app.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
-import android.os.Build
 import androidx.compose.ui.graphics.Color
 
-// Default Night / Evening Colors
-val SleepIndigo = Color(0xFF4F5DFF)
-val SleepIndigoDark = Color(0xFF2E3A9E)
-val RecoveryGreen = Color(0xFF2ED9A6)
-val CautionAmber = Color(0xFFFFB454)
-val AlertCoral = Color(0xFFFF5C7A)
-val MidnightBg = Color(0xFF0E1020)
-val MidnightSurface = Color(0xFF171A33)
+// Calm Night palette
+val SleepIndigo = Color(0xFF7C8BFF)
+val SleepIndigoDark = Color(0xFF5A63B8)
+val RecoveryGreen = Color(0xFF5FD98A)
+val CautionAmber = Color(0xFFF6C358)
+val AlertCoral = Color(0xFFFF7A7A)
 
-// Morning Colors
-val MorningOrange = Color(0xFFFF8B3D)
-val MorningYellow = Color(0xFFFFD15C)
-val MorningBg = Color(0xFFFFF4EB)
-val MorningSurface = Color(0xFFFFFFFF)
+val CalmNightBackground = Color(0xFF0B0F22)
+val CalmNightBackgroundEnd = Color(0xFF111633)
+val CalmNightSurface = Color(0xFF151B3D)
+val CalmNightSurfaceDim = Color(0xFF1C2248)
+val CalmNightTextPrimary = Color(0xFFE4E6F5)
+val CalmNightTextSecondary = Color(0xFF8B93C4)
+val CalmNightTextTertiary = Color(0xFF5C6489)
 
-// Daytime Colors
-val DaySkyBlue = Color(0xFF42A5F5)
-val DayTeal = Color(0xFF26A69A)
-val DayBg = Color(0xFFF0F8FF)
-val DaySurface = Color(0xFFFFFFFF)
-
-// Evening Colors
-val EveningPurple = Color(0xFF7E57C2)
-val EveningIndigo = Color(0xFF5C6BC0)
-val EveningBg = Color(0xFF1F1B24)
-val EveningSurface = Color(0xFF2C2735)
-
-private val DarkColors = darkColorScheme(
+private val CalmNightColors = darkColorScheme(
     primary = SleepIndigo,
+    onPrimary = CalmNightBackground,
     secondary = RecoveryGreen,
     tertiary = CautionAmber,
-    background = MidnightBg,
-    surface = MidnightSurface,
-)
-
-private val LightColors = lightColorScheme(
-    primary = SleepIndigoDark,
-    secondary = RecoveryGreen,
-    tertiary = CautionAmber,
-)
-
-private val MorningColors = lightColorScheme(
-    primary = MorningOrange,
-    secondary = MorningYellow,
-    background = MorningBg,
-    surface = MorningSurface,
-)
-
-private val DayColors = lightColorScheme(
-    primary = DaySkyBlue,
-    secondary = DayTeal,
-    background = DayBg,
-    surface = DaySurface,
-)
-
-private val EveningColors = darkColorScheme(
-    primary = EveningPurple,
-    secondary = EveningIndigo,
-    background = EveningBg,
-    surface = EveningSurface,
+    error = AlertCoral,
+    background = CalmNightBackground,
+    surface = CalmNightSurface,
+    surfaceVariant = CalmNightSurfaceDim,
+    onBackground = CalmNightTextPrimary,
+    onSurface = CalmNightTextPrimary,
+    onSurfaceVariant = CalmNightTextSecondary,
 )
 
 @Composable
 fun SleepPulseTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
     amoledBlack: Boolean = false,
-    dynamicColor: Boolean = true,
     content: @Composable () -> Unit,
 ) {
-    val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
-    
-    val timeBasedColorScheme = when (hour) {
-        in 6..11 -> MorningColors
-        in 12..17 -> DayColors
-        in 18..21 -> EveningColors
-        else -> DarkColors // Night
-    }
-
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-        else -> timeBasedColorScheme
-    }
-
-    val finalColorScheme = if (darkTheme && amoledBlack) {
-        colorScheme.copy(
+    val colorScheme = if (amoledBlack) {
+        CalmNightColors.copy(
             background = Color.Black,
-            surface = Color.Black
+            surface = Color.Black,
         )
     } else {
-        colorScheme
+        CalmNightColors
     }
 
-    MaterialTheme(colorScheme = finalColorScheme, content = content)
+    MaterialTheme(colorScheme = colorScheme, content = content)
 }
