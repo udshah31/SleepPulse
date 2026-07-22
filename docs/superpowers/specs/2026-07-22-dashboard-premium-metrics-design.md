@@ -16,6 +16,16 @@ aggregate Recovery Score — it isn't surfaced per-metric, and the guidance
 sentence is a static 4-way lookup by tier rather than naming which signal
 (HRV or resting HR) actually drove the score.
 
+## Design principle: inspiration, not replication
+
+Eight Sleep and Whoop are references for *patterns* — color-coded hero
+metrics, dominant-factor insight sentences, borderless trend rows — not for
+literal copying. No competitor colors, iconography, wording, logos, or exact
+layouts are to be reused; SleepPulse's own Calm Night palette, typography, and
+copy voice stay authoritative throughout. Where this spec says "Whoop-style"
+or "Eight Sleep-style," read that as "this structural idea," not "match their
+screen pixel-for-pixel."
+
 ## Goals
 
 1. Show HR and HRV each as a row with an icon, label, value, and a trend arrow
