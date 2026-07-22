@@ -84,4 +84,54 @@ class RecoveryScoreCalculatorTest {
 
         assertTrue("expected score > 50 (HRV-led weighting), was ${result.score}", result.score > 50)
     }
+
+    @Test
+    fun `guidance names HRV as the dominant factor when its deviation is larger`() {
+        val baseline = listOf(night(50.0, 60), night(50.0, 60), night(50.0, 60))
+        // HRV +25% (dominant), RHR +5% (smaller magnitude)
+        val lastNight = night(hrv = 62.5, hr = 63)
+
+        val result = RecoveryScoreCalculator.score(lastNight, baseline)!!
+
+        assertTrue(
+            "expected guidance to mention HRV, was: ${result.guidance}",
+            result.guidance.contains("HRV", ignoreCase = true),
+        )
+    }
+
+    @Test
+    fun `guidance names resting heart rate as the dominant factor when its deviation is larger`() {
+        val baseline = listOf(night(50.0, 60), night(50.0, 60), night(50.0, 60))
+        // RHR +20% (dominant), HRV +2% (smaller magnitude)
+        val lastNight = night(hrv = 51.0, hr = 72)
+
+        val result = RecoveryScoreCalculator.score(lastNight, baseline)!!
+
+        assertTrue(
+            "expected guidance to mention resting heart rate, was: ${result.guidance}",
+            result.guidance.contains("resting heart rate", ignoreCase = true),
+        )
+    }
+
+    @Test
+    fun `guidance falls back to the static tier message when both deviations are within the neutral threshold`() {
+        val baseline = listOf(night(50.0, 60), night(50.0, 60), night(50.0, 60))
+        // HRV +1%, RHR +1% — both within the +/-3% neutral threshold
+        val lastNight = night(hrv = 50.5, hr = 60.6.toInt())
+
+        val result = RecoveryScoreCalculator.score(lastNight, baseline)!!
+
+        assertEquals("Under-recovered — consider an easier day.", result.guidance)
+    }
+
+    @Test
+    fun `RecoveryResult exposes the raw hrvDeviation and rhrDeviation used to compute the score`() {
+        val baseline = listOf(night(50.0, 60), night(50.0, 60), night(50.0, 60))
+        val lastNight = night(hrv = 62.5, hr = 54) // +25% HRV, -10% RHR vs baseline
+
+        val result = RecoveryScoreCalculator.score(lastNight, baseline)!!
+
+        assertEquals(0.25, result.hrvDeviation, 0.001)
+        assertEquals(0.10, result.rhrDeviation, 0.001)
+    }
 }
