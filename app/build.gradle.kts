@@ -89,10 +89,7 @@ dependencies {
     implementation("androidx.health.connect:connect-client:1.1.0-alpha07")
     
     implementation("com.airbnb.android:lottie-compose:6.4.0")
-    
-    implementation("org.tensorflow:tensorflow-lite:2.14.0")
-    implementation("org.tensorflow:tensorflow-lite-support:0.4.4")
-    
+
     implementation("com.google.android.gms:play-services-wearable:18.1.0")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
