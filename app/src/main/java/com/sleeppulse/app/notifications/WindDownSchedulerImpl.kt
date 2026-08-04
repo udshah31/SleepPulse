@@ -25,26 +25,10 @@ class WindDownSchedulerImpl @Inject constructor(
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        // Calculate time 45 minutes prior
-        val now = nowMillis()
-        val calendar = Calendar.getInstance().apply {
-            timeInMillis = now
-            set(Calendar.HOUR_OF_DAY, targetHour)
-            set(Calendar.MINUTE, targetMinute)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-            add(Calendar.MINUTE, -45) // 45 minutes before bedtime
-
-            // If the calculated time has already passed today, schedule for tomorrow
-            if (timeInMillis <= now) {
-                add(Calendar.DAY_OF_YEAR, 1)
-            }
-        }
-
         // Use inexact repeating alarm so we don't need SCHEDULE_EXACT_ALARM permission
         alarmManager.setInexactRepeating(
             AlarmManager.RTC_WAKEUP,
-            calendar.timeInMillis,
+            nextWindDownTriggerMillis(targetHour, targetMinute, nowMillis()),
             AlarmManager.INTERVAL_DAY,
             pendingIntent
         )
@@ -64,4 +48,21 @@ class WindDownSchedulerImpl @Inject constructor(
     companion object {
         private const val WIND_DOWN_REQUEST_CODE = 1001
     }
+}
+
+// 45 minutes before bedtime; rolls to tomorrow if that time has already passed today.
+internal fun nextWindDownTriggerMillis(targetHour: Int, targetMinute: Int, nowMillis: Long): Long {
+    val calendar = Calendar.getInstance().apply {
+        timeInMillis = nowMillis
+        set(Calendar.HOUR_OF_DAY, targetHour)
+        set(Calendar.MINUTE, targetMinute)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+        add(Calendar.MINUTE, -45)
+
+        if (timeInMillis <= nowMillis) {
+            add(Calendar.DAY_OF_YEAR, 1)
+        }
+    }
+    return calendar.timeInMillis
 }

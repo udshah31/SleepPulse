@@ -51,21 +51,10 @@ class SmartAlarmSchedulerImpl @Inject constructor(
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val now = nowMillis()
-        val calendar = Calendar.getInstance().apply {
-            timeInMillis = now
-            set(Calendar.HOUR_OF_DAY, targetHour)
-            set(Calendar.MINUTE, targetMinute)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-
-            if (timeInMillis <= now) {
-                add(Calendar.DAY_OF_YEAR, 1)
-            }
-        }
+        val triggerMillis = nextTriggerMillis(targetHour, targetMinute, nowMillis())
 
         val alarmClockInfo = AlarmManager.AlarmClockInfo(
-            calendar.timeInMillis,
+            triggerMillis,
             pendingIntent
         )
         alarmManager.setAlarmClock(alarmClockInfo, pendingIntent)
@@ -113,4 +102,19 @@ class SmartAlarmSchedulerImpl @Inject constructor(
         private const val CHANNEL_ID = "smart_alarm_channel"
         private const val ALARM_NOTIFICATION_ID = 2003
     }
+}
+
+internal fun nextTriggerMillis(targetHour: Int, targetMinute: Int, nowMillis: Long): Long {
+    val calendar = Calendar.getInstance().apply {
+        timeInMillis = nowMillis
+        set(Calendar.HOUR_OF_DAY, targetHour)
+        set(Calendar.MINUTE, targetMinute)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+
+        if (timeInMillis <= nowMillis) {
+            add(Calendar.DAY_OF_YEAR, 1)
+        }
+    }
+    return calendar.timeInMillis
 }
