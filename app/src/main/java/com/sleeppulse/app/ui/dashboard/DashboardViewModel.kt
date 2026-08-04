@@ -79,11 +79,8 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
-    private fun computeRecovery(nights: List<NightlySummary>): RecoveryResult? {
-        val lastNight = nights.firstOrNull() ?: return null
-        val baseline = nights.drop(1).take(7)
-        return RecoveryScoreCalculator.score(lastNight, baseline)
-    }
+    private fun computeRecovery(nights: List<NightlySummary>): RecoveryResult? =
+        RecoveryScoreCalculator.scoreLatest(nights)
 
     private fun toggleConnection() {
         viewModelScope.launch {
