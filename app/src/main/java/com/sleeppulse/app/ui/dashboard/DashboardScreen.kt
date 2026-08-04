@@ -1,13 +1,16 @@
 package com.sleeppulse.app.ui.dashboard
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -33,9 +36,10 @@ import androidx.compose.ui.unit.dp
 import androidx.health.connect.client.PermissionController
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.sleeppulse.app.tracking.HealthConnectManager
-import com.sleeppulse.app.ui.components.LiveMetricChart
-import com.sleeppulse.app.ui.components.RecoveryScoreCard
 import com.sleeppulse.app.ui.components.SleepScoreGauge
+import com.sleeppulse.app.ui.theme.CalmNightSurfaceDim
+import com.sleeppulse.app.ui.theme.CalmNightTextSecondary
+import com.sleeppulse.app.ui.theme.ClinicalTeal
 import com.sleeppulse.app.ui.theme.RecoveryGreen
 import com.sleeppulse.app.ui.theme.SleepIndigo
 
@@ -93,50 +97,77 @@ fun DashboardScreen(
             .verticalScroll(rememberScrollState())
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(24.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        Text(text = "Tonight", style = MaterialTheme.typography.headlineMedium)
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text(text = "Tonight", style = MaterialTheme.typography.headlineMedium)
+            Text(
+                text = connectionLabel(state),
+                style = MaterialTheme.typography.labelMedium,
+                color = CalmNightTextSecondary,
+            )
+        }
 
-        SleepScoreGauge(score = state.sleepScore)
-
-        RecoveryScoreCard(
-            recoveryResult = state.recoveryResult,
-            recordedNightsCount = state.recordedNightsCount,
-            latestReading = state.latestReading,
-            metricBaseline = state.metricBaseline,
-            modifier = Modifier.fillMaxWidth(),
-        )
-
-        Text(
-            text = connectionLabel(state),
-            style = MaterialTheme.typography.bodyMedium,
-        )
-
-        if (state.metricBaseline == null) {
-            state.latestReading?.let { reading ->
-                Text(text = "Heart rate ${reading.heartRateBpm} bpm  ·  HRV ${reading.hrvMillis.toInt()} ms")
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(CalmNightSurfaceDim, RoundedCornerShape(24.dp))
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            SleepScoreGauge(score = state.sleepScore)
+            Text(
+                text = "RECOVERY",
+                style = MaterialTheme.typography.labelSmall,
+                color = CalmNightTextSecondary,
+            )
+            state.recoveryResult?.let { result ->
+                Text(
+                    text = result.tier.name.lowercase().replaceFirstChar { it.uppercase() },
+                    style = MaterialTheme.typography.labelMedium,
+                    color = ClinicalTeal,
+                )
             }
         }
 
-        Text(text = "Heart rate", style = MaterialTheme.typography.titleSmall)
-        LiveMetricChart(
-            values = state.recentReadings.map { it.heartRateBpm.toFloat() },
-            color = SleepIndigo,
+        DashboardGuidanceBanner(
+            recoveryResult = state.recoveryResult,
+            recordedNightsCount = state.recordedNightsCount,
         )
 
-        Text(text = "HRV", style = MaterialTheme.typography.titleSmall)
-        LiveMetricChart(
-            values = state.recentReadings.map { it.hrvMillis.toFloat() },
-            color = RecoveryGreen,
-        )
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            state.latestReading?.let { reading ->
+                DashboardMetricRow(
+                    icon = "♥",
+                    label = "Resting HR",
+                    value = "${reading.heartRateBpm} bpm",
+                    sparklineValues = smoothed(state.recentReadings.map { it.heartRateBpm.toFloat() }),
+                    sparklineColor = SleepIndigo,
+                )
+                DashboardMetricRow(
+                    icon = "≈",
+                    label = "HRV",
+                    value = "${reading.hrvMillis.toInt()} ms",
+                    sparklineValues = smoothed(state.recentReadings.map { it.hrvMillis.toFloat() }),
+                    sparklineColor = RecoveryGreen,
+                )
+            }
+        }
 
-        OutlinedButton(onClick = { 
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-            viewModel.onIntent(DashboardIntent.ToggleSensorConnection) 
-        }) {
+        OutlinedButton(
+            onClick = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                viewModel.onIntent(DashboardIntent.ToggleSensorConnection)
+            },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
             Text(if (state.isConnected) "Disconnect sensor" else "Connect sensor")
         }
-        
+
         Button(
             onClick = {
                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
@@ -152,10 +183,14 @@ fun DashboardScreen(
             enter = fadeIn() + expandVertically(),
             exit = fadeOut() + shrinkVertically()
         ) {
-            Button(onClick = { 
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                viewModel.onIntent(DashboardIntent.BeginWindDown) 
-            }) {
+            Button(
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    viewModel.onIntent(DashboardIntent.BeginWindDown)
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = ClinicalTeal),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
                 Text("Start wind-down")
             }
         }
@@ -180,4 +215,19 @@ private fun connectionLabel(state: DashboardState): String = when {
     state.isLoading -> "Connecting…"
     state.isConnected -> "Sensor connected"
     else -> "Sensor disconnected"
+}
+
+/**
+ * Centered moving average so per-second sensor jitter doesn't turn the metric-row
+ * sparklines into a jagged EKG line — the mockup's sparklines read as a calm trend, not
+ * raw noise. Window is small enough to still track a genuine trend shift.
+ */
+private fun smoothed(values: List<Float>, window: Int = 5): List<Float> {
+    if (values.size <= window) return values
+    val half = window / 2
+    return values.indices.map { i ->
+        val from = (i - half).coerceAtLeast(0)
+        val to = (i + half).coerceAtMost(values.lastIndex)
+        values.subList(from, to + 1).average().toFloat()
+    }
 }

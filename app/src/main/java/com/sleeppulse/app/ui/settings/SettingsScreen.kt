@@ -14,6 +14,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -25,8 +26,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.sleeppulse.app.ui.theme.CalmNightBackground
 import com.sleeppulse.app.ui.theme.CalmNightSurface
+import com.sleeppulse.app.ui.theme.CalmNightSurfaceDim
 import com.sleeppulse.app.ui.theme.CalmNightTextSecondary
+import com.sleeppulse.app.ui.theme.ClinicalTeal
 
 @Composable
 fun SettingsScreen(
@@ -51,30 +55,66 @@ fun SettingsScreen(
     ) {
         Text(text = "Settings", style = MaterialTheme.typography.headlineSmall)
 
-        SettingsSection(title = "Data source") {
-            DataSourceMode.entries.forEach { mode ->
-                SettingsOptionRow(
-                    label = mode.label(),
-                    selected = state.dataSourceMode == mode,
-                    onClick = { viewModel.onIntent(SettingsIntent.SetDataSource(mode)) },
-                )
-            }
-            if (state.dataSourceMode == DataSourceMode.BLE) {
-                Button(onClick = onNavigateToScan, modifier = Modifier.padding(top = 8.dp)) {
-                    Text("Scan for device")
+        SettingsSection(title = "Sensor source") {
+            Column(modifier = Modifier.padding(14.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(text = state.dataSourceMode.label(), style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            text = if (state.dataSourceMode == DataSourceMode.SIMULATED) {
+                                "Plausible night, no hardware needed"
+                            } else {
+                                "Reads live heart-rate from a paired sensor"
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = CalmNightTextSecondary,
+                        )
+                    }
+                    SegmentedToggle(
+                        options = DataSourceMode.entries.map { it.shortLabel() },
+                        selectedIndex = DataSourceMode.entries.indexOf(state.dataSourceMode),
+                        onSelect = { index ->
+                            viewModel.onIntent(SettingsIntent.SetDataSource(DataSourceMode.entries[index]))
+                        },
+                    )
                 }
-                state.selectedBleDeviceLabel?.let { label ->
-                    Text(text = "Selected: $label", style = MaterialTheme.typography.bodySmall)
+                if (state.dataSourceMode == DataSourceMode.BLE) {
+                    Button(onClick = onNavigateToScan, modifier = Modifier.padding(top = 12.dp)) {
+                        Text("Scan for device")
+                    }
+                    state.selectedBleDeviceLabel?.let { label ->
+                        Text(text = "Selected: $label", style = MaterialTheme.typography.bodySmall)
+                    }
                 }
             }
         }
 
-        SettingsSection(title = "Temperature unit") {
-            TemperatureUnit.entries.forEach { unit ->
-                SettingsOptionRow(
-                    label = unit.label(),
-                    selected = state.temperatureUnit == unit,
-                    onClick = { viewModel.onIntent(SettingsIntent.SetTemperatureUnit(unit)) },
+        SettingsSection(title = "Units") {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(14.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(text = "Temperature", style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        text = "Applies to skin-temp readings",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = CalmNightTextSecondary,
+                    )
+                }
+                SegmentedToggle(
+                    options = TemperatureUnit.entries.map { it.shortLabel() },
+                    selectedIndex = TemperatureUnit.entries.indexOf(state.temperatureUnit),
+                    onSelect = { index ->
+                        viewModel.onIntent(SettingsIntent.SetTemperatureUnit(TemperatureUnit.entries[index]))
+                    },
                 )
             }
         }
@@ -130,6 +170,11 @@ fun SettingsScreen(
                 Switch(
                     checked = state.amoledBlack,
                     onCheckedChange = { viewModel.onIntent(SettingsIntent.SetAmoledBlack(it)) },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = CalmNightBackground,
+                        checkedTrackColor = ClinicalTeal,
+                        checkedBorderColor = ClinicalTeal,
+                    ),
                 )
             }
         }
@@ -162,7 +207,7 @@ private fun SettingsOptionRow(
     enabled: Boolean = true,
     badge: String? = null,
 ) {
-    val rowBackground = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.16f) else Color.Transparent
+    val rowBackground = if (selected) ClinicalTeal.copy(alpha = 0.14f) else Color.Transparent
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -182,11 +227,11 @@ private fun SettingsOptionRow(
                 Text(
                     text = badge,
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = ClinicalTeal,
                     modifier = Modifier
                         .padding(start = 8.dp)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.16f))
+                        .background(ClinicalTeal.copy(alpha = 0.16f))
                         .padding(horizontal = 6.dp, vertical = 2.dp),
                 )
             }
@@ -194,8 +239,41 @@ private fun SettingsOptionRow(
         if (selected) {
             Text(
                 text = "✓",
-                color = MaterialTheme.colorScheme.primary,
+                color = ClinicalTeal,
                 style = MaterialTheme.typography.bodyLarge,
+            )
+        }
+    }
+}
+
+/**
+ * Compact two-way pill selector (e.g. Sim/BLE, °F/°C) — an alternative to a full list of
+ * [SettingsOptionRow]s when there are exactly two mutually-exclusive options and the row
+ * already carries a label/hint of its own.
+ */
+@Composable
+private fun SegmentedToggle(
+    options: List<String>,
+    selectedIndex: Int,
+    onSelect: (Int) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(10.dp))
+            .background(CalmNightSurfaceDim)
+            .padding(3.dp),
+    ) {
+        options.forEachIndexed { index, label ->
+            val selected = index == selectedIndex
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = if (selected) ClinicalTeal else CalmNightTextSecondary,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(if (selected) CalmNightSurface else Color.Transparent)
+                    .clickable { onSelect(index) }
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
             )
         }
     }
@@ -206,7 +284,12 @@ private fun DataSourceMode.label(): String = when (this) {
     DataSourceMode.BLE -> "BLE sensor"
 }
 
-private fun TemperatureUnit.label(): String = when (this) {
-    TemperatureUnit.CELSIUS -> "Celsius"
-    TemperatureUnit.FAHRENHEIT -> "Fahrenheit"
+private fun DataSourceMode.shortLabel(): String = when (this) {
+    DataSourceMode.SIMULATED -> "Sim"
+    DataSourceMode.BLE -> "BLE"
+}
+
+private fun TemperatureUnit.shortLabel(): String = when (this) {
+    TemperatureUnit.CELSIUS -> "°C"
+    TemperatureUnit.FAHRENHEIT -> "°F"
 }

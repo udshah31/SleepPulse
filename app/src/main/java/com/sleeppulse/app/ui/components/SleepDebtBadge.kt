@@ -1,12 +1,13 @@
 package com.sleeppulse.app.ui.components
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -16,54 +17,44 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.sleeppulse.app.ui.history.DebtLevel
 import com.sleeppulse.app.ui.history.SleepDebt
+import com.sleeppulse.app.ui.theme.AlertCoral
+import com.sleeppulse.app.ui.theme.CalmNightTextSecondary
+import com.sleeppulse.app.ui.theme.CautionAmber
+import com.sleeppulse.app.ui.theme.ClinicalTeal
 
 /**
  * Compact banner shown at the top of the History screen. Displays total sleep deficit
  * over the last 7 nights with a colour-coded tier indicator, or a "no data yet" message
- * when [sleepDebt] is null.
+ * when [sleepDebt] is null. Soft-tinted like the Dashboard guidance banner rather than a
+ * solid saturated card, so it reads as calm rather than alarming.
  */
 @Composable
 fun SleepDebtBadge(
     sleepDebt: SleepDebt?,
     modifier: Modifier = Modifier,
 ) {
-    val containerColor = if (sleepDebt != null) debtColor(sleepDebt.level) else Color(0xFF78909C)
+    val tint = if (sleepDebt != null) debtColor(sleepDebt.level) else CalmNightTextSecondary
 
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = containerColor),
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(tint.copy(alpha = 0.12f), RoundedCornerShape(16.dp))
+            .border(1.dp, tint.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column {
-                Text(
-                    text = "Sleep Debt (7 nights)",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = Color.White,
-                )
-                if (sleepDebt != null) {
-                    Text(
-                        text = formatDeficit(sleepDebt.deficitMinutes),
-                        style = MaterialTheme.typography.titleLarge,
-                        color = Color.White,
-                    )
-                } else {
-                    Text(
-                        text = "No history yet",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = Color.White,
-                    )
-                }
-            }
-            if (sleepDebt != null) {
-                Text(
-                    text = debtEmoji(sleepDebt.level),
-                    style = MaterialTheme.typography.headlineMedium,
-                )
-            }
+        Column {
+            Text(
+                text = "SLEEP DEBT · 7 NIGHTS",
+                style = MaterialTheme.typography.labelSmall,
+                color = CalmNightTextSecondary,
+            )
+            Text(
+                text = if (sleepDebt != null) formatDeficit(sleepDebt.deficitMinutes) else "No history yet",
+                style = MaterialTheme.typography.titleLarge.copy(fontFeatureSettings = "tnum"),
+                color = tint,
+            )
         }
     }
 }
@@ -80,15 +71,8 @@ private fun formatDeficit(minutes: Int): String {
 }
 
 private fun debtColor(level: DebtLevel): Color = when (level) {
-    DebtLevel.CAUGHT_UP -> Color(0xFF388E3C)  // green
-    DebtLevel.MILD -> Color(0xFFF9A825)        // amber
-    DebtLevel.MODERATE -> Color(0xFFE64A19)    // deep orange
-    DebtLevel.SEVERE -> Color(0xFFB71C1C)      // dark red
-}
-
-private fun debtEmoji(level: DebtLevel): String = when (level) {
-    DebtLevel.CAUGHT_UP -> "🟢"
-    DebtLevel.MILD -> "🟡"
-    DebtLevel.MODERATE -> "🟠"
-    DebtLevel.SEVERE -> "🔴"
+    DebtLevel.CAUGHT_UP -> ClinicalTeal
+    DebtLevel.MILD -> CautionAmber
+    DebtLevel.MODERATE -> CautionAmber
+    DebtLevel.SEVERE -> AlertCoral
 }

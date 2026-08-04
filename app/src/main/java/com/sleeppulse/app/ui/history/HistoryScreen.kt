@@ -1,43 +1,39 @@
 package com.sleeppulse.app.ui.history
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.material3.Card
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.SuggestionChip
-import com.airbnb.lottie.compose.LottieAnimation
-import com.airbnb.lottie.compose.LottieCompositionSpec
-import com.airbnb.lottie.compose.LottieConstants
-import com.airbnb.lottie.compose.rememberLottieComposition
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.runtime.remember
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.unit.dp
@@ -47,6 +43,11 @@ import com.sleeppulse.app.ui.components.SleepDebtBadge
 import com.sleeppulse.app.ui.components.SleepConsistencyBadge
 import com.sleeppulse.app.ui.components.SleepStagesBar
 import com.sleeppulse.app.ui.components.WeeklyTrendsChart
+import com.sleeppulse.app.ui.theme.AlertCoral
+import com.sleeppulse.app.ui.theme.CalmNightSurfaceDim
+import com.sleeppulse.app.ui.theme.CalmNightTextSecondary
+import com.sleeppulse.app.ui.theme.CautionAmber
+import com.sleeppulse.app.ui.theme.ClinicalTeal
 import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -120,54 +121,79 @@ fun HistoryScreen(
 
 @Composable
 private fun EmptyHistoryState() {
-    val composition by rememberLottieComposition(
-        LottieCompositionSpec.Url("https://assets3.lottiefiles.com/packages/lf20_kxwjmexb.json")
-    )
     Column(
-        modifier = Modifier.fillMaxWidth().padding(top = 48.dp),
-        horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
+        modifier = Modifier.fillMaxWidth().padding(top = 64.dp, start = 24.dp, end = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        LottieAnimation(
-            composition = composition,
-            iterations = LottieConstants.IterateForever,
-            modifier = Modifier.fillMaxWidth(0.6f)
+        Box(
+            modifier = Modifier
+                .size(56.dp)
+                .background(CalmNightSurfaceDim, RoundedCornerShape(16.dp)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(text = "☾", style = MaterialTheme.typography.headlineMedium)
+        }
+        Text(
+            text = "Nothing recorded yet",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(top = 16.dp),
         )
         Text(
-            text = "No sleep data yet. Time to get some rest!",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 16.dp)
+            text = "Your first completed night appears here automatically, with a trend arrow against the one before it.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = CalmNightTextSecondary,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            modifier = Modifier.padding(top = 6.dp)
         )
     }
 }
 
 @Composable
 private fun NightRow(night: NightWithTrend) {
-    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
-        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(
-                    text = night.summary.date.format(DateTimeFormatter.ofPattern("MMM d")),
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-                Text(
-                    text = "Score ${night.summary.sleepScore} ${trendArrow(night.trend)}",
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-            }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp)
+            .background(CalmNightSurfaceDim, RoundedCornerShape(16.dp))
+            .padding(14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        val scoreColorValue = scoreBandColor(night.summary.sleepScore)
+        Box(
+            modifier = Modifier
+                .size(46.dp)
+                .background(scoreColorValue.copy(alpha = 0.16f), RoundedCornerShape(12.dp)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = "${night.summary.sleepScore}",
+                style = MaterialTheme.typography.titleMedium.copy(fontFeatureSettings = "tnum"),
+                color = scoreColorValue,
+            )
+        }
+
+        Column(modifier = Modifier.weight(1f).padding(horizontal = 14.dp)) {
+            Text(
+                text = night.summary.date.format(DateTimeFormatter.ofPattern("EEEE, MMM d")),
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            Text(
+                text = "${formatDuration(night.summary.totalSleepMinutes)} · HRV ${night.summary.avgHrvMillis.toInt()}ms",
+                style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
+                color = CalmNightTextSecondary,
+            )
+
             SleepStagesBar(
                 totalMinutes = night.summary.totalSleepMinutes,
                 deepMinutes = night.summary.deepSleepMinutes,
                 remMinutes = night.summary.remSleepMinutes,
+                modifier = Modifier.padding(top = 10.dp),
             )
-            
+
             if (night.summary.tags.isNotEmpty()) {
                 @OptIn(ExperimentalLayoutApi::class)
                 FlowRow(
-                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     night.summary.tags.forEach { tag ->
@@ -178,26 +204,49 @@ private fun NightRow(night: NightWithTrend) {
                     }
                 }
             }
-            
-            Spacer(modifier = Modifier.height(16.dp))
+
+            Spacer(modifier = Modifier.height(12.dp))
             SleepChart()
         }
+
+        Text(
+            text = trendArrow(night.trend),
+            style = MaterialTheme.typography.bodyLarge,
+            color = trendColor(night.trend),
+        )
     }
+}
+
+private fun formatDuration(totalMinutes: Int): String {
+    val h = totalMinutes / 60
+    val m = totalMinutes % 60
+    return "${h}h ${m.toString().padStart(2, '0')}m"
+}
+
+private fun scoreBandColor(score: Int): androidx.compose.ui.graphics.Color = when {
+    score >= 70 -> ClinicalTeal
+    score >= 50 -> CautionAmber
+    else -> AlertCoral
+}
+
+private fun trendColor(trend: NightlySummary.Trend): androidx.compose.ui.graphics.Color = when (trend) {
+    NightlySummary.Trend.UP -> ClinicalTeal
+    NightlySummary.Trend.DOWN -> AlertCoral
+    NightlySummary.Trend.FLAT -> CalmNightTextSecondary
 }
 
 @Composable
 fun SleepChart() {
     val animationProgress = remember { Animatable(0f) }
-    
+
     LaunchedEffect(Unit) {
         animationProgress.animateTo(
             targetValue = 1f,
             animationSpec = tween(durationMillis = 1500, easing = LinearEasing)
         )
     }
-    
-    val primaryColor = MaterialTheme.colorScheme.primary
-    val secondaryColor = MaterialTheme.colorScheme.secondary
+
+    val primaryColor = ClinicalTeal
 
     Canvas(
         modifier = Modifier
