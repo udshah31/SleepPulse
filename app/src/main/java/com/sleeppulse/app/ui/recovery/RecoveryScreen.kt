@@ -1,13 +1,16 @@
 package com.sleeppulse.app.ui.recovery
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,6 +22,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.sleeppulse.app.ui.components.RecoveryScoreCard
+import com.sleeppulse.app.ui.components.scoreColor
+import com.sleeppulse.app.ui.theme.CalmNightSurfaceDim
+import com.sleeppulse.app.ui.theme.CalmNightTextSecondary
+import com.sleeppulse.app.ui.theme.ClinicalTeal
 
 @Composable
 fun RecoveryScreen(
@@ -34,11 +41,15 @@ fun RecoveryScreen(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(16.dp),
+            .padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(24.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        Text(text = "Recovery Coach", style = MaterialTheme.typography.headlineMedium)
+        Text(
+            text = "Recovery Coach",
+            style = MaterialTheme.typography.headlineMedium,
+            modifier = Modifier.fillMaxWidth(),
+        )
 
         if (state.recoveryResult != null) {
             RecoveryScoreCard(
@@ -50,45 +61,59 @@ fun RecoveryScreen(
             Text(
                 text = "Not enough data for recovery score. Wear your sensor for a few more nights.",
                 style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(16.dp)
+                color = CalmNightTextSecondary,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(ClinicalTeal.copy(alpha = 0.12f), RoundedCornerShape(16.dp))
+                    .border(1.dp, ClinicalTeal.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
+                    .padding(horizontal = 16.dp, vertical = 14.dp)
             )
         }
 
         if (state.personalizedAdvice != null) {
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "Personalized Advice",
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                    Text(
-                        text = state.personalizedAdvice!!,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
+            RecoveryInfoCard(title = "Personalized advice") {
+                Text(
+                    text = state.personalizedAdvice!!,
+                    style = MaterialTheme.typography.bodyMedium
+                )
             }
         }
 
         if (state.readiness != null) {
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "Today's Readiness",
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                    Text(
-                        text = "${state.readiness!!.score} — ${state.readiness!!.tier.name.lowercase().replaceFirstChar { it.uppercase() }}",
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                    Text(
-                        text = "Blends last night's recovery with your HRV/resting-HR trends and sleep debt.",
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                }
+            RecoveryInfoCard(title = "Today's readiness") {
+                Text(
+                    text = "${state.readiness!!.score} — ${state.readiness!!.tier.name.lowercase().replaceFirstChar { it.uppercase() }}",
+                    style = MaterialTheme.typography.titleLarge.copy(fontFeatureSettings = "tnum"),
+                    color = scoreColor(state.readiness!!.score / 100f),
+                )
+                Text(
+                    text = "Blends last night's recovery with your HRV/resting-HR trends and sleep debt.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = CalmNightTextSecondary,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
             }
         }
+    }
+}
+
+@Composable
+private fun RecoveryInfoCard(
+    title: String,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(CalmNightSurfaceDim, RoundedCornerShape(20.dp))
+            .padding(20.dp),
+    ) {
+        Text(
+            text = title.uppercase(),
+            style = MaterialTheme.typography.labelSmall,
+            color = CalmNightTextSecondary,
+            modifier = Modifier.padding(bottom = 8.dp),
+        )
+        content()
     }
 }
