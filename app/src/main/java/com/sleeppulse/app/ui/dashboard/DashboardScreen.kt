@@ -79,6 +79,7 @@ fun DashboardScreen(
         viewModel.onIntent(DashboardIntent.Start)
         val permissions = buildList {
             add(Manifest.permission.RECORD_AUDIO)
+            add(Manifest.permission.ACTIVITY_RECOGNITION)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 add(Manifest.permission.POST_NOTIFICATIONS)
             }
