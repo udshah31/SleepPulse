@@ -180,6 +180,70 @@ class SleepRepositoryImplTest {
     }
 
     @Test
+    fun `disconnecting after readings were flushed records a nightly summary dated from session start`() = runTest {
+        val sensorDataSource = FakeSensorDataSource()
+        val dao = FakeNightlySummaryDao()
+        val sessionDao = FakeSleepSessionDao()
+        val startMillis = LocalDate.of(2026, 7, 20).atStartOfDay(java.time.ZoneId.systemDefault())
+            .toInstant().toEpochMilli()
+        val repository = SleepRepositoryImpl(sensorDataSource, dao, sessionDao, backgroundScope, mock()) { startMillis }
+
+        repository.connectSensor()
+        runCurrent()
+        repeat(20) { i -> sensorDataSource.readingsFlow.emit(reading(timestampMillis = startMillis + i * 60_000L)) }
+        advanceTimeBy(1)
+
+        val summary = repository.disconnectSensor()
+
+        assertEquals(LocalDate.of(2026, 7, 20), summary?.date)
+        assertEquals(listOf("upsert", "trimToLast30Days"), dao.recordedCalls)
+        assertTrue(sessionDao.sessions.single().finalized)
+        assertEquals(0, sessionDao.readings.size)
+    }
+
+    @Test
+    fun `disconnecting with no readings returns null and still finalizes the empty session`() = runTest {
+        val sensorDataSource = FakeSensorDataSource()
+        val dao = FakeNightlySummaryDao()
+        val sessionDao = FakeSleepSessionDao()
+        val repository = SleepRepositoryImpl(sensorDataSource, dao, sessionDao, backgroundScope, mock()) { 0L }
+
+        repository.connectSensor()
+        val summary = repository.disconnectSensor()
+
+        assertEquals(null, summary)
+        assertTrue(dao.recordedCalls.isEmpty())
+        assertTrue(sessionDao.sessions.single().finalized)
+    }
+
+    @Test
+    fun `a recordNightlySummary failure during disconnect leaves the session unfinalized`() = runTest {
+        val sensorDataSource = FakeSensorDataSource()
+        val dao = FakeNightlySummaryDao()
+        val sessionDao = FakeSleepSessionDao()
+        val startMillis = 1_000L
+        val repository = SleepRepositoryImpl(sensorDataSource, dao, sessionDao, backgroundScope, mock()) { startMillis }
+
+        // Deliberately never call runCurrent()/advanceTimeBy()/advanceUntilIdle() before
+        // disconnectSensor(): doing so would let SleepRepositoryImpl's init-launched
+        // recoverUnfinalizedSessions() (queued on backgroundScope at construction time) race
+        // ahead and finalize this session as "empty" before the failure scenario below runs.
+        // connectSensor() and disconnectSensor() are called directly (suspend, not launched),
+        // so their own logic runs without draining that queued background coroutine.
+        repository.connectSensor()
+        val sessionId = sessionDao.sessions.single().sessionId
+        sessionDao.readingsForFailures.add(sessionId)
+
+        try {
+            repository.disconnectSensor()
+        } catch (e: IllegalStateException) {
+            // expected: readingsFor throws for this session id
+        }
+
+        assertTrue(!sessionDao.sessions.single().finalized)
+    }
+
+    @Test
     fun `recoverUnfinalizedSessions rebuilds and records a summary for a leftover session`() = runTest {
         val sensorDataSource = FakeSensorDataSource()
         val dao = FakeNightlySummaryDao()
