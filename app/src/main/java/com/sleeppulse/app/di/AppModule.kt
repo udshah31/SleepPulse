@@ -24,6 +24,8 @@ import com.sleeppulse.app.notifications.SmartAlarmScheduler
 import com.sleeppulse.app.notifications.SmartAlarmSchedulerImpl
 import com.sleeppulse.app.tracking.HealthConnectManager
 import com.sleeppulse.app.tracking.SleepStagePredictor
+import com.sleeppulse.app.widget.WidgetRefresher
+import com.sleeppulse.app.widget.WidgetRefresherImpl
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -66,6 +68,10 @@ abstract class BindingsModule {
     @Binds
     @Singleton
     abstract fun bindSmartAlarmScheduler(impl: SmartAlarmSchedulerImpl): SmartAlarmScheduler
+
+    @Binds
+    @Singleton
+    abstract fun bindWidgetRefresher(impl: WidgetRefresherImpl): WidgetRefresher
 }
 
 @Module
