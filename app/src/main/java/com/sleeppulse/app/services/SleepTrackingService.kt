@@ -22,6 +22,7 @@ import java.util.Calendar
 import javax.inject.Inject
 import com.sleeppulse.app.data.repository.SettingsRepository
 import com.sleeppulse.app.notifications.SmartAlarmScheduler
+import com.sleeppulse.app.notifications.SleepSessionFinalizer
 import com.sleeppulse.app.data.model.SleepStage
 import com.sleeppulse.app.tracking.NoiseMonitor
 import com.sleeppulse.app.wear.WearDataClient
@@ -40,7 +41,10 @@ class SleepTrackingService : Service() {
     
     @Inject
     lateinit var wearDataClient: WearDataClient
-    
+
+    @Inject
+    lateinit var sleepSessionFinalizer: SleepSessionFinalizer
+
     private var hasFiredSmartAlarm = false
     private var noiseMonitor: NoiseMonitor? = null
     
@@ -55,7 +59,7 @@ class SleepTrackingService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == ACTION_STOP_TRACKING) {
             scope.launch {
-                repository.disconnectSensor()
+                sleepSessionFinalizer.finalize()
             }
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
@@ -120,7 +124,7 @@ class SleepTrackingService : Service() {
 
     override fun onDestroy() {
         scope.launch {
-            repository.disconnectSensor()
+            sleepSessionFinalizer.finalize()
         }
         noiseMonitor?.stopMonitoring()
         scope.cancel()
