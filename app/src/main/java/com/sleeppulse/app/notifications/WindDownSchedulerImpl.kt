@@ -11,10 +11,10 @@ import javax.inject.Singleton
 
 @Singleton
 class WindDownSchedulerImpl @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val alarmManager: AlarmManager,
+    private val nowMillis: () -> Long = System::currentTimeMillis,
 ) : WindDownScheduler {
-
-    private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
     override fun scheduleWindDown(targetHour: Int, targetMinute: Int) {
         val intent = Intent(context, WindDownReceiver::class.java)
@@ -26,8 +26,9 @@ class WindDownSchedulerImpl @Inject constructor(
         )
 
         // Calculate time 45 minutes prior
+        val now = nowMillis()
         val calendar = Calendar.getInstance().apply {
-            timeInMillis = System.currentTimeMillis()
+            timeInMillis = now
             set(Calendar.HOUR_OF_DAY, targetHour)
             set(Calendar.MINUTE, targetMinute)
             set(Calendar.SECOND, 0)
@@ -35,7 +36,7 @@ class WindDownSchedulerImpl @Inject constructor(
             add(Calendar.MINUTE, -45) // 45 minutes before bedtime
 
             // If the calculated time has already passed today, schedule for tomorrow
-            if (timeInMillis <= System.currentTimeMillis()) {
+            if (timeInMillis <= now) {
                 add(Calendar.DAY_OF_YEAR, 1)
             }
         }

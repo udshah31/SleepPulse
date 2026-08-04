@@ -1,5 +1,7 @@
 package com.sleeppulse.app.di
 
+import android.app.AlarmManager
+import android.app.NotificationManager
 import android.content.Context
 import androidx.room.Room
 import com.sleeppulse.app.data.local.NightlySummaryDao
@@ -91,6 +93,16 @@ object DatabaseModule {
 
     @Provides
     fun provideNowMillis(): () -> Long = System::currentTimeMillis
+
+    @Provides
+    @Singleton
+    fun provideAlarmManager(@ApplicationContext context: Context): AlarmManager =
+        context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+
+    @Provides
+    @Singleton
+    fun provideNotificationManager(@ApplicationContext context: Context): NotificationManager =
+        context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
     @Provides
     @Singleton

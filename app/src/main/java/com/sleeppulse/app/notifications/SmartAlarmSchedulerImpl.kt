@@ -18,11 +18,11 @@ import javax.inject.Singleton
 
 @Singleton
 class SmartAlarmSchedulerImpl @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val alarmManager: AlarmManager,
+    private val notificationManager: NotificationManager,
+    private val nowMillis: () -> Long = System::currentTimeMillis,
 ) : SmartAlarmScheduler {
-
-    private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-    private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
     init {
         createNotificationChannel()
@@ -51,14 +51,15 @@ class SmartAlarmSchedulerImpl @Inject constructor(
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val now = nowMillis()
         val calendar = Calendar.getInstance().apply {
-            timeInMillis = System.currentTimeMillis()
+            timeInMillis = now
             set(Calendar.HOUR_OF_DAY, targetHour)
             set(Calendar.MINUTE, targetMinute)
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
 
-            if (timeInMillis <= System.currentTimeMillis()) {
+            if (timeInMillis <= now) {
                 add(Calendar.DAY_OF_YEAR, 1)
             }
         }
