@@ -6,7 +6,9 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import androidx.core.app.NotificationCompat
 import com.sleeppulse.app.R
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -27,6 +29,20 @@ class SmartAlarmSchedulerImpl @Inject constructor(
     }
 
     override fun scheduleHardAlarm(targetHour: Int, targetMinute: Int) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
+            // Android 12+ (and mandatory from 13/target 34) requires the user to grant this
+            // "special" permission from system Settings — it can't be requested via a normal
+            // runtime dialog. Deep-link there and skip scheduling for now rather than crash;
+            // the alarm will schedule successfully next time this is called once granted.
+            android.util.Log.w("SleepPulse", "SCHEDULE_EXACT_ALARM not granted — opening Settings")
+            val settingsIntent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                data = Uri.parse("package:${context.packageName}")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(settingsIntent)
+            return
+        }
+
         val intent = Intent(context, SmartAlarmReceiver::class.java)
         val pendingIntent = PendingIntent.getBroadcast(
             context,
