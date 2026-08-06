@@ -5,12 +5,10 @@ import androidx.lifecycle.viewModelScope
 import com.sleeppulse.app.data.model.NightlySummary
 import com.sleeppulse.app.data.model.SensorReading
 import com.sleeppulse.app.data.repository.SleepRepository
-import com.sleeppulse.app.notifications.SleepSummaryNotifier
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import android.content.Context
@@ -26,7 +24,6 @@ private const val MAX_RECORDED_NIGHTS_DISPLAY = 4
 class DashboardViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val repository: SleepRepository,
-    private val notifier: SleepSummaryNotifier,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(DashboardState())
