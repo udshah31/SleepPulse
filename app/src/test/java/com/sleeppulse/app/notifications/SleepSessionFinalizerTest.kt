@@ -5,6 +5,11 @@ import com.sleeppulse.app.testutil.FakeSleepRepository
 import com.sleeppulse.app.testutil.FakeSleepSummaryNotifier
 import com.sleeppulse.app.testutil.FakeWidgetRefresher
 import java.time.LocalDate
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -28,7 +33,7 @@ class SleepSessionFinalizerTest {
         val widgetRefresher = FakeWidgetRefresher()
         val summary = night(LocalDate.of(2026, 8, 4))
         repository.nextDisconnectSummary = summary
-        val finalizer = SleepSessionFinalizer(repository, notifier, widgetRefresher)
+        val finalizer = SleepSessionFinalizer(repository, notifier, widgetRefresher, backgroundScope)
 
         finalizer.finalize()
 
@@ -42,7 +47,7 @@ class SleepSessionFinalizerTest {
         val notifier = FakeSleepSummaryNotifier()
         val widgetRefresher = FakeWidgetRefresher()
         repository.nextDisconnectSummary = null
-        val finalizer = SleepSessionFinalizer(repository, notifier, widgetRefresher)
+        val finalizer = SleepSessionFinalizer(repository, notifier, widgetRefresher, backgroundScope)
 
         finalizer.finalize()
 
@@ -64,7 +69,7 @@ class SleepSessionFinalizerTest {
         )
         val tonight = night(LocalDate.of(2026, 8, 4), hrv = 62.5, hr = 54) // well-recovered vs. baseline
         repository.nextDisconnectSummary = tonight
-        val finalizer = SleepSessionFinalizer(repository, notifier, widgetRefresher)
+        val finalizer = SleepSessionFinalizer(repository, notifier, widgetRefresher, backgroundScope)
 
         finalizer.finalize()
 
@@ -81,11 +86,40 @@ class SleepSessionFinalizerTest {
         }
         val notifier = FakeSleepSummaryNotifier()
         val widgetRefresher = FakeWidgetRefresher()
-        val finalizer = SleepSessionFinalizer(repository, notifier, widgetRefresher)
+        val finalizer = SleepSessionFinalizer(repository, notifier, widgetRefresher, backgroundScope)
 
         finalizer.finalize() // must not throw
 
         assertEquals(0, notifier.notifiedSummaries.size)
         assertEquals(0, widgetRefresher.refreshCallCount)
+    }
+
+    @Test
+    fun `finalizeAsync completes on the injected app scope even after an unrelated caller scope is cancelled`() = runTest {
+        val repository = FakeSleepRepository()
+        val notifier = FakeSleepSummaryNotifier()
+        val widgetRefresher = FakeWidgetRefresher()
+        val summary = night(LocalDate.of(2026, 8, 5))
+        repository.nextDisconnectSummary = summary
+
+        // Shares this test's scheduler so advanceUntilIdle() below can drive it, but is
+        // otherwise an independent scope/Job from any "caller" scope — mirroring the
+        // Hilt-provided application-scoped CoroutineScope from DatabaseModule.provideApplicationScope(),
+        // which outlives any single Service instance.
+        val appScope = TestScope(testScheduler)
+        val finalizer = SleepSessionFinalizer(repository, notifier, widgetRefresher, appScope)
+
+        // Mirrors SleepTrackingService: a caller-owned scope that gets cancelled immediately
+        // after finalizeAsync() is invoked (as onDestroy() does with its own `scope` a few
+        // lines after calling sleepSessionFinalizer.finalizeAsync()).
+        val callerScope = CoroutineScope(SupervisorJob())
+
+        finalizer.finalizeAsync()
+        callerScope.cancel()
+
+        advanceUntilIdle()
+
+        assertEquals(listOf(summary), notifier.notifiedSummaries)
+        assertEquals(1, widgetRefresher.refreshCallCount)
     }
 }

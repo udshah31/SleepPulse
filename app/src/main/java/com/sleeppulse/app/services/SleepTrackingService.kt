@@ -58,9 +58,7 @@ class SleepTrackingService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == ACTION_STOP_TRACKING) {
-            scope.launch {
-                sleepSessionFinalizer.finalize()
-            }
+            sleepSessionFinalizer.finalizeAsync()
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
             return START_NOT_STICKY
@@ -123,9 +121,11 @@ class SleepTrackingService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
-        scope.launch {
-            sleepSessionFinalizer.finalize()
-        }
+        // Use finalizeAsync() (app-scoped), not scope.launch{}: this Service's own `scope` is
+        // cancelled a few lines below, and onDestroy() typically runs within milliseconds of
+        // stopSelf(), so a finalize() launched on `scope` would be killed mid-flight before its
+        // Room read + upsert + Health Connect write + widget refresh complete.
+        sleepSessionFinalizer.finalizeAsync()
         noiseMonitor?.stopMonitoring()
         scope.cancel()
         super.onDestroy()

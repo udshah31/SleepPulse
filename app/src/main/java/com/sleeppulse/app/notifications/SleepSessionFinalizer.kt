@@ -6,7 +6,9 @@ import com.sleeppulse.app.widget.WidgetRefresher
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 /**
  * Turns a just-ended sleep session into user-visible feedback: fires the summary
@@ -19,6 +21,7 @@ class SleepSessionFinalizer @Inject constructor(
     private val repository: SleepRepository,
     private val notifier: SleepSummaryNotifier,
     private val widgetRefresher: WidgetRefresher,
+    private val appScope: CoroutineScope,
 ) {
     suspend fun finalize() {
         val summary = try {
@@ -28,11 +31,24 @@ class SleepSessionFinalizer @Inject constructor(
         } catch (e: Exception) {
             // Leave the session unfinalized in Room; SleepRepositoryImpl.recoverUnfinalizedSessions()
             // retries it on next app launch rather than losing the night's data.
+            android.util.Log.w("SleepPulse", "Session finalize failed; will retry on next launch", e)
             return
         } ?: return
 
         val recovery = RecoveryScoreCalculator.scoreLatest(repository.recentNights().first())
         notifier.notify(summary, recovery)
         widgetRefresher.refresh()
+    }
+
+    /**
+     * Fire-and-forget variant that launches [finalize] on [appScope] (the application-scoped
+     * CoroutineScope from [com.sleeppulse.app.di.DatabaseModule]) instead of the caller's own
+     * scope. Callers like [com.sleeppulse.app.services.SleepTrackingService] must use this
+     * rather than launching finalize() on their own scope, since that scope is typically
+     * cancelled (e.g. in Service.onDestroy()) within milliseconds of being launched — before
+     * the Room read + upsert + Health Connect write + widget refresh can complete.
+     */
+    fun finalizeAsync() {
+        appScope.launch { finalize() }
     }
 }

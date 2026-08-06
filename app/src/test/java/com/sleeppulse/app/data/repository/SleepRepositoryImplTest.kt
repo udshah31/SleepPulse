@@ -9,6 +9,7 @@ import com.sleeppulse.app.testutil.FakeNightlySummaryDao
 import com.sleeppulse.app.testutil.FakeSensorDataSource
 import com.sleeppulse.app.testutil.FakeSleepSessionDao
 import java.time.LocalDate
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
@@ -350,5 +351,37 @@ class SleepRepositoryImplTest {
         // Session 5 was left unfinalized (with its data intact) so it can be retried later.
         val session5 = sessionDao.sessions.single { it.sessionId == 5L }
         assertTrue(!session5.finalized)
+    }
+
+    @Test
+    fun `concurrent disconnectSensor calls only finalize the session once`() = runTest {
+        val sensorDataSource = FakeSensorDataSource()
+        val dao = FakeNightlySummaryDao()
+        val sessionDao = FakeSleepSessionDao()
+        val startMillis = LocalDate.of(2026, 7, 20).atStartOfDay(java.time.ZoneId.systemDefault())
+            .toInstant().toEpochMilli()
+        val repository = SleepRepositoryImpl(sensorDataSource, dao, sessionDao, backgroundScope, mock()) { startMillis }
+
+        repository.connectSensor()
+        runCurrent()
+        repeat(20) { i -> sensorDataSource.readingsFlow.emit(reading(timestampMillis = startMillis + i * 60_000L)) }
+        advanceTimeBy(1)
+
+        // Two callers racing to disconnect/finalize at the same time (e.g. the stop-action
+        // branch and onDestroy() in SleepTrackingService, or a rapid double-tap). Only one
+        // should observe the non-null activeSessionId and actually finalize/record; the other
+        // must see it already cleared and no-op, per SleepRepositoryImpl's activeSessionMutex
+        // guard in disconnectSensor().
+        var first: NightlySummary? = null
+        var second: NightlySummary? = null
+        val job1 = launch { first = repository.disconnectSensor() }
+        val job2 = launch { second = repository.disconnectSensor() }
+        job1.join()
+        job2.join()
+
+        val results = listOf(first, second)
+        assertEquals(1, results.count { it != null })
+        assertEquals(listOf("upsert", "trimToLast30Days"), dao.recordedCalls)
+        assertTrue(sessionDao.sessions.single().finalized)
     }
 }

@@ -51,6 +51,12 @@ class SleepRepositoryImpl @Inject constructor(
     private val pendingReadingsMutex = Mutex()
     private val pendingReadings = mutableListOf<SessionReadingEntity>()
 
+    // Guards the capture-and-null of activeSessionId/activeSessionStartMillis in
+    // disconnectSensor() so two concurrent callers (e.g. a stop-action and onDestroy racing,
+    // or a rapid double-tap) can't both observe a non-null activeSessionId and both proceed to
+    // finalizeSession with the same id, risking a duplicate Health Connect write.
+    private val activeSessionMutex = Mutex()
+
     init {
         appScope.launch { recoverUnfinalizedSessions() }
     }
@@ -87,10 +93,13 @@ class SleepRepositoryImpl @Inject constructor(
         collectionJob = null
         flushTimerJob = null
         flush()
-        val sessionId = activeSessionId
-        val startMillis = activeSessionStartMillis
-        activeSessionId = null
-        activeSessionStartMillis = null
+        val (sessionId, startMillis) = activeSessionMutex.withLock {
+            val id = activeSessionId
+            val start = activeSessionStartMillis
+            activeSessionId = null
+            activeSessionStartMillis = null
+            id to start
+        }
         sensorDataSource.disconnect()
         return if (sessionId != null && startMillis != null) {
             finalizeSession(sessionId, startMillis)
@@ -128,6 +137,7 @@ class SleepRepositoryImpl @Inject constructor(
             } catch (e: Exception) {
                 // Leave this session unfinalized so it's retried on the next launch rather than
                 // silently discarding real reading data from a single bad session.
+                android.util.Log.w("SleepPulse", "Session finalize failed; will retry on next launch", e)
             }
         }
     }
