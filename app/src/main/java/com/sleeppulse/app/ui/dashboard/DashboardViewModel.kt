@@ -2,7 +2,6 @@ package com.sleeppulse.app.ui.dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.sleeppulse.app.data.NightSummaryBuilder
 import com.sleeppulse.app.data.model.NightlySummary
 import com.sleeppulse.app.data.model.SensorReading
 import com.sleeppulse.app.data.repository.SleepRepository
@@ -18,7 +17,6 @@ import android.content.Context
 import android.content.Intent
 import com.sleeppulse.app.services.SleepTrackingService
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.time.LocalDate
 import javax.inject.Inject
 
 private const val MAX_CHART_POINTS = 40
@@ -33,8 +31,6 @@ class DashboardViewModel @Inject constructor(
 
     private val _state = MutableStateFlow(DashboardState())
     val state: StateFlow<DashboardState> = _state.asStateFlow()
-
-    private val sessionReadings = mutableListOf<SensorReading>()
 
     fun onIntent(intent: DashboardIntent) {
         when (intent) {
@@ -54,7 +50,6 @@ class DashboardViewModel @Inject constructor(
         }
         viewModelScope.launch {
             repository.liveReadings().collect { reading ->
-                sessionReadings.add(reading)
                 _state.update { current ->
                     val updatedHistory = (current.recentReadings + reading).takeLast(MAX_CHART_POINTS)
                     current.copy(
@@ -85,14 +80,6 @@ class DashboardViewModel @Inject constructor(
     private fun toggleConnection() {
         viewModelScope.launch {
             if (_state.value.isConnected) {
-                if (sessionReadings.isNotEmpty()) {
-                    val summary = NightSummaryBuilder.build(sessionReadings.toList(), LocalDate.now())
-                    repository.recordNightlySummary(summary)
-                    val recovery = computeRecovery(repository.recentNights().first())
-                    notifier.notify(summary, recovery)
-                    com.sleeppulse.app.widget.SleepPulseWidget.refresh(context)
-                    sessionReadings.clear()
-                }
                 val stopIntent = Intent(context, SleepTrackingService::class.java).apply {
                     action = SleepTrackingService.ACTION_STOP_TRACKING
                 }
