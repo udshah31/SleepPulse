@@ -46,6 +46,12 @@ object RecoveryScoreCalculator {
         )
     }
 
+    fun scoreLatest(nights: List<NightlySummary>): RecoveryResult? {
+        val lastNight = nights.firstOrNull() ?: return null
+        val baseline = nights.drop(1).take(7)
+        return score(lastNight, baseline)
+    }
+
     private fun tierFor(score: Int): RecoveryTier = when {
         score >= 80 -> RecoveryTier.OPTIMAL
         score >= 60 -> RecoveryTier.ADEQUATE

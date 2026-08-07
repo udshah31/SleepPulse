@@ -6,7 +6,6 @@ import com.sleeppulse.app.data.model.SensorConnectionState
 import com.sleeppulse.app.data.model.SensorReading
 import com.sleeppulse.app.data.model.SleepStage
 import com.sleeppulse.app.testutil.FakeSleepRepository
-import com.sleeppulse.app.testutil.FakeSleepSummaryNotifier
 import com.sleeppulse.app.testutil.MainDispatcherRule
 import java.time.LocalDate
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -35,9 +34,8 @@ class DashboardViewModelTest {
     @Test
     fun `Start collects connection state and readings into state`() = runTest {
         val repository = FakeSleepRepository()
-        val notifier = FakeSleepSummaryNotifier()
         val context: Context = mock()
-        val viewModel = DashboardViewModel(context, repository, notifier)
+        val viewModel = DashboardViewModel(context, repository)
 
         viewModel.state.test {
             assertEquals(DashboardState(), awaitItem())
@@ -70,9 +68,8 @@ class DashboardViewModelTest {
     @Test
     fun `recent readings cap at 40 points`() = runTest {
         val repository = FakeSleepRepository()
-        val notifier = FakeSleepSummaryNotifier()
         val context: Context = mock()
-        val viewModel = DashboardViewModel(context, repository, notifier)
+        val viewModel = DashboardViewModel(context, repository)
 
         viewModel.onIntent(DashboardIntent.Start)
         advanceUntilIdle()
@@ -96,9 +93,8 @@ class DashboardViewModelTest {
     @Test
     fun `ToggleSensorConnection disconnects when connected`() = runTest {
         val repository = FakeSleepRepository()
-        val notifier = FakeSleepSummaryNotifier()
         val context: Context = mock()
-        val viewModel = DashboardViewModel(context, repository, notifier)
+        val viewModel = DashboardViewModel(context, repository)
         viewModel.onIntent(DashboardIntent.Start)
         advanceUntilIdle()
         repository.connectionStateFlow.value = SensorConnectionState.Connected("fake-device")
@@ -113,9 +109,8 @@ class DashboardViewModelTest {
     @Test
     fun `ToggleSensorConnection connects when not connected`() = runTest {
         val repository = FakeSleepRepository()
-        val notifier = FakeSleepSummaryNotifier()
         val context: Context = mock()
-        val viewModel = DashboardViewModel(context, repository, notifier)
+        val viewModel = DashboardViewModel(context, repository)
 
         // No Start() call: state stays at its default (Disconnected), so the toggle
         // must treat the sensor as not connected and call connectSensor().
@@ -128,9 +123,8 @@ class DashboardViewModelTest {
     @Test
     fun `wind-down flow advances through all steps and stops at DONE`() = runTest {
         val repository = FakeSleepRepository()
-        val notifier = FakeSleepSummaryNotifier()
         val context: Context = mock()
-        val viewModel = DashboardViewModel(context, repository, notifier)
+        val viewModel = DashboardViewModel(context, repository)
 
         viewModel.onIntent(DashboardIntent.BeginWindDown)
         assertEquals(WindDownStep.BREATHE, viewModel.state.value.windDownStep)
@@ -151,9 +145,8 @@ class DashboardViewModelTest {
     @Test
     fun `CancelWindDown clears the step`() = runTest {
         val repository = FakeSleepRepository()
-        val notifier = FakeSleepSummaryNotifier()
         val context: Context = mock()
-        val viewModel = DashboardViewModel(context, repository, notifier)
+        val viewModel = DashboardViewModel(context, repository)
 
         viewModel.onIntent(DashboardIntent.BeginWindDown)
         viewModel.onIntent(DashboardIntent.AdvanceWindDownStep)
@@ -164,57 +157,10 @@ class DashboardViewModelTest {
     }
 
     @Test
-    fun `disconnecting after readings accumulated records a nightly summary`() = runTest {
-        val repository = FakeSleepRepository()
-        val notifier = FakeSleepSummaryNotifier()
-        val context: Context = mock()
-        val viewModel = DashboardViewModel(context, repository, notifier)
-
-        viewModel.onIntent(DashboardIntent.Start)
-        advanceUntilIdle()
-
-        repository.readingsFlow.emit(reading(bpm = 58, hrv = 60.0))
-        advanceUntilIdle()
-        repository.readingsFlow.emit(reading(bpm = 62, hrv = 55.0))
-        advanceUntilIdle()
-
-        repository.connectionStateFlow.value = SensorConnectionState.Connected("fake-device")
-        advanceUntilIdle()
-
-        viewModel.onIntent(DashboardIntent.ToggleSensorConnection)
-        advanceUntilIdle()
-
-        assertEquals(1, repository.recordedSummaries.size)
-        val summary = repository.recordedSummaries.single()
-        assertEquals(60, summary.avgHeartRateBpm)
-        assertEquals(57.5, summary.avgHrvMillis, 0.0001)
-        assertEquals(LocalDate.now(), summary.date)
-    }
-
-    @Test
-    fun `disconnecting with no readings does not record a summary`() = runTest {
-        val repository = FakeSleepRepository()
-        val notifier = FakeSleepSummaryNotifier()
-        val context: Context = mock()
-        val viewModel = DashboardViewModel(context, repository, notifier)
-
-        viewModel.onIntent(DashboardIntent.Start)
-        advanceUntilIdle()
-        repository.connectionStateFlow.value = SensorConnectionState.Connected("fake-device")
-        advanceUntilIdle()
-
-        viewModel.onIntent(DashboardIntent.ToggleSensorConnection)
-        advanceUntilIdle()
-
-        assertEquals(0, repository.recordedSummaries.size)
-    }
-
-    @Test
     fun `recoveryResult is null until enough baseline nights are recorded`() = runTest {
         val repository = FakeSleepRepository()
-        val notifier = FakeSleepSummaryNotifier()
         val context: Context = mock()
-        val viewModel = DashboardViewModel(context, repository, notifier)
+        val viewModel = DashboardViewModel(context, repository)
 
         viewModel.onIntent(DashboardIntent.Start)
         advanceUntilIdle()
@@ -243,9 +189,8 @@ class DashboardViewModelTest {
     @Test
     fun `recoveryResult is computed once enough baseline nights exist`() = runTest {
         val repository = FakeSleepRepository()
-        val notifier = FakeSleepSummaryNotifier()
         val context: Context = mock()
-        val viewModel = DashboardViewModel(context, repository, notifier)
+        val viewModel = DashboardViewModel(context, repository)
 
         viewModel.onIntent(DashboardIntent.Start)
         advanceUntilIdle()
@@ -271,98 +216,10 @@ class DashboardViewModelTest {
     }
 
     @Test
-    fun `disconnecting after readings fires notifier with the recorded summary`() = runTest {
-        val repository = FakeSleepRepository()
-        val notifier = FakeSleepSummaryNotifier()
-        val context: Context = mock()
-        val viewModel = DashboardViewModel(context, repository, notifier)
-
-        viewModel.onIntent(DashboardIntent.Start)
-        advanceUntilIdle()
-
-        repository.readingsFlow.emit(reading(bpm = 58, hrv = 60.0))
-        advanceUntilIdle()
-        repository.readingsFlow.emit(reading(bpm = 62, hrv = 55.0))
-        advanceUntilIdle()
-
-        repository.connectionStateFlow.value = SensorConnectionState.Connected("fake-device")
-        advanceUntilIdle()
-
-        viewModel.onIntent(DashboardIntent.ToggleSensorConnection)
-        advanceUntilIdle()
-
-        assertEquals(1, notifier.notifiedSummaries.size)
-        val notified = notifier.notifiedSummaries.single()
-        assertEquals(60, notified.avgHeartRateBpm)
-        assertEquals(57.5, notified.avgHrvMillis, 0.0001)
-    }
-
-    @Test
-    fun `disconnecting with no readings does not fire notifier`() = runTest {
-        val repository = FakeSleepRepository()
-        val notifier = FakeSleepSummaryNotifier()
-        val context: Context = mock()
-        val viewModel = DashboardViewModel(context, repository, notifier)
-
-        viewModel.onIntent(DashboardIntent.Start)
-        advanceUntilIdle()
-        repository.connectionStateFlow.value = SensorConnectionState.Connected("fake-device")
-        advanceUntilIdle()
-
-        viewModel.onIntent(DashboardIntent.ToggleSensorConnection)
-        advanceUntilIdle()
-
-        assertEquals(0, notifier.notifiedSummaries.size)
-    }
-
-    @Test
-    fun `disconnecting notifies with recovery computed against the just-recorded summary, not stale state`() = runTest {
-        val repository = FakeSleepRepository()
-        val notifier = FakeSleepSummaryNotifier()
-        val context: Context = mock()
-        val viewModel = DashboardViewModel(context, repository, notifier)
-
-        fun night(hrv: Double, hr: Int) = NightlySummary(
-            date = LocalDate.now().minusDays(1),
-            sleepScore = 70,
-            avgHeartRateBpm = hr,
-            avgHrvMillis = hrv,
-            totalSleepMinutes = 420,
-            deepSleepMinutes = 90,
-            remSleepMinutes = 100,
-        )
-
-        // Baseline present before Start, so recoveryResult would be null at disconnect time
-        // if the notifier read state captured before tonight's summary was recorded.
-        repository.nightsFlow.value = listOf(night(50.0, 60), night(50.0, 60), night(50.0, 60))
-
-        viewModel.onIntent(DashboardIntent.Start)
-        advanceUntilIdle()
-
-        // recoveryResult is null here: only 3 baseline nights exist, no "last night" yet.
-        assertNull(viewModel.state.value.recoveryResult)
-
-        repository.readingsFlow.emit(reading(bpm = 54, hrv = 62.5)) // well-recovered reading
-        advanceUntilIdle()
-        repository.connectionStateFlow.value = SensorConnectionState.Connected("fake-device")
-        advanceUntilIdle()
-
-        viewModel.onIntent(DashboardIntent.ToggleSensorConnection)
-        advanceUntilIdle()
-
-        // The notifier must see recovery computed AFTER tonight's summary was recorded
-        // (tonight becomes "last night", the pre-existing 3 nights become baseline) —
-        // not the null value that was in _state.value.recoveryResult before disconnect.
-        assertEquals(1, notifier.notifiedRecoveryResults.size)
-        assertEquals(RecoveryTier.OPTIMAL, notifier.notifiedRecoveryResults.single()?.tier)
-    }
-
-    @Test
     fun `metricBaseline is null until recentNights emits`() = runTest {
         val repository = FakeSleepRepository()
-        val notifier = FakeSleepSummaryNotifier()
         val context: Context = mock()
-        val viewModel = DashboardViewModel(context, repository, notifier)
+        val viewModel = DashboardViewModel(context, repository)
 
         assertNull(viewModel.state.value.metricBaseline)
 
@@ -375,9 +232,8 @@ class DashboardViewModelTest {
     @Test
     fun `metricBaseline is computed from recentNights once enough nights are recorded`() = runTest {
         val repository = FakeSleepRepository()
-        val notifier = FakeSleepSummaryNotifier()
         val context: Context = mock()
-        val viewModel = DashboardViewModel(context, repository, notifier)
+        val viewModel = DashboardViewModel(context, repository)
 
         viewModel.onIntent(DashboardIntent.Start)
         advanceUntilIdle()

@@ -140,4 +140,33 @@ class RecoveryScoreCalculatorTest {
         assertEquals(0.25, result.hrvDeviation, 0.001)
         assertEquals(0.10, result.rhrDeviation, 0.001)
     }
+
+    @Test
+    fun `scoreLatest treats the first night as last night and the next 7 as baseline`() {
+        val baseline = listOf(night(50.0, 60), night(50.0, 60), night(50.0, 60))
+        val lastNight = night(hrv = 62.5, hr = 54) // +25% HRV, -10% RHR vs baseline
+
+        val result = RecoveryScoreCalculator.scoreLatest(listOf(lastNight) + baseline)
+
+        assertEquals(RecoveryTier.OPTIMAL, result?.tier)
+    }
+
+    @Test
+    fun `scoreLatest returns null for an empty night list`() {
+        assertNull(RecoveryScoreCalculator.scoreLatest(emptyList()))
+    }
+
+    @Test
+    fun `scoreLatest ignores nights beyond the first 7 baseline nights`() {
+        val lastNight = night(hrv = 62.5, hr = 54) // +25% HRV, -10% RHR vs. the neutral baseline below
+        val neutralBaseline = List(7) { night(50.0, 60) }
+        // Wildly different "poison" nights beyond the 7-night baseline window: if scoreLatest
+        // incorrectly included them in the average, the deviations above would be swamped and
+        // the tier would drop well below OPTIMAL.
+        val poisonNights = List(5) { night(hrv = 5.0, hr = 150) }
+
+        val result = RecoveryScoreCalculator.scoreLatest(listOf(lastNight) + neutralBaseline + poisonNights)
+
+        assertEquals(RecoveryTier.OPTIMAL, result?.tier)
+    }
 }

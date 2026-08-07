@@ -18,6 +18,7 @@ class FakeSleepRepository : SleepRepository {
     var disconnectSensorCallCount = 0
         private set
     val recordedSummaries = mutableListOf<NightlySummary>()
+    var nextDisconnectSummary: NightlySummary? = null
 
     override val connectionState: Flow<SensorConnectionState> = connectionStateFlow
 
@@ -30,9 +31,17 @@ class FakeSleepRepository : SleepRepository {
         connectionStateFlow.value = SensorConnectionState.Connected(deviceName = "fake-device")
     }
 
-    override suspend fun disconnectSensor() {
+    override suspend fun disconnectSensor(): NightlySummary? {
         disconnectSensorCallCount++
         connectionStateFlow.value = SensorConnectionState.Disconnected
+        val summary = nextDisconnectSummary
+        if (summary != null) {
+            // Mirrors recordNightlySummary()'s effect on nightsFlow below, so callers that
+            // read recentNights() right after disconnecting (e.g. to compute recovery) see
+            // tonight's summary already reflected, matching the real repository.
+            nightsFlow.value = listOf(summary) + nightsFlow.value
+        }
+        return summary
     }
 
     override suspend fun recordNightlySummary(summary: NightlySummary) {

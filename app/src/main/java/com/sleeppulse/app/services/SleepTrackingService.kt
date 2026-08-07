@@ -22,6 +22,7 @@ import java.util.Calendar
 import javax.inject.Inject
 import com.sleeppulse.app.data.repository.SettingsRepository
 import com.sleeppulse.app.notifications.SmartAlarmScheduler
+import com.sleeppulse.app.notifications.SleepSessionFinalizer
 import com.sleeppulse.app.data.model.SleepStage
 import com.sleeppulse.app.tracking.NoiseMonitor
 import com.sleeppulse.app.wear.WearDataClient
@@ -40,7 +41,10 @@ class SleepTrackingService : Service() {
     
     @Inject
     lateinit var wearDataClient: WearDataClient
-    
+
+    @Inject
+    lateinit var sleepSessionFinalizer: SleepSessionFinalizer
+
     private var hasFiredSmartAlarm = false
     private var noiseMonitor: NoiseMonitor? = null
     
@@ -54,9 +58,7 @@ class SleepTrackingService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == ACTION_STOP_TRACKING) {
-            scope.launch {
-                repository.disconnectSensor()
-            }
+            sleepSessionFinalizer.finalizeAsync()
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
             return START_NOT_STICKY
@@ -119,9 +121,11 @@ class SleepTrackingService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
-        scope.launch {
-            repository.disconnectSensor()
-        }
+        // Use finalizeAsync() (app-scoped), not scope.launch{}: this Service's own `scope` is
+        // cancelled a few lines below, and onDestroy() typically runs within milliseconds of
+        // stopSelf(), so a finalize() launched on `scope` would be killed mid-flight before its
+        // Room read + upsert + Health Connect write + widget refresh complete.
+        sleepSessionFinalizer.finalizeAsync()
         noiseMonitor?.stopMonitoring()
         scope.cancel()
         super.onDestroy()

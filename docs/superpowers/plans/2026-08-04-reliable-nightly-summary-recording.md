@@ -49,13 +49,15 @@ Add to the bottom of `RecoveryScoreCalculatorTest.kt`, inside the `RecoveryScore
     }
 
     @Test
-    fun `scoreLatest ignores nights beyond the first 8`() {
-        val lastNight = night(hrv = 62.5, hr = 54)
-        val baseline = List(10) { night(50.0, 60) }
+    fun `scoreLatest ignores nights beyond the first 7 baseline nights`() {
+        val lastNight = night(hrv = 62.5, hr = 54) // +25% HRV, -10% RHR vs. the neutral baseline below
+        val neutralBaseline = List(7) { night(50.0, 60) }
+        // Wildly different "poison" nights beyond the 7-night baseline window: if scoreLatest
+        // incorrectly included them in the average, the deviations above would be swamped and
+        // the tier would drop well below OPTIMAL.
+        val poisonNights = List(5) { night(hrv = 5.0, hr = 150) }
 
-        // Only the first 7 baseline nights should be used — this is exercised indirectly:
-        // scoreLatest must not throw or behave differently with extra trailing nights.
-        val result = RecoveryScoreCalculator.scoreLatest(listOf(lastNight) + baseline)
+        val result = RecoveryScoreCalculator.scoreLatest(listOf(lastNight) + neutralBaseline + poisonNights)
 
         assertEquals(RecoveryTier.OPTIMAL, result?.tier)
     }

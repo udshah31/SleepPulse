@@ -45,10 +45,17 @@ class SleepRepositoryImpl @Inject constructor(
         dao.observeRecent().map { entities -> entities.map { it.toDomain() } }
 
     private var activeSessionId: Long? = null
+    private var activeSessionStartMillis: Long? = null
     private var collectionJob: Job? = null
     private var flushTimerJob: Job? = null
     private val pendingReadingsMutex = Mutex()
     private val pendingReadings = mutableListOf<SessionReadingEntity>()
+
+    // Guards the capture-and-null of activeSessionId/activeSessionStartMillis in
+    // disconnectSensor() so two concurrent callers (e.g. a stop-action and onDestroy racing,
+    // or a rapid double-tap) can't both observe a non-null activeSessionId and both proceed to
+    // finalizeSession with the same id, risking a duplicate Health Connect write.
+    private val activeSessionMutex = Mutex()
 
     init {
         appScope.launch { recoverUnfinalizedSessions() }
@@ -56,10 +63,12 @@ class SleepRepositoryImpl @Inject constructor(
 
     override suspend fun connectSensor() {
         sensorDataSource.connect()
+        val startMillis = nowMillis()
         val sessionId = sessionDao.createSession(
-            SleepSessionEntity(startEpochMillis = nowMillis(), finalized = false)
+            SleepSessionEntity(startEpochMillis = startMillis, finalized = false)
         )
         activeSessionId = sessionId
+        activeSessionStartMillis = startMillis
 
         collectionJob = appScope.launch {
             sensorDataSource.readings().collect { reading ->
@@ -78,15 +87,25 @@ class SleepRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun disconnectSensor() {
+    override suspend fun disconnectSensor(): NightlySummary? {
         collectionJob?.cancelAndJoin()
         flushTimerJob?.cancelAndJoin()
         collectionJob = null
         flushTimerJob = null
         flush()
-        activeSessionId?.let { sessionDao.finalizeAndClear(it) }
-        activeSessionId = null
+        val (sessionId, startMillis) = activeSessionMutex.withLock {
+            val id = activeSessionId
+            val start = activeSessionStartMillis
+            activeSessionId = null
+            activeSessionStartMillis = null
+            id to start
+        }
         sensorDataSource.disconnect()
+        return if (sessionId != null && startMillis != null) {
+            finalizeSession(sessionId, startMillis)
+        } else {
+            null
+        }
     }
 
     private suspend fun flush() {
@@ -112,21 +131,36 @@ class SleepRepositoryImpl @Inject constructor(
     suspend fun recoverUnfinalizedSessions() {
         sessionDao.unfinalizedSessions().forEach { session ->
             try {
-                val readings = sessionDao.readingsFor(session.sessionId).map { it.toDomainReading() }
-                if (readings.isNotEmpty()) {
-                    val date = java.time.Instant.ofEpochMilli(session.startEpochMillis)
-                        .atZone(java.time.ZoneId.systemDefault())
-                        .toLocalDate()
-                    recordNightlySummary(NightSummaryBuilder.build(readings, date))
-                }
-                sessionDao.finalizeAndClear(session.sessionId)
+                finalizeSession(session.sessionId, session.startEpochMillis)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 // Leave this session unfinalized so it's retried on the next launch rather than
                 // silently discarding real reading data from a single bad session.
+                android.util.Log.w("SleepPulse", "Session finalize failed; will retry on next launch", e)
             }
         }
+    }
+
+    /**
+     * Reads back a session's persisted readings, records a [NightlySummary] if there are any,
+     * then finalizes/clears the session row. Only finalizes on success — if [recordNightlySummary]
+     * throws (e.g. a Room or Health Connect write failure), the session is left unfinalized so
+     * it's retried by [recoverUnfinalizedSessions] on next app launch rather than losing data.
+     */
+    private suspend fun finalizeSession(sessionId: Long, startEpochMillis: Long): NightlySummary? {
+        val readings = sessionDao.readingsFor(sessionId).map { it.toDomainReading() }
+        if (readings.isEmpty()) {
+            sessionDao.finalizeAndClear(sessionId)
+            return null
+        }
+        val date = java.time.Instant.ofEpochMilli(startEpochMillis)
+            .atZone(java.time.ZoneId.systemDefault())
+            .toLocalDate()
+        val summary = NightSummaryBuilder.build(readings, date)
+        recordNightlySummary(summary)
+        sessionDao.finalizeAndClear(sessionId)
+        return summary
     }
 
     private fun SessionReadingEntity.toDomainReading() = SensorReading(

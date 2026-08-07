@@ -20,7 +20,7 @@ interface SleepRepository {
 
     suspend fun connectSensor()
 
-    suspend fun disconnectSensor()
+    suspend fun disconnectSensor(): NightlySummary?
 
     suspend fun recordNightlySummary(summary: NightlySummary)
 
