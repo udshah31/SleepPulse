@@ -15,3 +15,10 @@ Task 3: complete (commits e9bcca8..35be0c1, review clean after one Important fix
 Task 4: complete (commit 92b0aa1, review clean)
 Task 5: complete (commits d591243..8ca23ea, review clean after one Important fix — per-session try/catch isolation in recoverUnfinalizedSessions)
 Task 6: complete (no new commit — DI wiring content was pulled forward into Task 3's commit 3eb0197 to resolve a plan ordering gap; verified here via full ./gradlew :app:assembleDebug :app:test — BUILD SUCCESSFUL, 80 tasks)
+Task 4: complete (commit 1488752, review clean; original commit 5465ece landed on master by mistake — no worktree isolation set on that dispatch — controller reset master to 9c15652 with user consent and cherry-picked the content onto the correct branch)
+Task 5: complete (commit f94c34b, review clean; pre-approved deviation — latestReading/metricBaseline given null defaults on RecoveryScoreCard to keep RecoveryScreen.kt's undocumented third call site compiling, without touching that file)
+All 5 tasks of dashboard-premium-metrics plan complete. Proceeding to on-device verification (Task 6) then final whole-branch review.
+Task 6: complete (on-device verification via emulator screenshots — borderless RecoveryScoreCard confirmed, gauge color-coding unregressed, fresh-install fallback state matches plan expectations; MetricRow rendering not visually verified since it requires 3+ recorded nights, out of scope to fake)
+Proceeding to final whole-branch review.
+Final whole-branch review: complete (Opus). Found 1 Important (guidance sentence could contradict displayed tier) + 2 Minor doc findings. Fix dispatched as commit 68ff1f8, re-reviewed and confirmed resolved; re-review also caught a cosmetic double-punctuation regression the fix introduced (", — consider"), fixed directly by controller as commit ff4bdf4 and tests re-verified green.
+dashboard-premium-metrics plan: ALL WORK COMPLETE. Ready for superpowers:finishing-a-development-branch.
