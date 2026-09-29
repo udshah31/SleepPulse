@@ -5,6 +5,9 @@ import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.SleepSessionRecord
 import androidx.health.connect.client.records.metadata.Metadata
+import androidx.health.connect.client.changes.DeletionChange
+import androidx.health.connect.client.changes.UpsertionChange
+import androidx.health.connect.client.request.ChangesTokenRequest
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
 import com.sleeppulse.app.data.model.NightlySummary
@@ -44,6 +47,7 @@ class HealthConnectManager(private val context: Context) {
                     fun minutesOf(type: Int) = r.stages.filter { it.stage == type }
                         .sumOf { java.time.Duration.between(it.startTime, it.endTime).toMinutes() }.toInt()
                     ExternalSleepSession(
+                        id = r.metadata.id,
                         startMillis = r.startTime.toEpochMilli(),
                         endMillis = r.endTime.toEpochMilli(),
                         deepSleepMinutes = minutesOf(SleepSessionRecord.STAGE_TYPE_DEEP),
@@ -137,6 +141,49 @@ class HealthConnectManager(private val context: Context) {
         }
     }
 
+    /**
+     * A token marking "now" in Health Connect's change log for sleep sessions, or null without
+     * read access. Take it *before* a full read so nothing written during the read is missed —
+     * a change seen by both is just an idempotent upsert.
+     */
+    suspend fun getChangesToken(): String? {
+        if (!hasReadPermissions()) return null
+        return try {
+            withContext(Dispatchers.IO) {
+                healthConnectClient.getChangesToken(ChangesTokenRequest(setOf(SleepSessionRecord::class)))
+            }
+        } catch (e: SecurityException) {
+            null // revoked between the check and the call
+        }
+    }
+
+    /** Everything that changed since [token], draining all pages (`hasMore`). */
+    suspend fun getSleepChanges(token: String): SleepChanges {
+        if (!hasReadPermissions()) return SleepChanges.NoPermission
+        return try {
+            withContext(Dispatchers.IO) {
+                val upserted = mutableListOf<SleepSessionRecord>()
+                val deletedIds = mutableListOf<String>()
+                var next = token
+                do {
+                    val response = healthConnectClient.getChanges(next)
+                    // Tokens expire (~30 days unused); the caller must fall back to a full read.
+                    if (response.changesTokenExpired) return@withContext SleepChanges.TokenExpired
+                    response.changes.forEach { change ->
+                        when (change) {
+                            is UpsertionChange -> (change.record as? SleepSessionRecord)?.let(upserted::add)
+                            is DeletionChange -> deletedIds += change.recordId
+                        }
+                    }
+                    next = response.nextChangesToken
+                } while (response.hasMore)
+                SleepChanges.Changes(fromOtherApps(upserted, context.packageName), deletedIds, next)
+            }
+        } catch (e: SecurityException) {
+            SleepChanges.NoPermission
+        }
+    }
+
     suspend fun writeSleepSession(summary: NightlySummary, stages: List<StageSegment> = emptyList()) {
         if (!hasRequiredPermissions()) {
             android.util.Log.w("HealthConnectManager", "Skipping write: Health Connect permission not granted")
@@ -160,9 +207,23 @@ class HealthConnectManager(private val context: Context) {
 
 /** A night recorded by another app, as read back from Health Connect. */
 data class ExternalSleepSession(
+    /** Health Connect's record id — the key change/deletion events refer to. */
+    val id: String,
     val startMillis: Long,
     val endMillis: Long,
     val deepSleepMinutes: Int,
     val remSleepMinutes: Int,
     val sourcePackage: String,
 )
+
+sealed interface SleepChanges {
+    /** [upserted] is already filtered to other apps; [deletedIds] may include any app's ids. */
+    data class Changes(
+        val upserted: List<ExternalSleepSession>,
+        val deletedIds: List<String>,
+        val nextToken: String,
+    ) : SleepChanges
+
+    data object TokenExpired : SleepChanges
+    data object NoPermission : SleepChanges
+}

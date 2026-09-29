@@ -46,4 +46,26 @@ class HealthConnectReadTest {
         val external = manager.readSleepSessions(start.minusSeconds(60), end.plusSeconds(60))
         assertTrue("own record leaked into readSleepSessions", external.none { it.startMillis == start.toEpochMilli() })
     }
+
+    @Test
+    fun changesTokenSeesAnInsertThenItsDeletion() = runBlocking {
+        val token = manager.getChangesToken()
+        assertTrue("no changes token (read access missing?)", token != null)
+
+        val start = Instant.now().minusSeconds(20 * 3600)
+        val inserted = client.insertRecords(
+            listOf(SleepSessionRecord(start, null, start.plusSeconds(3600), null))
+        ).recordIdsList.single()
+
+        val afterInsert = manager.getSleepChanges(token!!)
+        assertTrue("expected Changes, got $afterInsert", afterInsert is SleepChanges.Changes)
+        afterInsert as SleepChanges.Changes
+        // Our own write shows up in the change log but is filtered out of the upserts.
+        assertTrue(afterInsert.upserted.none { it.id == inserted })
+
+        client.deleteRecords(SleepSessionRecord::class, listOf(inserted), emptyList())
+        val afterDelete = manager.getSleepChanges(afterInsert.nextToken)
+        assertTrue("expected Changes, got $afterDelete", afterDelete is SleepChanges.Changes)
+        assertTrue("deletion not reported", (afterDelete as SleepChanges.Changes).deletedIds.contains(inserted))
+    }
 }

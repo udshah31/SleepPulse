@@ -23,6 +23,8 @@ import com.sleeppulse.app.notifications.WindDownSchedulerImpl
 import com.sleeppulse.app.notifications.SmartAlarmScheduler
 import com.sleeppulse.app.notifications.SmartAlarmSchedulerImpl
 import com.sleeppulse.app.tracking.HealthConnectManager
+import com.sleeppulse.app.tracking.PrefsSleepSyncStore
+import com.sleeppulse.app.tracking.SleepSyncStore
 import com.sleeppulse.app.tracking.SleepStagePredictor
 import com.sleeppulse.app.widget.WidgetRefresher
 import com.sleeppulse.app.widget.WidgetRefresherImpl
@@ -68,6 +70,9 @@ abstract class BindingsModule {
     @Binds
     @Singleton
     abstract fun bindSmartAlarmScheduler(impl: SmartAlarmSchedulerImpl): SmartAlarmScheduler
+
+    @Binds
+    abstract fun bindSleepSyncStore(impl: PrefsSleepSyncStore): SleepSyncStore
 
     @Binds
     @Singleton
