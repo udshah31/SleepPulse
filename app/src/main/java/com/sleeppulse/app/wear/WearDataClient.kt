@@ -2,6 +2,7 @@ package com.sleeppulse.app.wear
 
 import android.content.Context
 import com.google.android.gms.common.api.ApiException
+import com.google.android.gms.common.api.CommonStatusCodes
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.wearable.PutDataMapRequest
 import com.google.android.gms.wearable.Wearable
@@ -31,7 +32,10 @@ class WearDataClient @Inject constructor(
         dataClient.putDataItem(putDataReq).addOnSuccessListener {
             android.util.Log.d("SleepPulse", "Successfully sent data to wear: $it")
         }.addOnFailureListener {
-            if ((it as? ApiException)?.statusCode == ConnectionResult.API_UNAVAILABLE) {
+            // Play services reports a missing Wearable API as API_NOT_CONNECTED (17) on the
+            // ApiException; API_UNAVAILABLE (16) is only the inner ConnectionResult, so accept both.
+            val code = (it as? ApiException)?.statusCode
+            if (code == CommonStatusCodes.API_NOT_CONNECTED || code == ConnectionResult.API_UNAVAILABLE) {
                 wearUnavailable = true
                 android.util.Log.i("SleepPulse", "Wearable API unavailable; not syncing readings to watch this session")
             } else {
