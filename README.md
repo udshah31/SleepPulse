@@ -3,10 +3,9 @@
 ![CI](https://github.com/udshah31/SleepPulse/actions/workflows/ci.yml/badge.svg)
 
 A native Android sleep/recovery tracking companion app (Kotlin, Jetpack Compose), in the
-spirit of Eight Sleep or Whoop. This is **Phase 1** of the build: a working single-module
-app with the core architecture, screens, and animations in place. BLE hardware
-integration, the full multi-module split, automated tests, and CI are scoped for a
-follow-up hardening pass (see "What's deferred" below).
+spirit of Eight Sleep or Whoop. It tracks a night from a heart-rate sensor (simulated, or a
+real BLE heart-rate strap), scores sleep and recovery, and keeps a 30-night history. A
+minimal Wear OS module (`:wear`) sits alongside the phone app (`:app`).
 
 ## Architecture
 
@@ -51,66 +50,52 @@ Two implementations:
   toward stage-dependent targets (rather than pure random jitter) and cycles through
   `AWAKE → LIGHT → DEEP → LIGHT → REM → LIGHT`, so a demo session looks like a
   plausible night rather than white noise.
-- **`BleSensorDataSource`** — a real `BluetoothGatt` client stub. It targets the
-  standard Bluetooth SIG Heart Rate Service (`0x180D`)/Measurement Characteristic
-  (`0x2A37`), handles the connect → discover services → enable notifications →
-  parse-characteristic lifecycle correctly, but has no scan flow wired up yet (see
-  below) and is **not bound** by Hilt today.
+- **`BleSensorDataSource`** — a `BluetoothGatt` client for the standard Bluetooth SIG Heart
+  Rate Service (`0x180D`)/Measurement Characteristic (`0x2A37`). `hrvMillis` and
+  `sleepStage` are not part of that service, so it emits placeholder values for them (a
+  real product needs a vendor characteristic or second sensor).
 
-`di/AppModule.kt` binds `SensorDataSource` to `SimulatedSensorDataSource`:
+`SensorSourceManager` is what Hilt binds to `SensorDataSource`. It delegates to the simulated
+or BLE source depending on the data-source mode in Settings. Picking a device goes through
+the Scan screen (`ui/scan/`, `BleDeviceScanner` behind `BleScanSource`), which hands the
+chosen address to `BleSensorDataSource` via `BleTargetDeviceSink`. Nothing downstream of
+`SensorDataSource` knows which implementation is live.
 
-```kotlin
-@Binds
-abstract fun bindSensorDataSource(impl: SimulatedSensorDataSource): SensorDataSource
-```
+### Persistence and session lifecycle
 
-**To swap in the real BLE source** once you have a peripheral to test against:
+`SleepRepository` sits between the data source/Room and the ViewModels; ViewModels never
+touch Room or `SensorDataSource` directly.
 
-1. Change the `@Binds` target in `AppModule.kt` from `SimulatedSensorDataSource` to
-   `BleSensorDataSource`.
-2. Add a BLE scan (`BluetoothLeScanner`) somewhere in the connect flow — likely
-   triggered from Settings — that calls `BleSensorDataSource.setTargetDevice(address)`
-   before `connect()` is invoked. Nothing else in the app needs to change: the
-   `SleepRepository` and every ViewModel above it only see the `SensorDataSource`
-   interface.
-3. `hrvMillis` and `sleepStage` are not part of the standard Heart Rate Service — a real
-   product would need a vendor-specific characteristic (or a second sensor) for those;
-   `BleSensorDataSource` currently emits placeholder values for them.
+- `data/local/` — Room (DB version 4, destructive migration): `NightlySummaryEntity` (last
+  30 nights, with user tags) plus `SleepSessionEntity`/`SessionReadingEntity`, which persist
+  an in-progress session so a night survives process death.
+- On disconnect the summary is built from the persisted readings (`NightSummaryBuilder`);
+  sessions left unfinalized are retried on next launch (`recoverUnfinalizedSessions`).
+- `SleepTrackingService` (foreground service) runs the night: mic noise level, smart-alarm
+  firing, and mirroring readings to the watch. Stopping it calls `SleepSessionFinalizer`,
+  which — on the application scope, so it outlives the service — records the summary,
+  computes the recovery score, posts the summary notification, and refreshes the widget.
 
-Nothing downstream — repository, ViewModels, UI — imports either implementation
-directly, only the `SensorDataSource` interface, so this swap never touches business logic.
-
-### Local caching
-
-`SleepRepository` sits between the data source and the ViewModel layer, and between
-Room and the ViewModel layer, so either side is independently swappable:
-
-- `data/local/` — Room entity/DAO/database for the last 30 nights (`observeRecent()`
-  is capped to 30 rows; `trimToLast30Days()` prunes older rows on write).
-- `data/repository/SleepRepositoryImpl` — converts between the Room entity shape and
-  the domain-level `NightlySummary` model, and re-exposes the live sensor `Flow`s.
-
-ViewModels depend on `SleepRepository` only — never on Room or `SensorDataSource`
-directly.
+Settings (`SettingsRepository`) are in-memory only and reset on restart.
 
 ### Dependency injection
 
 Hilt wires the graph: `SleepPulseApp` (`@HiltAndroidApp`), `MainActivity`
-(`@AndroidEntryPoint`), each `@HiltViewModel`, and `di/AppModule.kt` (`@Binds`/`@Provides`
-for the repository, data source, and Room database).
+(`@AndroidEntryPoint`), each `@HiltViewModel`, and `di/AppModule.kt`.
 
-## Screens
+## Features
 
-- **Dashboard** (`ui/dashboard/`) — animated circular sleep-score gauge
-  (`ui/components/SleepScoreGauge.kt`, arc sweep + color driven by an `Animatable`), live
-  heart-rate/HRV line charts that animate their vertical scale as new points arrive
-  (`ui/components/LiveMetricChart.kt`), and a wind-down flow with `AnimatedContent`
-  transitions between steps (`ui/dashboard/WindDownFlow.kt`).
-- **History** (`ui/history/`) — a scrollable list of cached nights with a trend arrow
-  (▲/▼/―) computed against the previous night's score.
-- **Settings** (`ui/settings/`) — simulated-vs-BLE data source preference and a
-  temperature unit toggle. (The data-source radio button currently only records the
-  user's preference; see "What's deferred.")
+- **Dashboard** — animated sleep-score gauge, live HR/HRV charts, metric row and guidance
+  banner, and a wind-down flow. Links to a Breathe exercise.
+- **History** — cached nights with trend arrows, sleep consistency/debt/variability
+  analytics, night tags with tag correlations, and CSV export.
+- **Recovery** — readiness/recovery score from last night vs. a rolling 7-night baseline
+  (needs 3+ baseline nights).
+- **Alarm** — bedtime/wake targets, smart-alarm window (with a hard-alarm fallback), and a
+  wind-down reminder.
+- **Settings** — simulated vs. BLE source, BLE device scan, targets, AMOLED-black theme.
+- **Integrations** — Health Connect sleep-session write, Glance home-screen widget, Wear OS
+  data sync, sleep-stage heuristic (`SleepStagePredictor`).
 
 ## Running the app
 
@@ -120,24 +105,30 @@ for the repository, data source, and Room database).
 ./gradlew :app:installDebug
 ```
 
-Requires the Android SDK at the path in `local.properties` (`sdk.dir`); JDK 17+.
+Requires the Android SDK at the path in `local.properties` (`sdk.dir`); JDK 17+; minSdk 26.
 
-## What's deferred to the hardening pass
+## Testing and CI
 
-This phase intentionally stops short of the full original spec so the core could be
-verified end-to-end first:
+```
+./gradlew :app:test    # unit tests, hand-written fakes in app/src/test/.../testutil
+./gradlew lint
+```
 
-- **BLE scan flow** — `BleSensorDataSource` has correct GATT plumbing but no scan UI to
-  pick a real peripheral's address.
-- **Multi-module Gradle split** (`:app`, `:data`, `:domain`, `:ui-components`) — currently
-  one `:app` module. The package structure (`data/`, `ui/`, `di/`) already mirrors where
-  the module boundaries would land.
-- **Automated tests** — unit tests for `SleepScoreCalculator`/ViewModels/repository, and
-  an Espresso/Compose UI test for the Dashboard.
-- **GitHub Actions CI** — lint + unit tests + `assembleDebug` on push.
+GitHub Actions (`.github/workflows/ci.yml`) runs lint, unit tests, and `assembleDebug` on
+pushes and PRs to `master`. Instrumented tests live in `app/src/androidTest` and are not run
+in CI.
 
-Verified manually on an emulator for this phase: Dashboard renders and animates with live
-simulated data, sensor connect/disconnect toggles correctly, the wind-down flow steps
-through with its transition animation, History and Settings render (History is
-legitimately empty — nothing calls `recordNightlySummary` yet, since there's no
-full-night-completion flow in this phase).
+## Known limitations
+
+- HRV and sleep stage from a real BLE strap are placeholders (see above); stage prediction
+  is a simple HR/HRV/movement threshold heuristic.
+- Settings are not persisted.
+- Room uses destructive migration and doesn't export schemas — a version bump wipes data.
+- Single `:app` module (no `:data`/`:domain` split); the `data/`, `ui/`, `di/` packages
+  mirror where the boundaries would go.
+- The `:wear` module is a minimal shell.
+
+## Project history
+
+Features were built spec → plan → implementation; see `docs/superpowers/specs/` and
+`docs/superpowers/plans/`.
