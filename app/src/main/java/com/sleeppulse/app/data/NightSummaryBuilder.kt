@@ -33,17 +33,6 @@ object NightSummaryBuilder {
         }
 
         val score = SleepScoreCalculator.score(readings)
-        
-        val tags = mutableListOf<String>()
-        if (score < 65) {
-            tags.add("Alcohol")
-            tags.add("Late screen time")
-        } else if (score > 85) {
-            tags.add("Exercise")
-            tags.add("Read a book")
-        } else {
-            tags.add("Caffeine")
-        }
 
         return NightlySummary(
             date = date,
@@ -54,7 +43,6 @@ object NightSummaryBuilder {
             totalSleepMinutes = (totalMs / 60_000L).toInt(),
             deepSleepMinutes = (deepMs / 60_000L).toInt(),
             remSleepMinutes = (remMs / 60_000L).toInt(),
-            tags = tags,
         )
     }
 

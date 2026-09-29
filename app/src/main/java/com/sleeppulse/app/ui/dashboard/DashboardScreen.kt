@@ -87,8 +87,10 @@ fun DashboardScreen(
         permissionLauncher.launch(permissions.toTypedArray())
 
         val healthConnectManager = HealthConnectManager(context)
-        if (healthConnectManager.isAvailable() && !healthConnectManager.hasRequiredPermissions()) {
-            healthConnectPermissionLauncher.launch(HealthConnectManager.REQUIRED_PERMISSIONS)
+        if (healthConnectManager.isAvailable() &&
+            !(healthConnectManager.hasRequiredPermissions() && healthConnectManager.hasReadPermissions())
+        ) {
+            healthConnectPermissionLauncher.launch(HealthConnectManager.REQUESTED_PERMISSIONS)
         }
     }
 

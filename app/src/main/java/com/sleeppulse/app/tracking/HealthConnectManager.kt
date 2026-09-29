@@ -5,6 +5,8 @@ import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.SleepSessionRecord
 import androidx.health.connect.client.records.metadata.Metadata
+import androidx.health.connect.client.request.ReadRecordsRequest
+import androidx.health.connect.client.time.TimeRangeFilter
 import com.sleeppulse.app.data.model.NightlySummary
 import com.sleeppulse.app.data.model.SleepStage
 import com.sleeppulse.app.data.model.StageSegment
@@ -23,6 +25,32 @@ class HealthConnectManager(private val context: Context) {
          */
         val REQUIRED_PERMISSIONS: Set<String> =
             setOf(HealthPermission.getWritePermission(SleepSessionRecord::class))
+
+        /** Read access, requested alongside write but checked separately so writes never depend on it. */
+        val READ_PERMISSIONS: Set<String> =
+            setOf(HealthPermission.getReadPermission(SleepSessionRecord::class))
+
+        val REQUESTED_PERMISSIONS: Set<String> = REQUIRED_PERMISSIONS + READ_PERMISSIONS
+
+        /**
+         * Keeps sleep sessions written by other apps (ours are already in Room) and reduces each
+         * to what the app uses. Deep/REM minutes come from the record's stages; a record with no
+         * stages reports 0 for both rather than guessing.
+         */
+        fun fromOtherApps(records: List<SleepSessionRecord>, ownPackage: String): List<ExternalSleepSession> =
+            records
+                .filter { it.metadata.dataOrigin.packageName != ownPackage }
+                .map { r ->
+                    fun minutesOf(type: Int) = r.stages.filter { it.stage == type }
+                        .sumOf { java.time.Duration.between(it.startTime, it.endTime).toMinutes() }.toInt()
+                    ExternalSleepSession(
+                        startMillis = r.startTime.toEpochMilli(),
+                        endMillis = r.endTime.toEpochMilli(),
+                        deepSleepMinutes = minutesOf(SleepSessionRecord.STAGE_TYPE_DEEP),
+                        remSleepMinutes = minutesOf(SleepSessionRecord.STAGE_TYPE_REM),
+                        sourcePackage = r.metadata.dataOrigin.packageName,
+                    )
+                }
 
         /**
          * Builds the record Health Connect stores for a night, or null if there is no positive
@@ -79,6 +107,36 @@ class HealthConnectManager(private val context: Context) {
         return granted.containsAll(REQUIRED_PERMISSIONS)
     }
 
+    suspend fun hasReadPermissions(): Boolean {
+        if (!isAvailable()) return false
+        return healthConnectClient.permissionController.getGrantedPermissions().containsAll(READ_PERMISSIONS)
+    }
+
+    /**
+     * Sleep sessions other apps (a watch, Samsung Health, ...) wrote between [from] and [to].
+     * Returns empty when Health Connect is unavailable or read access isn't granted. Follows
+     * page tokens so a long range isn't silently cut at the first page.
+     */
+    suspend fun readSleepSessions(from: Instant, to: Instant): List<ExternalSleepSession> {
+        if (!hasReadPermissions()) return emptyList()
+        return withContext(Dispatchers.IO) {
+            val records = mutableListOf<SleepSessionRecord>()
+            var pageToken: String? = null
+            do {
+                val response = healthConnectClient.readRecords(
+                    ReadRecordsRequest(
+                        recordType = SleepSessionRecord::class,
+                        timeRangeFilter = TimeRangeFilter.between(from, to),
+                        pageToken = pageToken,
+                    )
+                )
+                records += response.records
+                pageToken = response.pageToken
+            } while (pageToken != null)
+            fromOtherApps(records, context.packageName)
+        }
+    }
+
     suspend fun writeSleepSession(summary: NightlySummary, stages: List<StageSegment> = emptyList()) {
         if (!hasRequiredPermissions()) {
             android.util.Log.w("HealthConnectManager", "Skipping write: Health Connect permission not granted")
@@ -99,3 +157,12 @@ class HealthConnectManager(private val context: Context) {
         }
     }
 }
+
+/** A night recorded by another app, as read back from Health Connect. */
+data class ExternalSleepSession(
+    val startMillis: Long,
+    val endMillis: Long,
+    val deepSleepMinutes: Int,
+    val remSleepMinutes: Int,
+    val sourcePackage: String,
+)

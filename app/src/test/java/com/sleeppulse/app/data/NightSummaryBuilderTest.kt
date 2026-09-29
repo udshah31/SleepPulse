@@ -111,4 +111,15 @@ class NightSummaryBuilderTest {
     fun `segments of fewer than two readings is empty`() {
         assertEquals(emptyList<StageSegment>(), NightSummaryBuilder.segments(listOf(reading(0L, SleepStage.LIGHT))))
     }
+
+    @Test
+    fun `builder never invents tags - tags are user-entered only`() {
+        listOf(SleepStage.AWAKE, SleepStage.DEEP).forEach { stage ->
+            val summary = NightSummaryBuilder.build(
+                listOf(reading(0L, stage), reading(300_000L, stage)),
+                LocalDate.of(2026, 7, 18),
+            )
+            assertEquals(emptyList<String>(), summary.tags)
+        }
+    }
 }
