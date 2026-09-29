@@ -3,6 +3,7 @@ package com.sleeppulse.app.data
 import com.sleeppulse.app.data.model.NightlySummary
 import com.sleeppulse.app.data.model.SensorReading
 import com.sleeppulse.app.data.model.SleepStage
+import com.sleeppulse.app.data.model.StageSegment
 import com.sleeppulse.app.ui.dashboard.SleepScoreCalculator
 import java.time.LocalDate
 
@@ -16,15 +17,17 @@ object NightSummaryBuilder {
         val avgHeartRateBpm = readings.map { it.heartRateBpm }.average().toInt()
         val avgHrvMillis = readings.map { it.hrvMillis }.average()
 
-        var totalMinutes = 0L
-        var deepMinutes = 0L
-        var remMinutes = 0L
+        // Accumulate milliseconds and convert once: readings arrive about once a second, so
+        // truncating each gap to whole minutes would round every gap (and the night) to zero.
+        var totalMs = 0L
+        var deepMs = 0L
+        var remMs = 0L
         for (i in 0 until readings.size - 1) {
-            val deltaMinutes = (readings[i + 1].timestampMillis - readings[i].timestampMillis) / 60_000L
-            totalMinutes += deltaMinutes
+            val deltaMs = readings[i + 1].timestampMillis - readings[i].timestampMillis
+            totalMs += deltaMs
             when (readings[i].sleepStage) {
-                SleepStage.DEEP -> deepMinutes += deltaMinutes
-                SleepStage.REM -> remMinutes += deltaMinutes
+                SleepStage.DEEP -> deepMs += deltaMs
+                SleepStage.REM -> remMs += deltaMs
                 SleepStage.AWAKE, SleepStage.LIGHT -> Unit
             }
         }
@@ -48,10 +51,28 @@ object NightSummaryBuilder {
             sleepScore = score,
             avgHeartRateBpm = avgHeartRateBpm,
             avgHrvMillis = avgHrvMillis,
-            totalSleepMinutes = totalMinutes.toInt(),
-            deepSleepMinutes = deepMinutes.toInt(),
-            remSleepMinutes = remMinutes.toInt(),
+            totalSleepMinutes = (totalMs / 60_000L).toInt(),
+            deepSleepMinutes = (deepMs / 60_000L).toInt(),
+            remSleepMinutes = (remMs / 60_000L).toInt(),
             tags = tags,
         )
+    }
+
+    /** Merges consecutive same-stage readings into segments; each runs to the next reading. */
+    fun segments(readings: List<SensorReading>): List<StageSegment> {
+        val out = mutableListOf<StageSegment>()
+        for (i in 0 until readings.size - 1) {
+            val start = readings[i].timestampMillis
+            val end = readings[i + 1].timestampMillis
+            if (end <= start) continue
+            val stage = readings[i].sleepStage
+            val last = out.lastOrNull()
+            if (last != null && last.stage == stage) {
+                out[out.lastIndex] = last.copy(endMillis = end)
+            } else {
+                out.add(StageSegment(start, end, stage))
+            }
+        }
+        return out
     }
 }

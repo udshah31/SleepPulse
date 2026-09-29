@@ -13,6 +13,9 @@ data class SensorReading(
     val sleepStage: SleepStage,
 )
 
+/** A contiguous run of one [SleepStage] between two timestamps (epoch millis, end exclusive). */
+data class StageSegment(val startMillis: Long, val endMillis: Long, val stage: SleepStage)
+
 /** Connection lifecycle for any [com.sleeppulse.app.data.source.SensorDataSource]. */
 sealed class SensorConnectionState {
     data object Disconnected : SensorConnectionState()

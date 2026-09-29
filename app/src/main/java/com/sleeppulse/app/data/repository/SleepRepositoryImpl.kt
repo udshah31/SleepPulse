@@ -9,6 +9,7 @@ import com.sleeppulse.app.data.local.SleepSessionEntity
 import com.sleeppulse.app.data.model.NightlySummary
 import com.sleeppulse.app.data.model.SensorConnectionState
 import com.sleeppulse.app.data.model.SensorReading
+import com.sleeppulse.app.data.model.StageSegment
 import com.sleeppulse.app.data.source.SensorDataSource
 import com.sleeppulse.app.tracking.HealthConnectManager
 import java.time.LocalDate
@@ -118,10 +119,13 @@ class SleepRepositoryImpl @Inject constructor(
         if (toInsert != null) sessionDao.insertReadings(toInsert)
     }
 
-    override suspend fun recordNightlySummary(summary: NightlySummary) {
+    override suspend fun recordNightlySummary(summary: NightlySummary) =
+        record(summary, emptyList())
+
+    private suspend fun record(summary: NightlySummary, stages: List<StageSegment>) {
         dao.upsert(summary.toEntity())
         dao.trimToLast30Days()
-        healthConnectManager.writeSleepSession(summary)
+        healthConnectManager.writeSleepSession(summary, stages)
     }
 
     override suspend fun updateTags(date: LocalDate, tags: List<String>) {
@@ -158,7 +162,7 @@ class SleepRepositoryImpl @Inject constructor(
             .atZone(java.time.ZoneId.systemDefault())
             .toLocalDate()
         val summary = NightSummaryBuilder.build(readings, date)
-        recordNightlySummary(summary)
+        record(summary, NightSummaryBuilder.segments(readings))
         sessionDao.finalizeAndClear(sessionId)
         return summary
     }

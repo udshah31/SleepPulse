@@ -18,7 +18,10 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 
 class SleepRepositoryImplTest {
 
@@ -383,5 +386,28 @@ class SleepRepositoryImplTest {
         assertEquals(1, results.count { it != null })
         assertEquals(listOf("upsert", "trimToLast30Days"), dao.recordedCalls)
         assertTrue(sessionDao.sessions.single().finalized)
+    }
+
+    @Test
+    fun `finalizing a session hands Health Connect the merged stage segments`() = runTest {
+        val sessionDao = FakeSleepSessionDao()
+        val healthConnect: com.sleeppulse.app.tracking.HealthConnectManager = mock()
+        val repository = SleepRepositoryImpl(FakeSensorDataSource(), FakeNightlySummaryDao(), sessionDao, backgroundScope, healthConnect) { 1_000L }
+
+        repository.connectSensor()
+        val sessionId = sessionDao.sessions.single().sessionId
+        sessionDao.insertReadings(
+            listOf(0L, 1_000L, 2_000L).map {
+                com.sleeppulse.app.data.local.SessionReadingEntity(
+                    sessionId = sessionId, timestampMillis = it, heartRateBpm = 60, hrvMillis = 60.0, sleepStage = SleepStage.LIGHT,
+                )
+            },
+        )
+        repository.disconnectSensor()
+
+        verify(healthConnect).writeSleepSession(
+            any(),
+            argThat { size == 1 && first().startMillis == 0L && first().endMillis == 2_000L },
+        )
     }
 }

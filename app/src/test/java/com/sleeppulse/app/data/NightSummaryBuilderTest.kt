@@ -2,6 +2,7 @@ package com.sleeppulse.app.data
 
 import com.sleeppulse.app.data.model.SensorReading
 import com.sleeppulse.app.data.model.SleepStage
+import com.sleeppulse.app.data.model.StageSegment
 import com.sleeppulse.app.ui.dashboard.SleepScoreCalculator
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -72,5 +73,42 @@ class NightSummaryBuilderTest {
         assertEquals(0, summary.totalSleepMinutes)
         assertEquals(0, summary.deepSleepMinutes)
         assertEquals(0, summary.remSleepMinutes)
+    }
+
+    @Test
+    fun `one-second cadence still yields real minutes, not zero`() {
+        // 2 hours of readings once a second: LIGHT for the first hour, DEEP for the second.
+        val readings = (0..7200).map { sec ->
+            reading(sec * 1_000L, if (sec < 3600) SleepStage.LIGHT else SleepStage.DEEP)
+        }
+
+        val summary = NightSummaryBuilder.build(readings, LocalDate.of(2026, 7, 18))
+
+        assertEquals(120, summary.totalSleepMinutes)
+        assertEquals(60, summary.deepSleepMinutes)
+    }
+
+    @Test
+    fun `segments merge consecutive same-stage readings and run to the next reading`() {
+        val readings = listOf(
+            reading(0L, SleepStage.LIGHT),
+            reading(1_000L, SleepStage.LIGHT),
+            reading(2_000L, SleepStage.DEEP),
+            reading(3_000L, SleepStage.DEEP),
+            reading(4_000L, SleepStage.LIGHT),
+        )
+
+        assertEquals(
+            listOf(
+                StageSegment(0L, 2_000L, SleepStage.LIGHT),
+                StageSegment(2_000L, 4_000L, SleepStage.DEEP),
+            ),
+            NightSummaryBuilder.segments(readings),
+        )
+    }
+
+    @Test
+    fun `segments of fewer than two readings is empty`() {
+        assertEquals(emptyList<StageSegment>(), NightSummaryBuilder.segments(listOf(reading(0L, SleepStage.LIGHT))))
     }
 }
