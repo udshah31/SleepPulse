@@ -3,6 +3,7 @@ package com.sleeppulse.app.tracking
 import android.content.Context
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
+import androidx.health.connect.client.records.HeartRateRecord
 import androidx.health.connect.client.records.SleepSessionRecord
 import androidx.health.connect.client.records.metadata.Metadata
 import androidx.health.connect.client.changes.DeletionChange
@@ -11,12 +12,14 @@ import androidx.health.connect.client.request.ChangesTokenRequest
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
 import com.sleeppulse.app.data.model.NightlySummary
+import com.sleeppulse.app.data.model.SensorReading
 import com.sleeppulse.app.data.model.SleepStage
 import com.sleeppulse.app.data.model.StageSegment
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.Instant
 import java.time.ZoneId
+import kotlin.math.roundToLong
 
 class HealthConnectManager(private val context: Context) {
 
@@ -26,8 +29,11 @@ class HealthConnectManager(private val context: Context) {
          * same set to drive [androidx.health.connect.client.PermissionController]'s request
          * contract, so it's exposed here rather than duplicated.
          */
-        val REQUIRED_PERMISSIONS: Set<String> =
-            setOf(HealthPermission.getWritePermission(SleepSessionRecord::class))
+        private val WRITE_SLEEP = HealthPermission.getWritePermission(SleepSessionRecord::class)
+        private val WRITE_HEART_RATE = HealthPermission.getWritePermission(HeartRateRecord::class)
+
+        /** Every write we ask for. Each write checks only its own permission, so a partial grant still syncs what it can. */
+        val REQUIRED_PERMISSIONS: Set<String> = setOf(WRITE_SLEEP, WRITE_HEART_RATE)
 
         /** Read access, requested alongside write but checked separately so writes never depend on it. */
         val READ_PERMISSIONS: Set<String> =
@@ -89,6 +95,45 @@ class HealthConnectManager(private val context: Context) {
             )
         }
 
+        /**
+         * One heart-rate record for the night, sampled once per minute (the mean of that minute's
+         * readings) — the sensor ticks about once a second, far denser than any consumer of this
+         * data needs. Readings outside Health Connect's accepted 1..300 bpm (sensor dropouts read
+         * as 0) are dropped; one bad sample would otherwise fail the whole insert. Null when
+         * nothing valid remains or the span has no duration.
+         */
+        // ponytail: one record per night — an 8h night is ~480 samples; split into hourly records if sessions ever run far longer
+        fun buildHeartRateRecord(
+            readings: List<SensorReading>,
+            zone: ZoneId = ZoneId.systemDefault(),
+        ): HeartRateRecord? {
+            val valid = readings.filter { it.heartRateBpm in 1..300 }
+            if (valid.size < 2) return null
+            val startMillis = valid.first().timestampMillis
+            val endMillis = valid.last().timestampMillis
+            if (endMillis <= startMillis) return null
+
+            val samples = valid
+                .groupBy { (it.timestampMillis - startMillis) / 60_000L }
+                .toSortedMap()
+                .map { (_, minute) ->
+                    HeartRateRecord.Sample(
+                        time = Instant.ofEpochMilli(minute.first().timestampMillis),
+                        beatsPerMinute = minute.map { it.heartRateBpm }.average().roundToLong(),
+                    )
+                }
+            val start = Instant.ofEpochMilli(startMillis)
+            val end = Instant.ofEpochMilli(endMillis)
+            return HeartRateRecord(
+                startTime = start,
+                startZoneOffset = zone.rules.getOffset(start),
+                endTime = end,
+                endZoneOffset = zone.rules.getOffset(end),
+                samples = samples,
+                metadata = Metadata(clientRecordId = "sleeppulse-hr-$startMillis"),
+            )
+        }
+
         private fun SleepStage.toHcStage() = when (this) {
             SleepStage.AWAKE -> SleepSessionRecord.STAGE_TYPE_AWAKE
             SleepStage.LIGHT -> SleepSessionRecord.STAGE_TYPE_LIGHT
@@ -105,10 +150,11 @@ class HealthConnectManager(private val context: Context) {
         return HealthConnectClient.getSdkStatus(context) == HealthConnectClient.SDK_AVAILABLE
     }
 
-    suspend fun hasRequiredPermissions(): Boolean {
+    suspend fun hasRequiredPermissions(): Boolean = hasPermission(*REQUIRED_PERMISSIONS.toTypedArray())
+
+    private suspend fun hasPermission(vararg permissions: String): Boolean {
         if (!isAvailable()) return false
-        val granted = healthConnectClient.permissionController.getGrantedPermissions()
-        return granted.containsAll(REQUIRED_PERMISSIONS)
+        return healthConnectClient.permissionController.getGrantedPermissions().containsAll(permissions.toList())
     }
 
     suspend fun hasReadPermissions(): Boolean {
@@ -185,7 +231,7 @@ class HealthConnectManager(private val context: Context) {
     }
 
     suspend fun writeSleepSession(summary: NightlySummary, stages: List<StageSegment> = emptyList()) {
-        if (!hasRequiredPermissions()) {
+        if (!hasPermission(WRITE_SLEEP)) {
             android.util.Log.w("HealthConnectManager", "Skipping write: Health Connect permission not granted")
             return
         }
@@ -200,6 +246,21 @@ class HealthConnectManager(private val context: Context) {
                 healthConnectClient.insertRecords(listOf(record))
             } catch (e: Exception) {
                 android.util.Log.e("HealthConnectManager", "Error writing sleep session", e)
+            }
+        }
+    }
+
+    suspend fun writeHeartRate(readings: List<SensorReading>) {
+        if (!hasPermission(WRITE_HEART_RATE)) {
+            android.util.Log.w("HealthConnectManager", "Skipping heart-rate write: permission not granted")
+            return
+        }
+        val record = buildHeartRateRecord(readings) ?: return
+        withContext(Dispatchers.IO) {
+            try {
+                healthConnectClient.insertRecords(listOf(record))
+            } catch (e: Exception) {
+                android.util.Log.e("HealthConnectManager", "Error writing heart rate", e)
             }
         }
     }

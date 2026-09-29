@@ -409,5 +409,6 @@ class SleepRepositoryImplTest {
             any(),
             argThat { size == 1 && first().startMillis == 0L && first().endMillis == 2_000L },
         )
+        verify(healthConnect).writeHeartRate(argThat { map { it.timestampMillis } == listOf(0L, 1_000L, 2_000L) })
     }
 }

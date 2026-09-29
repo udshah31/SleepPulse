@@ -122,10 +122,15 @@ class SleepRepositoryImpl @Inject constructor(
     override suspend fun recordNightlySummary(summary: NightlySummary) =
         record(summary, emptyList())
 
-    private suspend fun record(summary: NightlySummary, stages: List<StageSegment>) {
+    private suspend fun record(
+        summary: NightlySummary,
+        stages: List<StageSegment>,
+        readings: List<SensorReading> = emptyList(),
+    ) {
         dao.upsert(summary.toEntity())
         dao.trimToLast30Days()
         healthConnectManager.writeSleepSession(summary, stages)
+        if (readings.isNotEmpty()) healthConnectManager.writeHeartRate(readings)
     }
 
     override suspend fun updateTags(date: LocalDate, tags: List<String>) {
@@ -162,7 +167,7 @@ class SleepRepositoryImpl @Inject constructor(
             .atZone(java.time.ZoneId.systemDefault())
             .toLocalDate()
         val summary = NightSummaryBuilder.build(readings, date)
-        record(summary, NightSummaryBuilder.segments(readings))
+        record(summary, NightSummaryBuilder.segments(readings), readings)
         sessionDao.finalizeAndClear(sessionId)
         return summary
     }

@@ -4,6 +4,7 @@ import androidx.health.connect.client.records.SleepSessionRecord
 import androidx.health.connect.client.records.metadata.DataOrigin
 import androidx.health.connect.client.records.metadata.Metadata
 import com.sleeppulse.app.data.model.NightlySummary
+import com.sleeppulse.app.data.model.SensorReading
 import com.sleeppulse.app.data.model.SleepStage
 import com.sleeppulse.app.data.model.StageSegment
 import java.time.Instant
@@ -118,5 +119,49 @@ class HealthConnectManagerTest {
         val only = HealthConnectManager.fromOtherApps(listOf(hcRecord("other.app")), "com.sleeppulse.app").single()
         assertEquals(0, only.deepSleepMinutes)
         assertEquals(0, only.remSleepMinutes)
+    }
+
+    private fun hr(offsetMs: Long, bpm: Int) = SensorReading(start + offsetMs, bpm, 50.0, SleepStage.LIGHT)
+
+    @Test
+    fun `heart rate is one sample per minute, the mean of that minute`() {
+        // Minute 0: 60, 62, 64 -> 62. Minute 1: 70, 71 -> 70.5 rounds to 71. Minute 2: 55.
+        val readings = listOf(
+            hr(0, 60), hr(20_000, 62), hr(40_000, 64),
+            hr(60_000, 70), hr(90_000, 71),
+            hr(120_000, 55),
+        )
+
+        val record = HealthConnectManager.buildHeartRateRecord(readings, zone)!!
+
+        assertEquals(listOf(62L, 71L, 55L), record.samples.map { it.beatsPerMinute })
+        assertEquals(Instant.ofEpochMilli(start), record.startTime)
+        assertEquals(Instant.ofEpochMilli(start + 120_000), record.endTime)
+        assertEquals(listOf(start, start + 60_000, start + 120_000), record.samples.map { it.time.toEpochMilli() })
+        assertEquals("sleeppulse-hr-$start", record.metadata.clientRecordId)
+        assertEquals(zone.rules.getOffset(Instant.ofEpochMilli(start)), record.startZoneOffset)
+    }
+
+    @Test
+    fun `sensor dropouts outside 1 to 300 bpm are dropped instead of failing the insert`() {
+        val readings = listOf(hr(0, 0), hr(1_000, 58), hr(61_000, 400), hr(62_000, 60))
+
+        val record = HealthConnectManager.buildHeartRateRecord(readings, zone)!!
+
+        assertEquals(listOf(58L, 60L), record.samples.map { it.beatsPerMinute })
+        assertEquals(Instant.ofEpochMilli(start + 1_000), record.startTime)
+    }
+
+    @Test
+    fun `too few valid readings or no duration gives no heart-rate record`() {
+        assertNull(HealthConnectManager.buildHeartRateRecord(listOf(hr(0, 60)), zone))
+        assertNull(HealthConnectManager.buildHeartRateRecord(listOf(hr(0, 60), hr(0, 61)), zone))
+        assertNull(HealthConnectManager.buildHeartRateRecord(listOf(hr(0, 0), hr(1_000, 0)), zone))
+    }
+
+    @Test
+    fun `required permissions cover both the sleep and heart-rate writes`() {
+        assertEquals(2, HealthConnectManager.REQUIRED_PERMISSIONS.size)
+        assertEquals(true, HealthConnectManager.REQUIRED_PERMISSIONS.any { it.endsWith("WRITE_HEART_RATE") })
     }
 }

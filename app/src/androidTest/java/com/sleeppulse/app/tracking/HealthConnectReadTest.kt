@@ -34,9 +34,9 @@ class HealthConnectReadTest {
         val start = Instant.now().minusSeconds(10 * 3600)
         val end = start.plusSeconds(7 * 3600)
         val id = "sleeppulse-readtest-${start.toEpochMilli()}"
-        client.insertRecords(
+        val insertedId = client.insertRecords(
             listOf(SleepSessionRecord(start, null, end, null, metadata = Metadata(clientRecordId = id)))
-        )
+        ).recordIdsList.single()
 
         val raw = client.readRecords(
             ReadRecordsRequest(SleepSessionRecord::class, TimeRangeFilter.between(start.minusSeconds(60), end.plusSeconds(60)))
@@ -45,6 +45,9 @@ class HealthConnectReadTest {
 
         val external = manager.readSleepSessions(start.minusSeconds(60), end.plusSeconds(60))
         assertTrue("own record leaked into readSleepSessions", external.none { it.startMillis == start.toEpochMilli() })
+
+        // Don't leave a fake 7h night in the device's Health Connect data.
+        client.deleteRecords(SleepSessionRecord::class, listOf(insertedId), emptyList())
     }
 
     @Test
