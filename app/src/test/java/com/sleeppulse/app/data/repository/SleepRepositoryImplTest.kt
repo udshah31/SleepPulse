@@ -411,4 +411,32 @@ class SleepRepositoryImplTest {
         )
         verify(healthConnect).writeHeartRate(argThat { map { it.timestampMillis } == listOf(0L, 1_000L, 2_000L) })
     }
+
+    @Test
+    fun `a second session on the same date keeps the tags the user gave that night`() = runTest {
+        val dao = FakeNightlySummaryDao()
+        val repository = SleepRepositoryImpl(FakeSensorDataSource(), dao, FakeSleepSessionDao(), backgroundScope, mock()) { 0L }
+        val date = LocalDate.of(2026, 9, 29)
+
+        repository.recordNightlySummary(summary(date, score = 61))
+        repository.updateTags(date, listOf("Caffeine", "Stress"))
+        repository.recordNightlySummary(summary(date, score = 63)) // e.g. a second, later session
+
+        val stored = dao.entitiesFlow.value.single()
+        assertEquals(63, stored.sleepScore)
+        assertEquals(listOf("Caffeine", "Stress"), stored.tags)
+    }
+
+    @Test
+    fun `tags carried by a new summary are merged with existing ones without duplicates`() = runTest {
+        val dao = FakeNightlySummaryDao()
+        val repository = SleepRepositoryImpl(FakeSensorDataSource(), dao, FakeSleepSessionDao(), backgroundScope, mock()) { 0L }
+        val date = LocalDate.of(2026, 9, 29)
+
+        repository.recordNightlySummary(summary(date, score = 61))
+        repository.updateTags(date, listOf("Caffeine"))
+        repository.recordNightlySummary(summary(date, score = 62).copy(tags = listOf("Caffeine", "Nap")))
+
+        assertEquals(listOf("Caffeine", "Nap"), dao.entitiesFlow.value.single().tags)
+    }
 }

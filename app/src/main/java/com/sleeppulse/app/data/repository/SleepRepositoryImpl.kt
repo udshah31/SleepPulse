@@ -127,7 +127,12 @@ class SleepRepositoryImpl @Inject constructor(
         stages: List<StageSegment>,
         readings: List<SensorReading> = emptyList(),
     ) {
-        dao.upsert(summary.toEntity())
+        // A second session on the same date replaces that night's row (upsert keyed by date), and
+        // freshly built summaries carry no tags — so keep the tags the user already gave this night.
+        // ponytail: read-then-write isn't atomic; a tag edit landing in between could be lost. Move
+        // into a @Transaction DAO method if that ever matters.
+        val existingTags = dao.getByDate(summary.date.toEpochDay())?.tags.orEmpty()
+        dao.upsert(summary.copy(tags = (existingTags + summary.tags).distinct()).toEntity())
         dao.trimToLast30Days()
         healthConnectManager.writeSleepSession(summary, stages)
         if (readings.isNotEmpty()) healthConnectManager.writeHeartRate(readings)

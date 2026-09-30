@@ -17,6 +17,9 @@ class FakeNightlySummaryDao : NightlySummaryDao {
         entitiesFlow.value = (withoutExisting + summary).sortedByDescending { it.dateEpochDay }
     }
 
+    override suspend fun getByDate(dateEpochDay: Long): NightlySummaryEntity? =
+        entitiesFlow.value.find { it.dateEpochDay == dateEpochDay }
+
     override suspend fun trimToLast30Days() {
         recordedCalls.add("trimToLast30Days")
         entitiesFlow.value = entitiesFlow.value

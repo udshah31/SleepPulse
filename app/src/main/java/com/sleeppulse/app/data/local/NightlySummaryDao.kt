@@ -14,6 +14,9 @@ interface NightlySummaryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(summary: NightlySummaryEntity)
     
+    @Query("SELECT * FROM nightly_summary WHERE dateEpochDay = :dateEpochDay")
+    suspend fun getByDate(dateEpochDay: Long): NightlySummaryEntity?
+
     @Query("UPDATE nightly_summary SET tags = :tags WHERE dateEpochDay = :dateEpochDay")
     suspend fun updateTags(dateEpochDay: Long, tags: List<String>)
 
