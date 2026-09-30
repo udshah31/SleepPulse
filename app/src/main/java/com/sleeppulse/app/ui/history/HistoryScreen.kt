@@ -18,9 +18,6 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.SuggestionChip
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -191,20 +188,7 @@ private fun NightRow(night: NightWithTrend) {
                 modifier = Modifier.padding(top = 10.dp),
             )
 
-            if (night.summary.tags.isNotEmpty()) {
-                @OptIn(ExperimentalLayoutApi::class)
-                FlowRow(
-                    modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    night.summary.tags.forEach { tag ->
-                        SuggestionChip(
-                            onClick = { },
-                            label = { Text(text = tag, style = MaterialTheme.typography.labelSmall) }
-                        )
-                    }
-                }
-            }
+            NightTags(night.summary)
 
             Spacer(modifier = Modifier.height(12.dp))
             SleepChart()
