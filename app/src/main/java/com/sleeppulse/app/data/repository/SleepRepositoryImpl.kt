@@ -29,6 +29,18 @@ import kotlinx.coroutines.sync.withLock
 private const val FLUSH_BATCH_SIZE = 20
 private const val FLUSH_INTERVAL_MILLIS = 30_000L
 
+/**
+ * One night is stored per date, so a second session that day (a nap, a short test) must not
+ * overwrite a real night: the longer session's stats win, the newer one on a tie. Tags from
+ * both are kept — built summaries carry none, and the user's tags belong to the date.
+ */
+// ponytail: read-then-write isn't atomic; a tag edit landing in between could be lost. Move into
+// a @Transaction DAO method if that ever matters.
+internal fun nightToKeep(existing: NightlySummary?, new: NightlySummary): NightlySummary {
+    val winner = if (existing != null && existing.totalSleepMinutes > new.totalSleepMinutes) existing else new
+    return winner.copy(tags = (existing?.tags.orEmpty() + new.tags).distinct())
+}
+
 class SleepRepositoryImpl @Inject constructor(
     private val sensorDataSource: SensorDataSource,
     private val dao: NightlySummaryDao,
@@ -127,12 +139,7 @@ class SleepRepositoryImpl @Inject constructor(
         stages: List<StageSegment>,
         readings: List<SensorReading> = emptyList(),
     ) {
-        // A second session on the same date replaces that night's row (upsert keyed by date), and
-        // freshly built summaries carry no tags — so keep the tags the user already gave this night.
-        // ponytail: read-then-write isn't atomic; a tag edit landing in between could be lost. Move
-        // into a @Transaction DAO method if that ever matters.
-        val existingTags = dao.getByDate(summary.date.toEpochDay())?.tags.orEmpty()
-        dao.upsert(summary.copy(tags = (existingTags + summary.tags).distinct()).toEntity())
+        dao.upsert(nightToKeep(dao.getByDate(summary.date.toEpochDay())?.toDomain(), summary).toEntity())
         dao.trimToLast30Days()
         healthConnectManager.writeSleepSession(summary, stages)
         if (readings.isNotEmpty()) healthConnectManager.writeHeartRate(readings)

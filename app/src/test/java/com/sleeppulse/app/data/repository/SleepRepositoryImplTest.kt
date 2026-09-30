@@ -439,4 +439,43 @@ class SleepRepositoryImplTest {
 
         assertEquals(listOf("Caffeine", "Nap"), dao.entitiesFlow.value.single().tags)
     }
+
+    @Test
+    fun `a shorter same-day session does not overwrite the night`() = runTest {
+        val dao = FakeNightlySummaryDao()
+        val repository = SleepRepositoryImpl(FakeSensorDataSource(), dao, FakeSleepSessionDao(), backgroundScope, mock()) { 0L }
+        val date = LocalDate.of(2026, 9, 29)
+
+        repository.recordNightlySummary(summary(date, score = 80)) // 410 min
+        repository.updateTags(date, listOf("Caffeine"))
+        repository.recordNightlySummary(summary(date, score = 55).copy(totalSleepMinutes = 20)) // a nap
+
+        val stored = dao.entitiesFlow.value.single()
+        assertEquals(80, stored.sleepScore)
+        assertEquals(410, stored.totalSleepMinutes)
+        assertEquals(listOf("Caffeine"), stored.tags)
+    }
+
+    @Test
+    fun `a longer same-day session replaces the night, keeping its tags`() = runTest {
+        val dao = FakeNightlySummaryDao()
+        val repository = SleepRepositoryImpl(FakeSensorDataSource(), dao, FakeSleepSessionDao(), backgroundScope, mock()) { 0L }
+        val date = LocalDate.of(2026, 9, 29)
+
+        repository.recordNightlySummary(summary(date, score = 55).copy(totalSleepMinutes = 20))
+        repository.updateTags(date, listOf("Nap"))
+        repository.recordNightlySummary(summary(date, score = 80)) // 410 min
+
+        val stored = dao.entitiesFlow.value.single()
+        assertEquals(80, stored.sleepScore)
+        assertEquals(410, stored.totalSleepMinutes)
+        assertEquals(listOf("Nap"), stored.tags)
+    }
+
+    @Test
+    fun `on an equal length the newer session wins`() {
+        val date = LocalDate.of(2026, 9, 29)
+        val kept = nightToKeep(summary(date, score = 60), summary(date, score = 70))
+        assertEquals(70, kept.sleepScore)
+    }
 }
