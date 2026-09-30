@@ -105,6 +105,7 @@ fun HistoryScreen(
                         NightRow(night)
                     }
                 }
+                item(key = "other-apps") { OtherAppsSleepSection() }
             }
             HistoryTab.TRENDS -> {
                 item {
