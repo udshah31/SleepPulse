@@ -92,7 +92,10 @@ object DatabaseModule {
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): SleepPulseDatabase =
         Room.databaseBuilder(context, SleepPulseDatabase::class.java, "sleeppulse.db")
-            .fallbackToDestructiveMigration()
+            .addMigrations(*SleepPulseDatabase.MIGRATIONS)
+            // Only the pre-export versions may be wiped; from FIRST_EXPORTED_VERSION on, a
+            // missing migration fails loudly instead of silently deleting users' history.
+            .fallbackToDestructiveMigrationFrom(*SleepPulseDatabase.UNMIGRATABLE_VERSIONS)
             .build()
 
     @Provides

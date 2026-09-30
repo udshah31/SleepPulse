@@ -66,7 +66,7 @@ chosen address to `BleSensorDataSource` via `BleTargetDeviceSink`. Nothing downs
 `SleepRepository` sits between the data source/Room and the ViewModels; ViewModels never
 touch Room or `SensorDataSource` directly.
 
-- `data/local/` — Room (DB version 4, destructive migration): `NightlySummaryEntity` (last
+- `data/local/` — Room (DB version 4, schemas exported to `app/schemas/`, explicit migrations from 4 on): `NightlySummaryEntity` (last
   30 nights, with user tags) plus `SleepSessionEntity`/`SessionReadingEntity`, which persist
   an in-progress session so a night survives process death.
 - On disconnect the summary is built from the persisted readings (`NightSummaryBuilder`);
@@ -122,7 +122,6 @@ in CI.
 
 - HRV and sleep stage from a real BLE strap are placeholders (see above); stage prediction
   is a simple HR/HRV/movement threshold heuristic.
-- Room uses destructive migration and doesn't export schemas — a version bump wipes data.
 - Single `:app` module (no `:data`/`:domain` split); the `data/`, `ui/`, `di/` packages
   mirror where the boundaries would go.
 - The `:wear` module is a minimal shell.
