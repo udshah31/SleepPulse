@@ -84,7 +84,7 @@ class OtherAppsSleepViewModel @Inject constructor(
         val pm = context.packageManager
         pm.getApplicationLabel(pm.getApplicationInfo(packageName, 0)).toString()
     } catch (e: PackageManager.NameNotFoundException) {
-        packageName // not visible to us without a <queries> entry
+        packageName // uninstalled, or not a Health Connect client (see <queries> in the manifest)
     }
 }
 

@@ -13,6 +13,19 @@
     <uses-permission android:name="android.permission.health.READ_SLEEP" />
     <uses-permission android:name="android.permission.health.WRITE_HEART_RATE" />
 
+    <!-- Lets us show other Health Connect apps by name (History's "From other apps") instead of
+         their package. Android 11+ hides other apps unless queried; every Health Connect client
+         must declare one of these intents, so this covers them all without QUERY_ALL_PACKAGES. -->
+    <queries>
+        <intent>
+            <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+            <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
+        </intent>
+    </queries>
+
     <application
         android:name=".SleepPulseApp"
         android:allowBackup="true"
