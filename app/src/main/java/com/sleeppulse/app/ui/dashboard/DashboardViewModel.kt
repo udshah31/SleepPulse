@@ -6,14 +6,18 @@ import com.sleeppulse.app.data.model.NightlySummary
 import com.sleeppulse.app.data.model.SensorReading
 import com.sleeppulse.app.data.repository.SleepRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import android.content.Context
 import android.content.Intent
 import com.sleeppulse.app.services.SleepTrackingService
+import com.sleeppulse.app.tracking.HealthConnectManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
@@ -24,10 +28,17 @@ private const val MAX_RECORDED_NIGHTS_DISPLAY = 4
 class DashboardViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val repository: SleepRepository,
+    private val healthConnect: HealthConnectManager,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(DashboardState())
     val state: StateFlow<DashboardState> = _state.asStateFlow()
+
+    // One-shot: the permission prompt needs an ActivityResult launcher, which only the screen
+    // has, so the ViewModel decides *whether* to ask and the screen just launches it.
+    private val _healthConnectPermissionRequests = Channel<Set<String>>(Channel.BUFFERED)
+    val healthConnectPermissionRequests: Flow<Set<String>> = _healthConnectPermissionRequests.receiveAsFlow()
+    private var askedHealthConnect = false
 
     fun onIntent(intent: DashboardIntent) {
         when (intent) {
@@ -36,10 +47,32 @@ class DashboardViewModel @Inject constructor(
             DashboardIntent.BeginWindDown -> _state.update { it.copy(windDownStep = WindDownStep.BREATHE) }
             DashboardIntent.AdvanceWindDownStep -> advanceWindDown()
             DashboardIntent.CancelWindDown -> _state.update { it.copy(windDownStep = null) }
+            is DashboardIntent.HealthConnectPermissionsResult -> onHealthConnectResult(intent.granted)
+        }
+    }
+
+    /** Asks at most once per ViewModel, not every time Home re-enters composition. */
+    private fun requestHealthConnectPermissionsIfNeeded() {
+        if (askedHealthConnect) return
+        askedHealthConnect = true
+        viewModelScope.launch {
+            if (healthConnect.isAvailable() &&
+                !(healthConnect.hasRequiredPermissions() && healthConnect.hasReadPermissions())
+            ) {
+                _healthConnectPermissionRequests.send(HealthConnectManager.REQUESTED_PERMISSIONS)
+            }
+        }
+    }
+
+    private fun onHealthConnectResult(granted: Set<String>) {
+        if (!granted.containsAll(HealthConnectManager.REQUIRED_PERMISSIONS)) {
+            // Nightly summaries just won't sync to Health Connect — no blocking UI.
+            android.util.Log.w("SleepPulse", "Health Connect permission not fully granted")
         }
     }
 
     private fun start() {
+        requestHealthConnectPermissionsIfNeeded()
         viewModelScope.launch {
             repository.connectionState.collect { connection ->
                 _state.update { it.copy(connectionState = connection, isLoading = false) }

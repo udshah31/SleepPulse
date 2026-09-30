@@ -12,6 +12,8 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import com.sleeppulse.app.tracking.HealthConnectManager
+import org.mockito.kotlin.doReturn
 import org.junit.Rule
 import org.junit.Test
 import org.mockito.kotlin.any
@@ -35,7 +37,7 @@ class DashboardViewModelTest {
     fun `Start collects connection state and readings into state`() = runTest {
         val repository = FakeSleepRepository()
         val context: Context = mock()
-        val viewModel = DashboardViewModel(context, repository)
+        val viewModel = DashboardViewModel(context, repository, mock())
 
         viewModel.state.test {
             assertEquals(DashboardState(), awaitItem())
@@ -69,7 +71,7 @@ class DashboardViewModelTest {
     fun `recent readings cap at 40 points`() = runTest {
         val repository = FakeSleepRepository()
         val context: Context = mock()
-        val viewModel = DashboardViewModel(context, repository)
+        val viewModel = DashboardViewModel(context, repository, mock())
 
         viewModel.onIntent(DashboardIntent.Start)
         advanceUntilIdle()
@@ -94,7 +96,7 @@ class DashboardViewModelTest {
     fun `ToggleSensorConnection disconnects when connected`() = runTest {
         val repository = FakeSleepRepository()
         val context: Context = mock()
-        val viewModel = DashboardViewModel(context, repository)
+        val viewModel = DashboardViewModel(context, repository, mock())
         viewModel.onIntent(DashboardIntent.Start)
         advanceUntilIdle()
         repository.connectionStateFlow.value = SensorConnectionState.Connected("fake-device")
@@ -110,7 +112,7 @@ class DashboardViewModelTest {
     fun `ToggleSensorConnection connects when not connected`() = runTest {
         val repository = FakeSleepRepository()
         val context: Context = mock()
-        val viewModel = DashboardViewModel(context, repository)
+        val viewModel = DashboardViewModel(context, repository, mock())
 
         // No Start() call: state stays at its default (Disconnected), so the toggle
         // must treat the sensor as not connected and call connectSensor().
@@ -124,7 +126,7 @@ class DashboardViewModelTest {
     fun `wind-down flow advances through all steps and stops at DONE`() = runTest {
         val repository = FakeSleepRepository()
         val context: Context = mock()
-        val viewModel = DashboardViewModel(context, repository)
+        val viewModel = DashboardViewModel(context, repository, mock())
 
         viewModel.onIntent(DashboardIntent.BeginWindDown)
         assertEquals(WindDownStep.BREATHE, viewModel.state.value.windDownStep)
@@ -146,7 +148,7 @@ class DashboardViewModelTest {
     fun `CancelWindDown clears the step`() = runTest {
         val repository = FakeSleepRepository()
         val context: Context = mock()
-        val viewModel = DashboardViewModel(context, repository)
+        val viewModel = DashboardViewModel(context, repository, mock())
 
         viewModel.onIntent(DashboardIntent.BeginWindDown)
         viewModel.onIntent(DashboardIntent.AdvanceWindDownStep)
@@ -160,7 +162,7 @@ class DashboardViewModelTest {
     fun `recoveryResult is null until enough baseline nights are recorded`() = runTest {
         val repository = FakeSleepRepository()
         val context: Context = mock()
-        val viewModel = DashboardViewModel(context, repository)
+        val viewModel = DashboardViewModel(context, repository, mock())
 
         viewModel.onIntent(DashboardIntent.Start)
         advanceUntilIdle()
@@ -190,7 +192,7 @@ class DashboardViewModelTest {
     fun `recoveryResult is computed once enough baseline nights exist`() = runTest {
         val repository = FakeSleepRepository()
         val context: Context = mock()
-        val viewModel = DashboardViewModel(context, repository)
+        val viewModel = DashboardViewModel(context, repository, mock())
 
         viewModel.onIntent(DashboardIntent.Start)
         advanceUntilIdle()
@@ -219,7 +221,7 @@ class DashboardViewModelTest {
     fun `metricBaseline is null until recentNights emits`() = runTest {
         val repository = FakeSleepRepository()
         val context: Context = mock()
-        val viewModel = DashboardViewModel(context, repository)
+        val viewModel = DashboardViewModel(context, repository, mock())
 
         assertNull(viewModel.state.value.metricBaseline)
 
@@ -233,7 +235,7 @@ class DashboardViewModelTest {
     fun `metricBaseline is computed from recentNights once enough nights are recorded`() = runTest {
         val repository = FakeSleepRepository()
         val context: Context = mock()
-        val viewModel = DashboardViewModel(context, repository)
+        val viewModel = DashboardViewModel(context, repository, mock())
 
         viewModel.onIntent(DashboardIntent.Start)
         advanceUntilIdle()
@@ -253,5 +255,46 @@ class DashboardViewModelTest {
 
         val baseline = viewModel.state.value.metricBaseline
         assertEquals(50.0, baseline?.avgHrvMillis ?: 0.0, 0.0001)
+    }
+
+    private fun healthConnect(available: Boolean, write: Boolean, read: Boolean) = mock<HealthConnectManager> {
+        on { isAvailable() } doReturn available
+        onBlocking { hasRequiredPermissions() } doReturn write
+        onBlocking { hasReadPermissions() } doReturn read
+    }
+
+    @Test
+    fun `asks for Health Connect permissions once, even if Start runs again`() = runTest {
+        val viewModel = DashboardViewModel(mock(), FakeSleepRepository(), healthConnect(available = true, write = true, read = false))
+
+        viewModel.healthConnectPermissionRequests.test {
+            viewModel.onIntent(DashboardIntent.Start)
+            assertEquals(HealthConnectManager.REQUESTED_PERMISSIONS, awaitItem())
+            viewModel.onIntent(DashboardIntent.Start) // e.g. Home re-entering composition
+            advanceUntilIdle()
+            expectNoEvents()
+        }
+    }
+
+    @Test
+    fun `does not ask when everything is already granted`() = runTest {
+        val viewModel = DashboardViewModel(mock(), FakeSleepRepository(), healthConnect(available = true, write = true, read = true))
+
+        viewModel.healthConnectPermissionRequests.test {
+            viewModel.onIntent(DashboardIntent.Start)
+            advanceUntilIdle()
+            expectNoEvents()
+        }
+    }
+
+    @Test
+    fun `does not ask when Health Connect isn't available on the device`() = runTest {
+        val viewModel = DashboardViewModel(mock(), FakeSleepRepository(), healthConnect(available = false, write = false, read = false))
+
+        viewModel.healthConnectPermissionRequests.test {
+            viewModel.onIntent(DashboardIntent.Start)
+            advanceUntilIdle()
+            expectNoEvents()
+        }
     }
 }

@@ -10,6 +10,7 @@ sealed class DashboardIntent {
     data object BeginWindDown : DashboardIntent()
     data object AdvanceWindDownStep : DashboardIntent()
     data object CancelWindDown : DashboardIntent()
+    data class HealthConnectPermissionsResult(val granted: Set<String>) : DashboardIntent()
 }
 
 enum class WindDownStep { BREATHE, DIM_LIGHTS, SET_ALARM, DONE }
