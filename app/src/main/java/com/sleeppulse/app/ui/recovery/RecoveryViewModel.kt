@@ -54,7 +54,7 @@ class RecoveryViewModel @Inject constructor(
                 } else null
                 
                 val debt = SleepDebtCalculator.calculate(nights)
-                val consistencyScore = SleepConsistencyCalculator.calculateScore(nights) ?: 0
+                val consistencyScore = SleepConsistencyCalculator.calculateScore(nights)
                 val hrvTrend = HrvTrendCalculator.analyze(nights)
                 val rhrTrend = RestingHeartRateTrendCalculator.analyze(nights)
                 val variability = SleepVariabilityCalculator.analyze(nights)
@@ -67,9 +67,9 @@ class RecoveryViewModel @Inject constructor(
                 )
 
                 val advice = generateAdvice(
-                    debtMinutes = debt?.deficitMinutes ?: 0,
+                    debtMinutes = debt?.deficitMinutes,
                     consistency = consistencyScore,
-                    recoveryScore = recoveryResult?.score ?: 0,
+                    recoveryScore = recoveryResult?.score,
                     hrvTrend = hrvTrend,
                     rhrTrend = rhrTrend,
                     variability = variability,
@@ -81,7 +81,7 @@ class RecoveryViewModel @Inject constructor(
                         isLoading = false,
                         recoveryResult = recoveryResult,
                         sleepDebt = debt,
-                        consistencyScore = consistencyScore,
+                        consistencyScore = consistencyScore ?: 0,
                         latestNight = latest,
                         personalizedAdvice = advice,
                         recordedNightsCount = nights.size.coerceAtMost(MAX_RECORDED_NIGHTS_DISPLAY),
@@ -96,29 +96,36 @@ class RecoveryViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Each line speaks only to a signal we actually have: an unknown value (not enough nights
+     * yet) says nothing rather than defaulting to 0, which would read as "low debt" and
+     * "irregular schedule" on an empty history. Null when there's nothing to say yet.
+     */
     private fun generateAdvice(
-        debtMinutes: Int,
-        consistency: Int,
-        recoveryScore: Int,
+        debtMinutes: Int?,
+        consistency: Int?,
+        recoveryScore: Int?,
         hrvTrend: HrvTrendResult?,
         rhrTrend: RestingHeartRateTrendResult?,
         variability: SleepVariabilityResult?,
         tagCorrelations: List<TagCorrelation>,
-    ): String {
+    ): String? {
         val parts = mutableListOf<String>()
 
-        if (debtMinutes > 60) {
+        if (debtMinutes != null && debtMinutes > 60) {
             val hours = debtMinutes / 60
             parts.add("You have $hours hour(s) of sleep debt. Target an extra 30m of sleep tonight.")
-        } else {
+        } else if (debtMinutes != null) {
             parts.add("Your sleep debt is low. Keep up the good work!")
         }
 
-        if (consistency < 70) {
+        if (consistency != null && consistency < 70) {
             parts.add("Your sleep schedule is irregular. Try going to bed at the same time tonight.")
         }
 
-        if (recoveryScore > 80) {
+        if (recoveryScore == null) {
+            // no baseline yet
+        } else if (recoveryScore > 80) {
             parts.add("You are well recovered, a great day for a workout.")
         } else if (recoveryScore in 1..50) {
             parts.add("Your body is stressed. Prioritize rest today.")
@@ -140,6 +147,6 @@ class RecoveryViewModel @Inject constructor(
             parts.add("Nights tagged \"${worst.tag}\" average ${worst.avgScoreWithTag.toInt()} vs ${worst.avgScoreWithoutTag.toInt()} otherwise — worth cutting back.")
         }
 
-        return parts.joinToString(" ")
+        return parts.joinToString(" ").ifEmpty { null }
     }
 }

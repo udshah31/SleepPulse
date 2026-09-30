@@ -99,6 +99,34 @@ class RecoveryViewModelTest {
     }
 
     @Test
+    fun `no nights gives no advice instead of low-debt and irregular-schedule claims`() = runTest {
+        val viewModel = RecoveryViewModel(FakeSleepRepository())
+
+        viewModel.state.test {
+            awaitItem()
+            viewModel.onIntent(RecoveryIntent.Load)
+
+            assertEquals(null, awaitItem().personalizedAdvice)
+        }
+    }
+
+    @Test
+    fun `one night speaks to sleep debt but not to schedule consistency`() = runTest {
+        val repository = FakeSleepRepository()
+        repository.nightsFlow.value = listOf(night(LocalDate.of(2026, 7, 21)))
+        val viewModel = RecoveryViewModel(repository)
+
+        viewModel.state.test {
+            awaitItem()
+            viewModel.onIntent(RecoveryIntent.Load)
+            val advice = awaitItem().personalizedAdvice
+
+            assertEquals(true, advice?.contains("sleep debt"))
+            assertEquals(false, advice?.contains("irregular"))
+        }
+    }
+
+    @Test
     fun `tag correlations surface once a tag has enough occurrences`() = runTest {
         val repository = FakeSleepRepository()
         repository.nightsFlow.value = listOf(
