@@ -12,11 +12,11 @@ import com.sleeppulse.app.data.model.SensorConnectionState
 import com.sleeppulse.app.data.model.SensorReading
 import com.sleeppulse.app.data.model.SleepStage
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.callbackFlow
 import java.util.UUID
 import javax.inject.Inject
 import com.sleeppulse.app.tracking.SleepStagePredictor
@@ -44,6 +44,11 @@ class BleSensorDataSource @Inject constructor(
     private val _connectionState =
         MutableStateFlow<SensorConnectionState>(SensorConnectionState.Disconnected)
     override val connectionState: Flow<SensorConnectionState> = _connectionState.asStateFlow()
+
+    // GATT callbacks are registered when connectGatt() is called, so this must be a stable
+    // callback rather than one created later by a readings() collector. A shared flow also lets
+    // the repository and dashboard observe the same peripheral without replacing the callback.
+    private val _readings = MutableSharedFlow<SensorReading>(extraBufferCapacity = 16)
 
     private var gatt: BluetoothGatt? = null
     private var targetDeviceAddress: String? = null
@@ -91,73 +96,62 @@ class BleSensorDataSource @Inject constructor(
      * Live readings from the connected peripheral. Only heart rate is available from the
      * standard Heart Rate Service; HRV and sleep stage would come from a vendor-specific
      * characteristic on real hardware and default to neutral placeholders here.
+     *
+     * This is shared because the GATT callback belongs to the connection, not to an individual
+     * collector. Creating a callback inside this method would allow a later collector to replace
+     * the callback that was registered with connectGatt().
      */
-    override fun readings(): Flow<SensorReading> = callbackFlow {
-        val callback = object : BluetoothGattCallback() {
-            @SuppressLint("MissingPermission")
-            override fun onConnectionStateChange(g: BluetoothGatt, status: Int, newState: Int) {
-                when (newState) {
-                    BluetoothProfile.STATE_CONNECTED -> {
-                        _connectionState.value =
-                            SensorConnectionState.Connected(deviceName = g.device.name ?: g.device.address)
-                        g.discoverServices()
-                    }
-                    BluetoothProfile.STATE_DISCONNECTED -> {
-                        _connectionState.value = SensorConnectionState.Disconnected
-                    }
+    override fun readings(): Flow<SensorReading> = _readings.asSharedFlow()
+
+    private val gattCallback: BluetoothGattCallback = object : BluetoothGattCallback() {
+        @SuppressLint("MissingPermission")
+        override fun onConnectionStateChange(g: BluetoothGatt, status: Int, newState: Int) {
+            when (newState) {
+                BluetoothProfile.STATE_CONNECTED -> {
+                    _connectionState.value =
+                        SensorConnectionState.Connected(deviceName = g.device.name ?: g.device.address)
+                    g.discoverServices()
+                }
+                BluetoothProfile.STATE_DISCONNECTED -> {
+                    _connectionState.value = SensorConnectionState.Disconnected
                 }
             }
+        }
 
-            @SuppressLint("MissingPermission")
-            override fun onServicesDiscovered(g: BluetoothGatt, status: Int) {
-                val hrCharacteristic = g.getService(Ble.HEART_RATE_SERVICE)
-                    ?.getCharacteristic(Ble.HEART_RATE_MEASUREMENT)
-                    ?: return
-                g.setCharacteristicNotification(hrCharacteristic, true)
-                hrCharacteristic.getDescriptor(Ble.CLIENT_CONFIG_DESCRIPTOR)?.let { descriptor ->
-                    descriptor.value = BluetoothGattDescriptorEnableNotification
-                    g.writeDescriptor(descriptor)
-                }
+        @SuppressLint("MissingPermission")
+        override fun onServicesDiscovered(g: BluetoothGatt, status: Int) {
+            val hrCharacteristic = g.getService(Ble.HEART_RATE_SERVICE)
+                ?.getCharacteristic(Ble.HEART_RATE_MEASUREMENT)
+                ?: return
+            g.setCharacteristicNotification(hrCharacteristic, true)
+            hrCharacteristic.getDescriptor(Ble.CLIENT_CONFIG_DESCRIPTOR)?.let { descriptor ->
+                descriptor.value = BluetoothGattDescriptorEnableNotification
+                g.writeDescriptor(descriptor)
             }
+        }
 
-            override fun onCharacteristicChanged(
-                g: BluetoothGatt,
-                characteristic: BluetoothGattCharacteristic,
-            ) {
-                val bpm = parseHeartRate(characteristic) ?: return
-                
-                val predictedStage = predictor.predict(
+        override fun onCharacteristicChanged(
+            g: BluetoothGatt,
+            characteristic: BluetoothGattCharacteristic,
+        ) {
+            val bpm = parseHeartRate(characteristic) ?: return
+
+            val predictedStage = predictor.predict(
+                heartRateBpm = bpm,
+                hrvMillis = 50, // mock HRV for BLE source
+                movement = 0.5f // mock movement
+            )
+
+            _readings.tryEmit(
+                SensorReading(
+                    timestampMillis = System.currentTimeMillis(),
                     heartRateBpm = bpm,
-                    hrvMillis = 50, // mock HRV for BLE source
-                    movement = 0.5f // mock movement
+                    hrvMillis = 50.0, // not available from the standard HR characteristic
+                    sleepStage = predictedStage,
                 )
-
-                trySend(
-                    SensorReading(
-                        timestampMillis = System.currentTimeMillis(),
-                        heartRateBpm = bpm,
-                        hrvMillis = 50.0, // not available from the standard HR characteristic
-                        sleepStage = predictedStage,
-                    )
-                )
-            }
-        }
-
-        gattCallbackRef = callback
-
-        awaitClose {
-            disconnectGattQuietly()
+            )
         }
     }
-
-    @SuppressLint("MissingPermission")
-    private fun disconnectGattQuietly() {
-        gatt?.disconnect()
-    }
-
-    private var gattCallbackRef: BluetoothGattCallback? = null
-    private val gattCallback: BluetoothGattCallback
-        get() = gattCallbackRef ?: object : BluetoothGattCallback() {}
 
     private fun parseHeartRate(characteristic: BluetoothGattCharacteristic): Int? {
         val flags = characteristic.value?.getOrNull(0)?.toInt() ?: return null

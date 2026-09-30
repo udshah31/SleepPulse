@@ -8,6 +8,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -21,6 +22,8 @@ class HistoryViewModel @Inject constructor(
     private val _state = MutableStateFlow(HistoryState())
     val state: StateFlow<HistoryState> = _state.asStateFlow()
 
+    private var nightsJob: Job? = null
+
     fun onIntent(intent: HistoryIntent) {
         when (intent) {
             HistoryIntent.Load -> load()
@@ -32,7 +35,9 @@ class HistoryViewModel @Inject constructor(
     }
 
     private fun load() {
-        viewModelScope.launch {
+        if (nightsJob?.isActive == true) return
+
+        nightsJob = viewModelScope.launch {
             repository.recentNights().collect { nights ->
                 val nightsWithTrend = nights.mapIndexed { index, summary ->
                     val previous = nights.getOrNull(index + 1)

@@ -12,6 +12,10 @@ class FakeSleepRepository : SleepRepository {
     val connectionStateFlow = MutableStateFlow<SensorConnectionState>(SensorConnectionState.Disconnected)
     val readingsFlow = MutableSharedFlow<SensorReading>(extraBufferCapacity = 10)
     val nightsFlow = MutableStateFlow<List<NightlySummary>>(emptyList())
+    var liveReadingsCallCount = 0
+        private set
+    var recentNightsCallCount = 0
+        private set
 
     var connectSensorCallCount = 0
         private set
@@ -22,9 +26,15 @@ class FakeSleepRepository : SleepRepository {
 
     override val connectionState: Flow<SensorConnectionState> = connectionStateFlow
 
-    override fun liveReadings(): Flow<SensorReading> = readingsFlow
+    override fun liveReadings(): Flow<SensorReading> {
+        liveReadingsCallCount++
+        return readingsFlow
+    }
 
-    override fun recentNights(): Flow<List<NightlySummary>> = nightsFlow
+    override fun recentNights(): Flow<List<NightlySummary>> {
+        recentNightsCallCount++
+        return nightsFlow
+    }
 
     override suspend fun connectSensor() {
         connectSensorCallCount++

@@ -14,7 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.sleeppulse.app.ui.theme.AlertCoral
 import com.sleeppulse.app.ui.theme.CautionAmber
-import com.sleeppulse.app.ui.theme.ClinicalTeal
+import com.sleeppulse.app.ui.theme.RecoveryGreen
 
 @Composable
 fun SleepConsistencyBadge(
@@ -24,7 +24,7 @@ fun SleepConsistencyBadge(
     if (score == null) return
 
     val (color, text) = when {
-        score >= 90 -> ClinicalTeal to "Excellent"
+        score >= 90 -> RecoveryGreen to "Excellent"
         score >= 70 -> CautionAmber to "Good"
         else -> AlertCoral to "Needs improvement"
     }

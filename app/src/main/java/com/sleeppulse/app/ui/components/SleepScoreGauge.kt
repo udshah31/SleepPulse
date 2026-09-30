@@ -22,6 +22,8 @@ import androidx.compose.ui.unit.sp
 import com.sleeppulse.app.ui.theme.AlertCoral
 import com.sleeppulse.app.ui.theme.CautionAmber
 import com.sleeppulse.app.ui.theme.RecoveryGreen
+import com.sleeppulse.app.ui.theme.SleepIndigo
+import com.sleeppulse.app.ui.theme.SleepIndigoDark
 
 /**
  * Animated circular sleep-score gauge. The arc sweeps from 0 to [score] out of 100 and the
@@ -47,11 +49,15 @@ fun SleepScoreGauge(
     Box(modifier = modifier.size(size), contentAlignment = Alignment.Center) {
         Canvas(modifier = Modifier.size(size)) {
             val strokeWidth = size.toPx() * 0.09f
+            drawCircle(
+                color = SleepIndigo.copy(alpha = 0.08f),
+                radius = this.size.minDimension * 0.42f,
+            )
             val arcSize = Size(this.size.width - strokeWidth, this.size.height - strokeWidth)
             val topLeft = androidx.compose.ui.geometry.Offset(strokeWidth / 2, strokeWidth / 2)
 
             drawArc(
-                color = color.copy(alpha = 0.15f),
+                color = SleepIndigoDark.copy(alpha = 0.42f),
                 startAngle = 135f,
                 sweepAngle = 270f,
                 useCenter = false,

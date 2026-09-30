@@ -11,9 +11,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import com.sleeppulse.app.ui.theme.ClinicalTeal
 import com.sleeppulse.app.ui.theme.RecoveryGreen
 import com.sleeppulse.app.ui.theme.SleepIndigo
+import com.sleeppulse.app.ui.theme.SleepIndigoDark
 
 @Composable
 fun SleepStagesBar(
@@ -30,8 +30,8 @@ fun SleepStagesBar(
     val deepWeight = deepMinutes.toFloat() / totalMinutes.toFloat()
     val remWeight = remMinutes.toFloat() / totalMinutes.toFloat()
 
-    val lightColor = SleepIndigo
-    val deepColor = ClinicalTeal
+    val lightColor = SleepIndigoDark.copy(alpha = 0.72f)
+    val deepColor = SleepIndigo
     val remColor = RecoveryGreen
 
     Row(

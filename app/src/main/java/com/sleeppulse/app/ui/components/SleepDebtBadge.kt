@@ -20,7 +20,7 @@ import com.sleeppulse.app.ui.history.SleepDebt
 import com.sleeppulse.app.ui.theme.AlertCoral
 import com.sleeppulse.app.ui.theme.CalmNightTextSecondary
 import com.sleeppulse.app.ui.theme.CautionAmber
-import com.sleeppulse.app.ui.theme.ClinicalTeal
+import com.sleeppulse.app.ui.theme.RecoveryGreen
 
 /**
  * Compact banner shown at the top of the History screen. Displays total sleep deficit
@@ -71,7 +71,7 @@ private fun formatDeficit(minutes: Int): String {
 }
 
 private fun debtColor(level: DebtLevel): Color = when (level) {
-    DebtLevel.CAUGHT_UP -> ClinicalTeal
+    DebtLevel.CAUGHT_UP -> RecoveryGreen
     DebtLevel.MILD -> CautionAmber
     DebtLevel.MODERATE -> CautionAmber
     DebtLevel.SEVERE -> AlertCoral

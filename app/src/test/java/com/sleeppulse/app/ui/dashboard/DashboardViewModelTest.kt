@@ -34,6 +34,19 @@ class DashboardViewModelTest {
     )
 
     @Test
+    fun `repeated Start does not create duplicate collectors`() = runTest {
+        val repository = FakeSleepRepository()
+        val viewModel = DashboardViewModel(mock(), repository, mock())
+
+        viewModel.onIntent(DashboardIntent.Start)
+        viewModel.onIntent(DashboardIntent.Start)
+        advanceUntilIdle()
+
+        assertEquals(1, repository.liveReadingsCallCount)
+        assertEquals(1, repository.recentNightsCallCount)
+    }
+
+    @Test
     fun `Start collects connection state and readings into state`() = runTest {
         val repository = FakeSleepRepository()
         val context: Context = mock()

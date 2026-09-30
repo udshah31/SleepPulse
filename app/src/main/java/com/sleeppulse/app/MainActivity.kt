@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import com.sleeppulse.app.ui.SleepPulseApp
 import com.sleeppulse.app.ui.theme.SleepPulseTheme
 import com.sleeppulse.app.data.repository.SettingsRepository
@@ -24,7 +25,10 @@ class MainActivity : ComponentActivity() {
         setContent {
             val amoledBlack by settingsRepository.amoledBlack.collectAsState()
             SleepPulseTheme(amoledBlack = amoledBlack) {
-                Surface(modifier = Modifier.fillMaxSize()) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = Color.Transparent,
+                ) {
                     SleepPulseApp()
                 }
             }

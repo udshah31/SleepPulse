@@ -20,8 +20,8 @@ val CalmNightTextPrimary = Color(0xFFE4E6F5)
 val CalmNightTextSecondary = Color(0xFF8B93C4)
 val CalmNightTextTertiary = Color(0xFF5C6489)
 
-// Dashboard accent — clinical teal used for guidance banners and the primary wind-down CTA.
-val ClinicalTeal = Color(0xFF49C7B8)
+// Backwards-compatible name used by existing components; the redesign uses one indigo accent.
+val ClinicalTeal = SleepIndigo
 
 private val CalmNightColors = darkColorScheme(
     primary = SleepIndigo,

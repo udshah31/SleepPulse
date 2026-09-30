@@ -6,6 +6,7 @@ import com.sleeppulse.app.data.model.NightlySummary
 import com.sleeppulse.app.testutil.FakeSleepRepository
 import com.sleeppulse.app.testutil.MainDispatcherRule
 import java.time.LocalDate
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -27,6 +28,18 @@ class HistoryViewModelTest {
         deepSleepMinutes = 90,
         remSleepMinutes = 100,
     )
+
+    @Test
+    fun `repeated Load does not create duplicate collectors`() = runTest {
+        val repository = FakeSleepRepository()
+        val viewModel = HistoryViewModel(repository, mock<DataExporter>())
+
+        viewModel.onIntent(HistoryIntent.Load)
+        viewModel.onIntent(HistoryIntent.Load)
+        advanceUntilIdle()
+
+        assertEquals(1, repository.recentNightsCallCount)
+    }
 
     @Test
     fun `Load with no nights produces empty non-loading state`() = runTest {

@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import android.content.Context
@@ -39,6 +40,9 @@ class DashboardViewModel @Inject constructor(
     private val _healthConnectPermissionRequests = Channel<Set<String>>(Channel.BUFFERED)
     val healthConnectPermissionRequests: Flow<Set<String>> = _healthConnectPermissionRequests.receiveAsFlow()
     private var askedHealthConnect = false
+    private var connectionJob: Job? = null
+    private var readingsJob: Job? = null
+    private var nightsJob: Job? = null
 
     fun onIntent(intent: DashboardIntent) {
         when (intent) {
@@ -73,32 +77,40 @@ class DashboardViewModel @Inject constructor(
 
     private fun start() {
         requestHealthConnectPermissionsIfNeeded()
-        viewModelScope.launch {
-            repository.connectionState.collect { connection ->
-                _state.update { it.copy(connectionState = connection, isLoading = false) }
-            }
-        }
-        viewModelScope.launch {
-            repository.liveReadings().collect { reading ->
-                _state.update { current ->
-                    val updatedHistory = (current.recentReadings + reading).takeLast(MAX_CHART_POINTS)
-                    current.copy(
-                        latestReading = reading,
-                        recentReadings = updatedHistory,
-                        sleepScore = SleepScoreCalculator.score(updatedHistory),
-                        isLoading = false,
-                    )
+        // Navigation can recreate the Composable while retaining this ViewModel. Keep each
+        // long-lived collector idempotent so returning to the Dashboard does not multiply work.
+        if (connectionJob?.isActive != true) {
+            connectionJob = viewModelScope.launch {
+                repository.connectionState.collect { connection ->
+                    _state.update { it.copy(connectionState = connection, isLoading = false) }
                 }
             }
         }
-        viewModelScope.launch {
-            repository.recentNights().collect { nights ->
-                _state.update {
-                    it.copy(
-                        recoveryResult = computeRecovery(nights),
-                        recordedNightsCount = nights.size.coerceAtMost(MAX_RECORDED_NIGHTS_DISPLAY),
-                        metricBaseline = MetricBaselineCalculator.compute(nights),
-                    )
+        if (readingsJob?.isActive != true) {
+            readingsJob = viewModelScope.launch {
+                repository.liveReadings().collect { reading ->
+                    _state.update { current ->
+                        val updatedHistory = (current.recentReadings + reading).takeLast(MAX_CHART_POINTS)
+                        current.copy(
+                            latestReading = reading,
+                            recentReadings = updatedHistory,
+                            sleepScore = SleepScoreCalculator.score(updatedHistory),
+                            isLoading = false,
+                        )
+                    }
+                }
+            }
+        }
+        if (nightsJob?.isActive != true) {
+            nightsJob = viewModelScope.launch {
+                repository.recentNights().collect { nights ->
+                    _state.update {
+                        it.copy(
+                            recoveryResult = computeRecovery(nights),
+                            recordedNightsCount = nights.size.coerceAtMost(MAX_RECORDED_NIGHTS_DISPLAY),
+                            metricBaseline = MetricBaselineCalculator.compute(nights),
+                        )
+                    }
                 }
             }
         }

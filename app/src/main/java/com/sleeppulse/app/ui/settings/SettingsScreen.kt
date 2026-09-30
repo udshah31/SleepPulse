@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -30,7 +31,7 @@ import com.sleeppulse.app.ui.theme.CalmNightBackground
 import com.sleeppulse.app.ui.theme.CalmNightSurface
 import com.sleeppulse.app.ui.theme.CalmNightSurfaceDim
 import com.sleeppulse.app.ui.theme.CalmNightTextSecondary
-import com.sleeppulse.app.ui.theme.ClinicalTeal
+import com.sleeppulse.app.ui.theme.SleepIndigo
 
 @Composable
 fun SettingsScreen(
@@ -53,7 +54,12 @@ fun SettingsScreen(
             .padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(28.dp),
     ) {
-        Text(text = "Settings", style = MaterialTheme.typography.headlineSmall)
+        Text(text = "Settings", style = MaterialTheme.typography.headlineMedium)
+        Text(
+            text = "Shape the signals and rituals that make your nights feel better.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = CalmNightTextSecondary,
+        )
 
         SettingsSection(title = "Sensor source") {
             Column(modifier = Modifier.padding(14.dp)) {
@@ -172,8 +178,11 @@ fun SettingsScreen(
                     onCheckedChange = { viewModel.onIntent(SettingsIntent.SetAmoledBlack(it)) },
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = CalmNightBackground,
-                        checkedTrackColor = ClinicalTeal,
-                        checkedBorderColor = ClinicalTeal,
+                        checkedTrackColor = SleepIndigo,
+                        checkedBorderColor = SleepIndigo,
+                        uncheckedThumbColor = CalmNightTextSecondary,
+                        uncheckedTrackColor = CalmNightSurfaceDim,
+                        uncheckedBorderColor = CalmNightTextSecondary.copy(alpha = 0.35f),
                     ),
                 )
             }
@@ -193,7 +202,8 @@ private fun SettingsSection(title: String, content: @Composable ColumnScope.() -
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(16.dp))
-                .background(CalmNightSurface),
+                .background(CalmNightSurface)
+                .border(1.dp, Color.White.copy(alpha = 0.05f), RoundedCornerShape(16.dp)),
             content = content,
         )
     }
@@ -207,7 +217,7 @@ private fun SettingsOptionRow(
     enabled: Boolean = true,
     badge: String? = null,
 ) {
-    val rowBackground = if (selected) ClinicalTeal.copy(alpha = 0.14f) else Color.Transparent
+    val rowBackground = if (selected) SleepIndigo.copy(alpha = 0.14f) else Color.Transparent
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -227,11 +237,11 @@ private fun SettingsOptionRow(
                 Text(
                     text = badge,
                     style = MaterialTheme.typography.labelSmall,
-                    color = ClinicalTeal,
+                    color = SleepIndigo,
                     modifier = Modifier
                         .padding(start = 8.dp)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(ClinicalTeal.copy(alpha = 0.16f))
+                        .background(SleepIndigo.copy(alpha = 0.16f))
                         .padding(horizontal = 6.dp, vertical = 2.dp),
                 )
             }
@@ -239,7 +249,7 @@ private fun SettingsOptionRow(
         if (selected) {
             Text(
                 text = "✓",
-                color = ClinicalTeal,
+                color = SleepIndigo,
                 style = MaterialTheme.typography.bodyLarge,
             )
         }
@@ -268,7 +278,7 @@ private fun SegmentedToggle(
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelMedium,
-                color = if (selected) ClinicalTeal else CalmNightTextSecondary,
+                color = if (selected) SleepIndigo else CalmNightTextSecondary,
                 modifier = Modifier
                     .clip(RoundedCornerShape(8.dp))
                     .background(if (selected) CalmNightSurface else Color.Transparent)

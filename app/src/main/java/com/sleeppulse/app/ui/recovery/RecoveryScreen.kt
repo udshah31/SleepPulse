@@ -17,15 +17,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.sleeppulse.app.ui.components.CalmNightCard
+import com.sleeppulse.app.ui.components.CalmNightSectionLabel
 import com.sleeppulse.app.ui.components.RecoveryScoreCard
 import com.sleeppulse.app.ui.components.scoreColor
 import com.sleeppulse.app.ui.theme.CalmNightSurfaceDim
 import com.sleeppulse.app.ui.theme.CalmNightTextSecondary
-import com.sleeppulse.app.ui.theme.ClinicalTeal
+import com.sleeppulse.app.ui.theme.SleepIndigo
 
 @Composable
 fun RecoveryScreen(
@@ -41,40 +43,41 @@ fun RecoveryScreen(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(20.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(20.dp),
+            .padding(horizontal = 20.dp, vertical = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
+        Text(text = "Recovery Coach", style = MaterialTheme.typography.headlineMedium)
         Text(
-            text = "Recovery Coach",
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.fillMaxWidth(),
+            text = "A daily read on how ready your body is to do more.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = CalmNightTextSecondary,
         )
 
         if (state.recoveryResult != null) {
             RecoveryScoreCard(
                 recoveryResult = state.recoveryResult,
                 recordedNightsCount = state.recordedNightsCount,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             )
         } else if (!state.isLoading) {
-            Text(
-                text = "Not enough data for recovery score. Wear your sensor for a few more nights.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = CalmNightTextSecondary,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(ClinicalTeal.copy(alpha = 0.12f), RoundedCornerShape(16.dp))
-                    .border(1.dp, ClinicalTeal.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
-                    .padding(horizontal = 16.dp, vertical = 14.dp)
-            )
-        }
-
-        if (state.personalizedAdvice != null) {
-            RecoveryInfoCard(title = "Personalized advice") {
+            CalmNightCard(modifier = Modifier.fillMaxWidth(), containerColor = CalmNightSurfaceDim) {
+                CalmNightSectionLabel(text = "Recovery baseline")
                 Text(
-                    text = state.personalizedAdvice!!,
-                    style = MaterialTheme.typography.bodyMedium
+                    text = "Building your baseline",
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+                Text(
+                    text = "Wear your sensor for a few more nights. SleepPulse needs enough history to make the comparison personal.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = CalmNightTextSecondary,
+                    modifier = Modifier.padding(top = 6.dp),
+                )
+                Text(
+                    text = "${state.recordedNightsCount} nights recorded",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = SleepIndigo,
+                    modifier = Modifier.padding(top = 14.dp),
                 )
             }
         }
@@ -82,15 +85,24 @@ fun RecoveryScreen(
         if (state.readiness != null) {
             RecoveryInfoCard(title = "Today's readiness") {
                 Text(
-                    text = "${state.readiness!!.score} — ${state.readiness!!.tier.name.lowercase().replaceFirstChar { it.uppercase() }}",
-                    style = MaterialTheme.typography.titleLarge.copy(fontFeatureSettings = "tnum"),
+                    text = "${state.readiness!!.score} · ${state.readiness!!.tier.name.lowercase().replaceFirstChar { it.uppercase() }}",
+                    style = MaterialTheme.typography.headlineSmall.copy(fontFeatureSettings = "tnum"),
                     color = scoreColor(state.readiness!!.score / 100f),
                 )
                 Text(
-                    text = "Blends last night's recovery with your HRV/resting-HR trends and sleep debt.",
+                    text = "Blends last night's recovery with your HRV, resting heart rate, trends, and sleep debt.",
                     style = MaterialTheme.typography.bodySmall,
                     color = CalmNightTextSecondary,
-                    modifier = Modifier.padding(top = 4.dp)
+                    modifier = Modifier.padding(top = 6.dp),
+                )
+            }
+        }
+
+        if (state.personalizedAdvice != null) {
+            RecoveryInfoCard(title = "Personalized advice") {
+                Text(
+                    text = state.personalizedAdvice!!,
+                    style = MaterialTheme.typography.bodyMedium,
                 )
             }
         }
@@ -102,18 +114,12 @@ private fun RecoveryInfoCard(
     title: String,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(CalmNightSurfaceDim, RoundedCornerShape(20.dp))
-            .padding(20.dp),
-    ) {
-        Text(
-            text = title.uppercase(),
-            style = MaterialTheme.typography.labelSmall,
-            color = CalmNightTextSecondary,
-            modifier = Modifier.padding(bottom = 8.dp),
-        )
-        content()
-    }
+    CalmNightCard(
+        modifier = Modifier.fillMaxWidth(),
+        containerColor = CalmNightSurfaceDim,
+        content = {
+            CalmNightSectionLabel(text = title)
+            Column(modifier = Modifier.padding(top = 8.dp), content = content)
+        },
+    )
 }

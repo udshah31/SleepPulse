@@ -5,6 +5,7 @@ import com.sleeppulse.app.data.model.NightlySummary
 import com.sleeppulse.app.testutil.FakeSleepRepository
 import com.sleeppulse.app.testutil.MainDispatcherRule
 import java.time.LocalDate
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -31,6 +32,18 @@ class RecoveryViewModelTest {
         remSleepMinutes = 100,
         tags = tags,
     )
+
+    @Test
+    fun `repeated Load does not create duplicate collectors`() = runTest {
+        val repository = FakeSleepRepository()
+        val viewModel = RecoveryViewModel(repository)
+
+        viewModel.onIntent(RecoveryIntent.Load)
+        viewModel.onIntent(RecoveryIntent.Load)
+        advanceUntilIdle()
+
+        assertEquals(1, repository.recentNightsCallCount)
+    }
 
     @Test
     fun `recordedNightsCount reflects actual recentNights size, not a hardcoded placeholder`() = runTest {

@@ -20,6 +20,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -34,6 +35,8 @@ class RecoveryViewModel @Inject constructor(
     private val _state = MutableStateFlow(RecoveryState())
     val state: StateFlow<RecoveryState> = _state.asStateFlow()
 
+    private var nightsJob: Job? = null
+
     fun onIntent(intent: RecoveryIntent) {
         when (intent) {
             RecoveryIntent.Load -> load()
@@ -41,7 +44,9 @@ class RecoveryViewModel @Inject constructor(
     }
 
     private fun load() {
-        viewModelScope.launch {
+        if (nightsJob?.isActive == true) return
+
+        nightsJob = viewModelScope.launch {
             repository.recentNights().collect { nights ->
                 val latest = nights.firstOrNull()
                 val recoveryResult = if (latest != null) {

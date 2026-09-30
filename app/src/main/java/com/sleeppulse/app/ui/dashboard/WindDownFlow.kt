@@ -19,6 +19,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.sleeppulse.app.ui.components.CalmNightSectionLabel
+import com.sleeppulse.app.ui.theme.CalmNightTextSecondary
 
 @Composable
 fun WindDownFlow(
@@ -34,6 +36,8 @@ fun WindDownFlow(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
+        CalmNightSectionLabel(text = "Wind-down · step ${step.ordinal + 1} of ${WindDownStep.entries.size}")
+
         AnimatedContent(
             targetState = step,
             transitionSpec = {
@@ -44,15 +48,19 @@ fun WindDownFlow(
         ) { targetStep ->
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(text = targetStep.title(), style = MaterialTheme.typography.headlineSmall)
-                Text(text = targetStep.description(), style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    text = targetStep.description(),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = CalmNightTextSecondary,
+                )
             }
         }
 
         if (step == WindDownStep.DONE) {
-            Button(onClick = onCancel) { Text("Finish") }
+            Button(onClick = onCancel, modifier = Modifier.fillMaxWidth()) { Text("Finish") }
         } else {
-            Button(onClick = onAdvance) { Text("Next") }
-            OutlinedButton(onClick = onCancel) { Text("Cancel") }
+            Button(onClick = onAdvance, modifier = Modifier.fillMaxWidth()) { Text("Next") }
+            OutlinedButton(onClick = onCancel, modifier = Modifier.fillMaxWidth()) { Text("Cancel") }
         }
     }
 }

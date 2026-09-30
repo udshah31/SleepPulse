@@ -7,6 +7,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 import kotlin.math.sin
@@ -38,44 +40,54 @@ class SimulatedSensorDataSource @Inject constructor(
         var heartRate = 62.0
         var hrv = 55.0
         while (true) {
-            val stage = stageCycle[(tick / 20) % stageCycle.size]
+            // Keep the dashboard's long-lived collector alive, but don't generate fake sensor
+            // data until a tracking session has actually connected the simulated device.
+            connectionState.filter { it is SensorConnectionState.Connected }.first()
 
-            val stageHrBias = when (stage) {
-                SleepStage.AWAKE -> 8.0
-                SleepStage.LIGHT -> 0.0
-                SleepStage.DEEP -> -10.0
-                SleepStage.REM -> 4.0
-            }
-            val stageHrvBias = when (stage) {
-                SleepStage.AWAKE -> -8.0
-                SleepStage.LIGHT -> 0.0
-                SleepStage.DEEP -> 12.0
-                SleepStage.REM -> -4.0
-            }
+            while (_connectionState.value is SensorConnectionState.Connected) {
+                val stage = stageCycle[(tick / 20) % stageCycle.size]
 
-            val target = 60.0 + stageHrBias + sin(tick / 15.0) * 3.0
-            heartRate += (target - heartRate) * 0.06 + Random.nextDouble(-0.15, 0.15)
+                val stageHrBias = when (stage) {
+                    SleepStage.AWAKE -> 8.0
+                    SleepStage.LIGHT -> 0.0
+                    SleepStage.DEEP -> -10.0
+                    SleepStage.REM -> 4.0
+                }
+                val stageHrvBias = when (stage) {
+                    SleepStage.AWAKE -> -8.0
+                    SleepStage.LIGHT -> 0.0
+                    SleepStage.DEEP -> 12.0
+                    SleepStage.REM -> -4.0
+                }
 
-            val hrvTarget = 55.0 + stageHrvBias + sin(tick / 22.0) * 4.0
-            hrv += (hrvTarget - hrv) * 0.05 + Random.nextDouble(-0.2, 0.2)
-            
-            val predictedStage = predictor.predict(
-                heartRateBpm = heartRate.toInt(),
-                hrvMillis = hrv.toLong(),
-                movement = if (stage == SleepStage.AWAKE) 1.0f else 0.1f
-            )
+                val target = 60.0 + stageHrBias + sin(tick / 15.0) * 3.0
+                heartRate += (target - heartRate) * 0.06 + Random.nextDouble(-0.15, 0.15)
 
-            emit(
-                SensorReading(
-                    timestampMillis = System.currentTimeMillis(),
-                    heartRateBpm = heartRate.toInt().coerceIn(38, 140),
-                    hrvMillis = hrv.coerceIn(15.0, 120.0),
-                    sleepStage = predictedStage,
+                val hrvTarget = 55.0 + stageHrvBias + sin(tick / 22.0) * 4.0
+                hrv += (hrvTarget - hrv) * 0.05 + Random.nextDouble(-0.2, 0.2)
+
+                val predictedStage = predictor.predict(
+                    heartRateBpm = heartRate.toInt(),
+                    hrvMillis = hrv.toLong(),
+                    movement = if (stage == SleepStage.AWAKE) 1.0f else 0.1f
                 )
-            )
 
-            tick++
-            delay(1_000)
+                // A disconnect can happen while the reading is being calculated. Check again
+                // immediately before emitting so a stopped session does not receive a trailing
+                // simulated sample.
+                if (_connectionState.value is SensorConnectionState.Connected) {
+                    emit(
+                        SensorReading(
+                            timestampMillis = System.currentTimeMillis(),
+                            heartRateBpm = heartRate.toInt().coerceIn(38, 140),
+                            hrvMillis = hrv.coerceIn(15.0, 120.0),
+                            sleepStage = predictedStage,
+                        )
+                    )
+                    tick++
+                }
+                delay(1_000)
+            }
         }
     }
 

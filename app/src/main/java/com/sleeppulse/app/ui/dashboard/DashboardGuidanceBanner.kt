@@ -10,7 +10,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.sleeppulse.app.ui.theme.ClinicalTeal
+import com.sleeppulse.app.ui.theme.SleepIndigo
 
 private const val MIN_NIGHTS_FOR_RECOVERY = 4
 
@@ -34,8 +34,8 @@ fun DashboardGuidanceBanner(
         style = MaterialTheme.typography.bodyMedium,
         modifier = modifier
             .fillMaxWidth()
-            .background(ClinicalTeal.copy(alpha = 0.12f), RoundedCornerShape(16.dp))
-            .border(1.dp, ClinicalTeal.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
+            .background(SleepIndigo.copy(alpha = 0.12f), RoundedCornerShape(16.dp))
+            .border(1.dp, SleepIndigo.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
             .padding(horizontal = 16.dp, vertical = 14.dp),
     )
 }

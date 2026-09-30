@@ -1,17 +1,19 @@
 package com.sleeppulse.app.ui.history
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Tab
@@ -24,27 +26,21 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.clipRect
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.runtime.remember
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.height
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.sleeppulse.app.data.model.NightlySummary
+import com.sleeppulse.app.ui.components.CalmNightCard
+import com.sleeppulse.app.ui.components.CalmNightSectionLabel
 import com.sleeppulse.app.ui.components.SleepDebtBadge
 import com.sleeppulse.app.ui.components.SleepConsistencyBadge
 import com.sleeppulse.app.ui.components.SleepStagesBar
 import com.sleeppulse.app.ui.components.WeeklyTrendsChart
 import com.sleeppulse.app.ui.theme.AlertCoral
+import com.sleeppulse.app.ui.theme.CalmNightBackground
 import com.sleeppulse.app.ui.theme.CalmNightSurfaceDim
 import com.sleeppulse.app.ui.theme.CalmNightTextSecondary
 import com.sleeppulse.app.ui.theme.CautionAmber
-import com.sleeppulse.app.ui.theme.ClinicalTeal
+import com.sleeppulse.app.ui.theme.RecoveryGreen
 import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -58,9 +54,26 @@ fun HistoryScreen(
         viewModel.onIntent(HistoryIntent.Load)
     }
 
-    LazyColumn(modifier = Modifier.padding(16.dp)) {
+    LazyColumn(
+        modifier = Modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 22.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
         stickyHeader(key = "badges") {
-            Column(modifier = Modifier.padding(bottom = 8.dp)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(CalmNightBackground)
+                    .padding(bottom = 12.dp),
+            ) {
+                Text(text = "History", style = MaterialTheme.typography.headlineMedium)
+                Text(
+                    text = "Patterns are easier to change when you can see them.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = CalmNightTextSecondary,
+                    modifier = Modifier.padding(top = 4.dp, bottom = 18.dp),
+                )
+                CalmNightSectionLabel(text = "Your recent nights", modifier = Modifier.padding(bottom = 8.dp))
                 SleepDebtBadge(
                     sleepDebt = state.sleepDebt,
                     modifier = Modifier.padding(bottom = 8.dp),
@@ -109,7 +122,13 @@ fun HistoryScreen(
                     if (state.nights.isEmpty() && !state.isLoading) {
                         EmptyHistoryState()
                     } else {
-                        WeeklyTrendsChart(nights = state.nights)
+                        CalmNightCard(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                            padding = 8.dp,
+                        ) {
+                            CalmNightSectionLabel(text = "Sleep score trend", modifier = Modifier.padding(horizontal = 8.dp))
+                            WeeklyTrendsChart(nights = state.nights)
+                        }
                     }
                 }
             }
@@ -148,57 +167,61 @@ private fun EmptyHistoryState() {
 
 @Composable
 private fun NightRow(night: NightWithTrend) {
-    Row(
+    val scoreColorValue = scoreBandColor(night.summary.sleepScore)
+    CalmNightCard(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp)
-            .background(CalmNightSurfaceDim, RoundedCornerShape(16.dp))
-            .padding(14.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            .padding(vertical = 6.dp),
+        padding = 14.dp,
+        shape = RoundedCornerShape(22.dp),
     ) {
-        val scoreColorValue = scoreBandColor(night.summary.sleepScore)
-        Box(
-            modifier = Modifier
-                .size(46.dp)
-                .background(scoreColorValue.copy(alpha = 0.16f), RoundedCornerShape(12.dp)),
-            contentAlignment = Alignment.Center,
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.Top,
         ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .border(2.dp, scoreColorValue.copy(alpha = 0.65f), CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "${night.summary.sleepScore}",
+                    style = MaterialTheme.typography.titleMedium.copy(fontFeatureSettings = "tnum"),
+                    color = scoreColorValue,
+                )
+            }
+
+            Column(modifier = Modifier.weight(1f).padding(horizontal = 14.dp)) {
+                Text(
+                    text = night.summary.date.format(DateTimeFormatter.ofPattern("EEEE, MMM d")),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Text(
+                    text = "${formatDuration(night.summary.totalSleepMinutes)} · HRV ${night.summary.avgHrvMillis.toInt()} ms",
+                    style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
+                    color = CalmNightTextSecondary,
+                    modifier = Modifier.padding(top = 3.dp),
+                )
+
+                SleepStagesBar(
+                    totalMinutes = night.summary.totalSleepMinutes,
+                    deepMinutes = night.summary.deepSleepMinutes,
+                    remMinutes = night.summary.remSleepMinutes,
+                    modifier = Modifier.padding(top = 12.dp),
+                )
+
+                NightTags(night.summary)
+
+
+            }
+
             Text(
-                text = "${night.summary.sleepScore}",
-                style = MaterialTheme.typography.titleMedium.copy(fontFeatureSettings = "tnum"),
-                color = scoreColorValue,
+                text = trendArrow(night.trend),
+                style = MaterialTheme.typography.titleMedium,
+                color = trendColor(night.trend),
             )
         }
-
-        Column(modifier = Modifier.weight(1f).padding(horizontal = 14.dp)) {
-            Text(
-                text = night.summary.date.format(DateTimeFormatter.ofPattern("EEEE, MMM d")),
-                style = MaterialTheme.typography.bodyLarge,
-            )
-            Text(
-                text = "${formatDuration(night.summary.totalSleepMinutes)} · HRV ${night.summary.avgHrvMillis.toInt()}ms",
-                style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
-                color = CalmNightTextSecondary,
-            )
-
-            SleepStagesBar(
-                totalMinutes = night.summary.totalSleepMinutes,
-                deepMinutes = night.summary.deepSleepMinutes,
-                remMinutes = night.summary.remSleepMinutes,
-                modifier = Modifier.padding(top = 10.dp),
-            )
-
-            NightTags(night.summary)
-
-            Spacer(modifier = Modifier.height(12.dp))
-            SleepChart()
-        }
-
-        Text(
-            text = trendArrow(night.trend),
-            style = MaterialTheme.typography.bodyLarge,
-            color = trendColor(night.trend),
-        )
     }
 }
 
@@ -209,58 +232,15 @@ private fun formatDuration(totalMinutes: Int): String {
 }
 
 private fun scoreBandColor(score: Int): androidx.compose.ui.graphics.Color = when {
-    score >= 70 -> ClinicalTeal
+    score >= 70 -> RecoveryGreen
     score >= 50 -> CautionAmber
     else -> AlertCoral
 }
 
 private fun trendColor(trend: NightlySummary.Trend): androidx.compose.ui.graphics.Color = when (trend) {
-    NightlySummary.Trend.UP -> ClinicalTeal
+    NightlySummary.Trend.UP -> RecoveryGreen
     NightlySummary.Trend.DOWN -> AlertCoral
     NightlySummary.Trend.FLAT -> CalmNightTextSecondary
-}
-
-@Composable
-fun SleepChart() {
-    val animationProgress = remember { Animatable(0f) }
-
-    LaunchedEffect(Unit) {
-        animationProgress.animateTo(
-            targetValue = 1f,
-            animationSpec = tween(durationMillis = 1500, easing = LinearEasing)
-        )
-    }
-
-    val primaryColor = ClinicalTeal
-
-    Canvas(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(60.dp)
-            .padding(vertical = 8.dp)
-    ) {
-        val width = size.width
-        val height = size.height
-        
-        val path = Path().apply {
-            moveTo(0f, height * 0.2f)
-            lineTo(width * 0.2f, height * 0.8f) // Deep
-            lineTo(width * 0.4f, height * 0.5f) // Light
-            lineTo(width * 0.5f, height * 0.1f) // Awake
-            lineTo(width * 0.7f, height * 0.3f) // REM
-            lineTo(width * 0.85f, height * 0.9f) // Deep
-            lineTo(width, height * 0.4f) // Light
-        }
-        
-        clipRect(right = width * animationProgress.value) {
-            drawPath(
-                path = path,
-                color = primaryColor,
-                style = Stroke(width = 6f)
-            )
-            // Draw gradient/fill under path for a more advanced look could go here
-        }
-    }
 }
 
 private fun trendArrow(trend: NightlySummary.Trend): String = when (trend) {
