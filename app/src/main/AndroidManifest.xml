@@ -21,6 +21,9 @@
          their package. Android 11+ hides other apps unless queried; every Health Connect client
          must declare one of these intents, so this covers them all without QUERY_ALL_PACKAGES. -->
     <queries>
+        <!-- Android 13 and older: Health Connect is a separate app. Without package visibility,
+             getSdkStatus() can't see it and every Health Connect feature is silently off. -->
+        <package android:name="com.google.android.apps.healthdata" />
         <intent>
             <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
         </intent>
