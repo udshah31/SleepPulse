@@ -12,6 +12,7 @@ import com.sleeppulse.app.data.model.SensorReading
 import com.sleeppulse.app.data.model.StageSegment
 import com.sleeppulse.app.data.source.SensorDataSource
 import com.sleeppulse.app.tracking.HealthConnectManager
+import com.sleeppulse.app.ui.settings.DataSourceMode
 import java.time.LocalDate
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -47,6 +48,7 @@ class SleepRepositoryImpl @Inject constructor(
     private val sessionDao: SleepSessionDao,
     private val appScope: CoroutineScope,
     private val healthConnectManager: HealthConnectManager,
+    private val settings: SettingsRepository = SettingsRepository(),
     private val nowMillis: () -> Long = System::currentTimeMillis,
 ) : SleepRepository {
 
@@ -143,6 +145,12 @@ class SleepRepositoryImpl @Inject constructor(
         dao.trimToLast30Days()
         healthConnectManager.writeSleepSession(summary, stages)
         if (readings.isNotEmpty()) healthConnectManager.writeHeartRate(readings)
+        // A BLE strap's standard heart-rate service carries no HRV; BleSensorDataSource fills in a
+        // fixed placeholder, which must not land in the user's health record as a measurement.
+        // ponytail: gated on the mode at finalize time; a night that switched source mid-way is judged by the final mode
+        if (readings.isNotEmpty() && settings.dataSourceMode.value != DataSourceMode.BLE) {
+            healthConnectManager.writeHrv(readings)
+        }
     }
 
     override suspend fun updateTags(date: LocalDate, tags: List<String>) {

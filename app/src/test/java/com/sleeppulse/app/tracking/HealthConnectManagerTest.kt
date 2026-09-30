@@ -163,9 +163,33 @@ class HealthConnectManagerTest {
         assertNull(HealthConnectManager.buildHeartRateRecord(listOf(hr(0, 0), hr(1_000, 0)), zone))
     }
 
+    private fun hrv(offsetMs: Long, ms: Double) = SensorReading(start + offsetMs, 60, ms, SleepStage.LIGHT)
+
     @Test
-    fun `required permissions cover both the sleep and heart-rate writes`() {
-        assertEquals(2, HealthConnectManager.REQUIRED_PERMISSIONS.size)
+    fun `hrv is one record per 5-minute window, the mean of that window`() {
+        // Window 0 (0..5 min): 40, 60 -> 50. Window 2 (10..15 min): 70. Window 1 has nothing.
+        val readings = listOf(hrv(0, 40.0), hrv(299_000, 60.0), hrv(600_000, 70.0))
+
+        val records = HealthConnectManager.buildHrvRecords(readings, zone)
+
+        assertEquals(listOf(50.0, 70.0), records.map { it.heartRateVariabilityMillis })
+        assertEquals(listOf(start, start + 600_000), records.map { it.time.toEpochMilli() })
+        assertEquals(listOf("sleeppulse-hrv-$start", "sleeppulse-hrv-${start + 600_000}"), records.map { it.metadata.clientRecordId })
+        assertEquals(zone.rules.getOffset(Instant.ofEpochMilli(start)), records.first().zoneOffset)
+    }
+
+    @Test
+    fun `hrv outside 1 to 200 ms is dropped instead of failing the insert`() {
+        val readings = listOf(hrv(0, 0.0), hrv(1_000, 250.0), hrv(2_000, Double.NaN), hrv(3_000, 45.0))
+
+        assertEquals(listOf(45.0), HealthConnectManager.buildHrvRecords(readings, zone).map { it.heartRateVariabilityMillis })
+        assertEquals(emptyList<Any>(), HealthConnectManager.buildHrvRecords(listOf(hrv(0, 0.0)), zone))
+    }
+
+    @Test
+    fun `required permissions cover the sleep, heart-rate and hrv writes`() {
+        assertEquals(3, HealthConnectManager.REQUIRED_PERMISSIONS.size)
         assertEquals(true, HealthConnectManager.REQUIRED_PERMISSIONS.any { it.endsWith("WRITE_HEART_RATE") })
+        assertEquals(true, HealthConnectManager.REQUIRED_PERMISSIONS.any { it.endsWith("WRITE_HEART_RATE_VARIABILITY") })
     }
 }

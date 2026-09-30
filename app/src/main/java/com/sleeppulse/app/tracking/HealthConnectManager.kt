@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.HeartRateRecord
+import androidx.health.connect.client.records.HeartRateVariabilityRmssdRecord
 import androidx.health.connect.client.records.SleepSessionRecord
 import androidx.health.connect.client.records.metadata.Device
 import androidx.health.connect.client.records.metadata.Metadata
@@ -32,9 +33,13 @@ class HealthConnectManager(private val context: Context) {
          */
         private val WRITE_SLEEP = HealthPermission.getWritePermission(SleepSessionRecord::class)
         private val WRITE_HEART_RATE = HealthPermission.getWritePermission(HeartRateRecord::class)
+        private val WRITE_HRV = HealthPermission.getWritePermission(HeartRateVariabilityRmssdRecord::class)
 
         /** Every write we ask for. Each write checks only its own permission, so a partial grant still syncs what it can. */
-        val REQUIRED_PERMISSIONS: Set<String> = setOf(WRITE_SLEEP, WRITE_HEART_RATE)
+        val REQUIRED_PERMISSIONS: Set<String> = setOf(WRITE_SLEEP, WRITE_HEART_RATE, WRITE_HRV)
+
+        /** RMSSD is conventionally measured over 5-minute windows. */
+        private const val HRV_WINDOW_MILLIS = 5 * 60_000L
 
         /** Read access, requested alongside write but checked separately so writes never depend on it. */
         val READ_PERMISSIONS: Set<String> =
@@ -146,6 +151,32 @@ class HealthConnectManager(private val context: Context) {
                 samples = samples,
                 metadata = sensorMetadata("sleeppulse-hr-$startMillis"),
             )
+        }
+
+        /**
+         * One RMSSD record per 5-minute window of the night, the mean of that window's readings
+         * (each reading already carries the source's short-term RMSSD). HRV is an instant record
+         * in Health Connect, so each window is its own record with its own stable client id.
+         * Readings outside Health Connect's accepted 1..200 ms are dropped.
+         */
+        fun buildHrvRecords(
+            readings: List<SensorReading>,
+            zone: ZoneId = ZoneId.systemDefault(),
+        ): List<HeartRateVariabilityRmssdRecord> {
+            val valid = readings.filter { it.hrvMillis in 1.0..200.0 }
+            val firstMillis = valid.firstOrNull()?.timestampMillis ?: return emptyList()
+            return valid
+                .groupBy { (it.timestampMillis - firstMillis) / HRV_WINDOW_MILLIS }
+                .toSortedMap()
+                .map { (_, window) ->
+                    val time = Instant.ofEpochMilli(window.first().timestampMillis)
+                    HeartRateVariabilityRmssdRecord(
+                        time = time,
+                        zoneOffset = zone.rules.getOffset(time),
+                        heartRateVariabilityMillis = window.map { it.hrvMillis }.average(),
+                        metadata = sensorMetadata("sleeppulse-hrv-${time.toEpochMilli()}"),
+                    )
+                }
         }
 
         /**
@@ -297,6 +328,21 @@ class HealthConnectManager(private val context: Context) {
                 healthConnectClient.insertRecords(listOf(record))
             } catch (e: Exception) {
                 android.util.Log.e("HealthConnectManager", "Error writing heart rate", e)
+            }
+        }
+    }
+
+    suspend fun writeHrv(readings: List<SensorReading>) {
+        if (!hasPermission(WRITE_HRV)) {
+            android.util.Log.w("HealthConnectManager", "Skipping HRV write: permission not granted")
+            return
+        }
+        val records = buildHrvRecords(readings).ifEmpty { return }
+        withContext(Dispatchers.IO) {
+            try {
+                healthConnectClient.insertRecords(records)
+            } catch (e: Exception) {
+                android.util.Log.e("HealthConnectManager", "Error writing HRV", e)
             }
         }
     }
