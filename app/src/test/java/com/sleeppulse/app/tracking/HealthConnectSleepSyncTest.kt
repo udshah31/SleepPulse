@@ -3,10 +3,12 @@ package com.sleeppulse.app.tracking
 import java.time.Instant
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verifyBlocking
@@ -106,5 +108,22 @@ class HealthConnectSleepSyncTest {
             SleepChanges.Changes(listOf(session("a", 0).copy(deepSleepMinutes = 42)), emptyList(), "t"),
         )
         assertEquals(42, result.single().deepSleepMinutes)
+    }
+
+    @Test
+    fun `a refusal that isn't a revocation keeps the cache and token and reports failure`() = runTest {
+        // e.g. a background read without background access: the manager rethrows because read
+        // access is still granted. Wiping here would lose the user's synced nights.
+        val manager = mock<HealthConnectManager> {
+            onBlocking { getSleepChanges("t1") } doThrow SecurityException("background read not allowed")
+        }
+        val store = MemoryStore(token = "t1", sessions = listOf(session("a")))
+        val sync = HealthConnectSleepSync(manager, store) { now }
+
+        assertFalse(sync.sync())
+
+        assertEquals("t1", store.token)
+        assertEquals(listOf(session("a")), store.sessions)
+        assertEquals(listOf(session("a")), sync.sessions.value)
     }
 }

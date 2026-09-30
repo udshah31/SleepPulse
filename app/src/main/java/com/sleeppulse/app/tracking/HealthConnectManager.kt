@@ -39,7 +39,14 @@ class HealthConnectManager(private val context: Context) {
         val READ_PERMISSIONS: Set<String> =
             setOf(HealthPermission.getReadPermission(SleepSessionRecord::class))
 
-        val REQUESTED_PERMISSIONS: Set<String> = REQUIRED_PERMISSIONS + READ_PERMISSIONS
+        /**
+         * Lets [com.sleeppulse.app.tracking.SleepSyncWorker] read while the app isn't visible.
+         * Health Connect only offers it on devices that support background reads; without it,
+         * background reads throw and the worker just skips.
+         */
+        const val READ_IN_BACKGROUND = "android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND"
+
+        val REQUESTED_PERMISSIONS: Set<String> = REQUIRED_PERMISSIONS + READ_PERMISSIONS + READ_IN_BACKGROUND
 
         /**
          * Keeps sleep sessions written by other apps (ours are already in Room) and reduces each
@@ -157,6 +164,18 @@ class HealthConnectManager(private val context: Context) {
         return healthConnectClient.permissionController.getGrantedPermissions().containsAll(permissions.toList())
     }
 
+    suspend fun canReadInBackground(): Boolean =
+        hasPermission(*(READ_PERMISSIONS + READ_IN_BACKGROUND).toTypedArray())
+
+    /**
+     * A SecurityException means "revoked" only if read access is really gone; otherwise it's a
+     * refusal for another reason (e.g. a background read without background access) and must
+     * not be mistaken for a revocation, which would wipe the synced cache.
+     */
+    private suspend fun revokedOrRethrow(e: SecurityException) {
+        if (hasReadPermissions()) throw e
+    }
+
     suspend fun hasReadPermissions(): Boolean {
         if (!isAvailable()) return false
         return healthConnectClient.permissionController.getGrantedPermissions().containsAll(READ_PERMISSIONS)
@@ -199,6 +218,7 @@ class HealthConnectManager(private val context: Context) {
                 healthConnectClient.getChangesToken(ChangesTokenRequest(setOf(SleepSessionRecord::class)))
             }
         } catch (e: SecurityException) {
+            revokedOrRethrow(e)
             null // revoked between the check and the call
         }
     }
@@ -226,6 +246,7 @@ class HealthConnectManager(private val context: Context) {
                 SleepChanges.Changes(fromOtherApps(upserted, context.packageName), deletedIds, next)
             }
         } catch (e: SecurityException) {
+            revokedOrRethrow(e)
             SleepChanges.NoPermission
         }
     }

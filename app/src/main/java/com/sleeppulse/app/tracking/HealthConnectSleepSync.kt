@@ -6,6 +6,7 @@ import java.time.Duration
 import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -33,12 +34,26 @@ class HealthConnectSleepSync @Inject constructor(
 
     private val mutex = Mutex()
 
-    suspend fun sync() = mutex.withLock {
-        val token = store.token
-        when (val result = token?.let { manager.getSleepChanges(it) }) {
-            is SleepChanges.Changes -> save(applyChanges(_sessions.value, result), result.nextToken)
-            SleepChanges.NoPermission -> clear()
-            SleepChanges.TokenExpired, null -> fullResync()
+    /**
+     * Returns false if Health Connect failed for a reason other than lost read access (a
+     * transient error, or a background read the device refused); the cache and token are left
+     * as they were so the next attempt picks up where this one stopped. Never throws, so
+     * fire-and-forget callers (app start, History) can't crash on it.
+     */
+    suspend fun sync(): Boolean = mutex.withLock {
+        try {
+            val token = store.token
+            when (val result = token?.let { manager.getSleepChanges(it) }) {
+                is SleepChanges.Changes -> save(applyChanges(_sessions.value, result), result.nextToken)
+                SleepChanges.NoPermission -> clear()
+                SleepChanges.TokenExpired, null -> fullResync()
+            }
+            true
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            android.util.Log.w("SleepPulse", "Health Connect sleep sync failed; will retry", e)
+            false
         }
     }
 

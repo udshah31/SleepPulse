@@ -87,6 +87,10 @@ dependencies {
     implementation("androidx.glance:glance-material3:1.1.0")
     
     implementation("androidx.health.connect:connect-client:1.1.0-alpha07")
+
+    implementation("androidx.work:work-runtime-ktx:2.9.1")
+    implementation("androidx.hilt:hilt-work:1.2.0")
+    ksp("androidx.hilt:hilt-compiler:1.2.0")
     
     implementation("com.airbnb.android:lottie-compose:6.4.0")
 

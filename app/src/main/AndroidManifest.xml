@@ -1,4 +1,5 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
@@ -12,6 +13,7 @@
     <uses-permission android:name="android.permission.health.WRITE_SLEEP" />
     <uses-permission android:name="android.permission.health.READ_SLEEP" />
     <uses-permission android:name="android.permission.health.WRITE_HEART_RATE" />
+    <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND" />
 
     <!-- Lets us show other Health Connect apps by name (History's "From other apps") instead of
          their package. Android 11+ hides other apps unless queried; every Health Connect client
@@ -83,5 +85,17 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/sleep_pulse_widget_info" />
         </receiver>
+
+        <!-- SleepPulseApp configures WorkManager itself (Hilt worker factory). -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+        </provider>
     </application>
 </manifest>
