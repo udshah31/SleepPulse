@@ -61,6 +61,7 @@ There are two `SleepPulseApp.kt` files — `com.sleeppulse.app.SleepPulseApp` (t
 ## Testing patterns
 
 - Unit tests in `app/src/test` mirror the main packages; hand-written fakes live in `testutil/` (`FakeSleepRepository`, `FakeSensorDataSource`, `FakeSleepSessionDao`, `FakeNightlySummaryDao`, `FakeBleScanSource`, `FakeSleepSummaryNotifier`, `FakeWidgetRefresher`, …) and `MainDispatcherRule`. Prefer these over a mocking library.
+- Unit-test compilation opts into `kotlinx.coroutines.ExperimentalCoroutinesApi` globally (`app/build.gradle.kts`), so tests don't need per-file `@OptIn` for `setMain`/`advanceUntilIdle`/etc.
 - Orchestration classes are kept plain Kotlin behind interfaces (`SleepSummaryNotifier`, `WidgetRefresher`, `*Scheduler`) so they test without Robolectric — the Service/Receiver stays a thin shell.
 
 ## Docs / workflow

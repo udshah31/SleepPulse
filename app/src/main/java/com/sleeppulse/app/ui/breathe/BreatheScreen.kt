@@ -45,6 +45,11 @@ import com.sleeppulse.app.ui.theme.SleepIndigo
 import com.sleeppulse.app.ui.theme.SleepIndigoDark
 import kotlinx.coroutines.delay
 
+// Ring radius as a multiple of a quarter of the 300dp box (75dp). The smallest ring (idle and
+// end of exhale) must still hold the 32sp label; the largest plus its 18dp glow must fit the box.
+private const val MIN_SCALE = 0.9f
+private const val MAX_SCALE = 1.7f
+
 enum class BreatheState(val text: String, val durationMs: Int) {
     INHALE("Inhale", 4000),
     HOLD("Hold", 7000),
@@ -74,9 +79,9 @@ fun BreatheScreen(onBack: () -> Unit) {
         label = "circle_scale",
     ) { state ->
         when (state) {
-            BreatheState.INHALE -> 1.5f
-            BreatheState.HOLD -> 1.5f
-            BreatheState.EXHALE -> 0.5f
+            BreatheState.INHALE -> MAX_SCALE
+            BreatheState.HOLD -> MAX_SCALE
+            BreatheState.EXHALE -> MIN_SCALE
         }
     }
     val circleColor by transition.animateColor(
@@ -123,10 +128,10 @@ fun BreatheScreen(onBack: () -> Unit) {
         ) {
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val baseRadius = size.minDimension / 4
-                val animatedRadius = baseRadius * (if (isPlaying) circleScale else 0.5f)
-                drawCircle(color = circleColor.copy(alpha = 0.08f), radius = animatedRadius + 48f)
-                drawCircle(color = circleColor.copy(alpha = 0.14f), radius = animatedRadius + 28f)
-                drawCircle(color = circleColor, radius = animatedRadius, style = Stroke(width = 8f))
+                val animatedRadius = baseRadius * (if (isPlaying) circleScale else MIN_SCALE)
+                drawCircle(color = circleColor.copy(alpha = 0.08f), radius = animatedRadius + 18.dp.toPx())
+                drawCircle(color = circleColor.copy(alpha = 0.14f), radius = animatedRadius + 11.dp.toPx())
+                drawCircle(color = circleColor, radius = animatedRadius, style = Stroke(width = 3.dp.toPx()))
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
