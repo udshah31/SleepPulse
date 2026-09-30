@@ -1,5 +1,6 @@
 package com.sleeppulse.app.services
 
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -7,9 +8,13 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import androidx.core.app.ServiceCompat
+import androidx.core.content.ContextCompat
 import com.sleeppulse.app.MainActivity
 import com.sleeppulse.app.R
 import com.sleeppulse.app.data.repository.SleepRepository
@@ -65,7 +70,9 @@ class SleepTrackingService : Service() {
             return START_NOT_STICKY
         }
 
-        startForeground(NOTIFICATION_ID, buildNotification())
+        val micGranted = ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) ==
+            PackageManager.PERMISSION_GRANTED
+        ServiceCompat.startForeground(this, NOTIFICATION_ID, buildNotification(), foregroundServiceTypes(micGranted))
         scope.launch {
             repository.connectSensor()
         }
@@ -168,5 +175,18 @@ class SleepTrackingService : Service() {
         private const val CHANNEL_ID = "sleep_tracking_channel"
         private const val NOTIFICATION_ID = 1
         const val ACTION_STOP_TRACKING = "com.sleeppulse.app.ACTION_STOP_TRACKING"
+
+        /**
+         * Android 14+ rejects a foreground-service type whose permission isn't granted, and
+         * startForeground() without types claims every type in the manifest — so a denied
+         * microphone crashed Connect. Claim the microphone only when it's granted; noise
+         * monitoring simply doesn't run without it.
+         * The constants are newer than minSdk, but inlining them is fine: aapt compiles the
+         * manifest's `health|microphone` to the same bits, so older releases accept the subset.
+         */
+        @SuppressLint("InlinedApi")
+        fun foregroundServiceTypes(micGranted: Boolean): Int =
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH or
+                (if (micGranted) ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE else 0)
     }
 }
