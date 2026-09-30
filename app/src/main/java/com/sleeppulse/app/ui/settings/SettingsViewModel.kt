@@ -68,12 +68,23 @@ class SettingsViewModel @Inject constructor(
                 _state.update { it.copy(amoledBlack = enabled) }
             }
         }
+        viewModelScope.launch {
+            repository.temperatureUnit.collect { unit ->
+                _state.update { it.copy(temperatureUnit = unit) }
+            }
+        }
+        viewModelScope.launch {
+            // Restores the chosen sensor's label after a restart; the Scan screen saves it.
+            repository.bleDeviceLabel.collect { label ->
+                if (label != null) _state.update { it.copy(selectedBleDeviceLabel = label) }
+            }
+        }
     }
 
     fun onIntent(intent: SettingsIntent) {
         when (intent) {
             is SettingsIntent.SetDataSource -> repository.setDataSourceMode(intent.mode)
-            is SettingsIntent.SetTemperatureUnit -> _state.update { it.copy(temperatureUnit = intent.unit) }
+            is SettingsIntent.SetTemperatureUnit -> repository.setTemperatureUnit(intent.unit)
             is SettingsIntent.SetSelectedBleDevice -> _state.update { it.copy(selectedBleDeviceLabel = intent.label) }
             is SettingsIntent.SetTargetBedtime -> {
                 repository.setTargetBedtime(intent.hour, intent.minute)

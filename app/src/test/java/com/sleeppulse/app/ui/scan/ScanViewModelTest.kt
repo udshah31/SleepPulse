@@ -1,6 +1,7 @@
 package com.sleeppulse.app.ui.scan
 
 import app.cash.turbine.test
+import com.sleeppulse.app.data.repository.SettingsRepository
 import com.sleeppulse.app.data.source.ScannedDevice
 import com.sleeppulse.app.testutil.FakeBleScanSource
 import com.sleeppulse.app.testutil.FakeBleTargetDeviceSink
@@ -19,7 +20,7 @@ class ScanViewModelTest {
     @Test
     fun `StartScan collects devices into state`() = runTest {
         val scanSource = FakeBleScanSource()
-        val viewModel = ScanViewModel(scanSource, FakeBleTargetDeviceSink())
+        val viewModel = ScanViewModel(scanSource, FakeBleTargetDeviceSink(), SettingsRepository())
 
         viewModel.state.test {
             assertEquals(ScanState(), awaitItem())
@@ -44,7 +45,7 @@ class ScanViewModelTest {
     @Test
     fun `SelectDevice sets target device and emits selection signal`() = runTest {
         val sink = FakeBleTargetDeviceSink()
-        val viewModel = ScanViewModel(FakeBleScanSource(), sink)
+        val viewModel = ScanViewModel(FakeBleScanSource(), sink, SettingsRepository())
         val device = ScannedDevice(address = "AA:BB", name = "Fake HR Strap")
 
         viewModel.deviceSelected.test {
@@ -55,8 +56,19 @@ class ScanViewModelTest {
     }
 
     @Test
+    fun `SelectDevice saves the device so BLE mode survives a restart`() {
+        val settings = SettingsRepository()
+        val viewModel = ScanViewModel(FakeBleScanSource(), FakeBleTargetDeviceSink(), settings)
+
+        viewModel.onIntent(ScanIntent.SelectDevice(ScannedDevice(address = "AA:BB", name = null)))
+
+        assertEquals("AA:BB", settings.bleDeviceAddress.value)
+        assertEquals("Unknown (AA:BB)", settings.bleDeviceLabel.value)
+    }
+
+    @Test
     fun `PermissionDenied sets error text`() {
-        val viewModel = ScanViewModel(FakeBleScanSource(), FakeBleTargetDeviceSink())
+        val viewModel = ScanViewModel(FakeBleScanSource(), FakeBleTargetDeviceSink(), SettingsRepository())
 
         viewModel.onIntent(ScanIntent.PermissionDenied)
 
@@ -66,7 +78,7 @@ class ScanViewModelTest {
     @Test
     fun `StartScan called twice cancels the prior scan instead of running concurrently`() = runTest {
         val scanSource = FakeBleScanSource()
-        val viewModel = ScanViewModel(scanSource, FakeBleTargetDeviceSink())
+        val viewModel = ScanViewModel(scanSource, FakeBleTargetDeviceSink(), SettingsRepository())
 
         viewModel.onIntent(ScanIntent.StartScan)
         advanceUntilIdle()
@@ -87,7 +99,7 @@ class ScanViewModelTest {
         val scanSource = FakeBleScanSource().apply {
             errorToThrow = IllegalStateException("Bluetooth is turned off")
         }
-        val viewModel = ScanViewModel(scanSource, FakeBleTargetDeviceSink())
+        val viewModel = ScanViewModel(scanSource, FakeBleTargetDeviceSink(), SettingsRepository())
 
         viewModel.state.test {
             assertEquals(ScanState(), awaitItem())

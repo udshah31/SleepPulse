@@ -45,6 +45,11 @@ class SensorSourceManager @Inject constructor(
         }
 
     override suspend fun connect() {
+        // The BLE source only remembers its target in memory; after a restart the saved one
+        // has to be handed back or a persisted BLE mode could never connect.
+        if (settingsRepository.dataSourceMode.value == DataSourceMode.BLE) {
+            settingsRepository.bleDeviceAddress.value?.let(bleSource::setTargetDevice)
+        }
         activeSource.connect()
     }
 

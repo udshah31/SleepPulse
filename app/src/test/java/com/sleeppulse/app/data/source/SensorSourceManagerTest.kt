@@ -17,7 +17,10 @@ import org.junit.Rule
 import org.junit.Test
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.any
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyBlocking
 
 class SensorSourceManagerTest {
 
@@ -108,5 +111,33 @@ class SensorSourceManagerTest {
             assertEquals(SensorConnectionState.Disconnected, awaitItem())
             cancelAndIgnoreRemainingEvents()
         }
+    }
+
+    @Test
+    fun `BLE connect after a restart hands the saved device back to the BLE source`() = runTest {
+        val store = com.sleeppulse.app.data.repository.InMemorySettingsStore()
+        SettingsRepository(store).apply {
+            setDataSourceMode(DataSourceMode.BLE)
+            setBleDevice("AA:BB:CC:DD:EE:FF", "Strap (AA:BB:CC:DD:EE:FF)")
+        }
+        val ble = mock<BleSensorDataSource>()
+        val manager = SensorSourceManager(SettingsRepository(store), SimulatedSensorDataSource(mock<SleepStagePredictor>()), ble)
+
+        manager.connect()
+
+        verify(ble).setTargetDevice("AA:BB:CC:DD:EE:FF")
+        verifyBlocking(ble) { connect() }
+    }
+
+    @Test
+    fun `simulated connect never touches the BLE target`() = runTest {
+        val repo = SettingsRepository().apply { setBleDevice("AA:BB", "x") }
+        val ble = mock<BleSensorDataSource>()
+        val manager = SensorSourceManager(repo, SimulatedSensorDataSource(mock<SleepStagePredictor>()), ble)
+
+        val job = backgroundScope.launch(kotlinx.coroutines.Dispatchers.Default) { manager.connect() }
+        job.cancel()
+
+        verify(ble, never()).setTargetDevice(any())
     }
 }

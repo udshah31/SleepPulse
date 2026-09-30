@@ -2,6 +2,7 @@ package com.sleeppulse.app.ui.scan
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.sleeppulse.app.data.repository.SettingsRepository
 import com.sleeppulse.app.data.source.BleScanSource
 import com.sleeppulse.app.data.source.BleTargetDeviceSink
 import com.sleeppulse.app.data.source.ScannedDevice
@@ -22,6 +23,7 @@ import kotlinx.coroutines.launch
 class ScanViewModel @Inject constructor(
     private val scanSource: BleScanSource,
     private val targetDeviceSink: BleTargetDeviceSink,
+    private val settingsRepository: SettingsRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ScanState())
@@ -60,6 +62,8 @@ class ScanViewModel @Inject constructor(
 
     private fun selectDevice(device: ScannedDevice) {
         targetDeviceSink.setTargetDevice(device.address)
+        // Saved so BLE mode can reconnect to this sensor after a restart (see SensorSourceManager).
+        settingsRepository.setBleDevice(device.address, "${device.name ?: "Unknown"} (${device.address})")
         _deviceSelected.trySend(device)
     }
 }

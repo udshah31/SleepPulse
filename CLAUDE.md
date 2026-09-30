@@ -54,7 +54,7 @@ Package root: `com.sleeppulse.app`.
 
 **DI** — Hilt; all bindings/provides live in `di/AppModule.kt` (`BindingsModule` for `@Binds`, `DatabaseModule` for DB, DAOs, application scope, `nowMillis`, system services).
 
-**Settings are in-memory only** — `SettingsRepository` is `MutableStateFlow`s with defaults (simulated source, bed 22:30, wake 07:00, 30-min window); nothing is persisted across process restarts.
+**Settings persist** — `SettingsRepository` exposes one `StateFlow` per setting, initialised from a `SettingsStore` and saving the whole `Settings` snapshot on every setter (`PrefsSettingsStore`, SharedPreferences file `settings`; unknown enum names fall back to defaults). It also owns the temperature unit and the chosen BLE device: `ScanViewModel` saves the device, and `SensorSourceManager.connect()` hands the saved address back to `BleSensorDataSource` in BLE mode (which only remembers its target in memory). Tests use the no-arg constructor (in-memory store); it's a secondary constructor, not a default argument, because Kotlin would copy `@Inject` onto the generated no-arg constructor and Hilt rejects two.
 
 There are two `SleepPulseApp.kt` files — `com.sleeppulse.app.SleepPulseApp` (the `@HiltAndroidApp` Application class) and `com.sleeppulse.app.ui.SleepPulseApp` (the root Composable/nav setup). Don't conflate them when searching.
 

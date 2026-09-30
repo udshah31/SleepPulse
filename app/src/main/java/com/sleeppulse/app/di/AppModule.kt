@@ -7,6 +7,8 @@ import androidx.room.Room
 import com.sleeppulse.app.data.local.NightlySummaryDao
 import com.sleeppulse.app.data.local.SleepPulseDatabase
 import com.sleeppulse.app.data.local.SleepSessionDao
+import com.sleeppulse.app.data.repository.PrefsSettingsStore
+import com.sleeppulse.app.data.repository.SettingsStore
 import com.sleeppulse.app.data.repository.SleepRepository
 import com.sleeppulse.app.data.repository.SleepRepositoryImpl
 import com.sleeppulse.app.data.source.BleDeviceScanner
@@ -70,6 +72,9 @@ abstract class BindingsModule {
     @Binds
     @Singleton
     abstract fun bindSmartAlarmScheduler(impl: SmartAlarmSchedulerImpl): SmartAlarmScheduler
+
+    @Binds
+    abstract fun bindSettingsStore(impl: PrefsSettingsStore): SettingsStore
 
     @Binds
     abstract fun bindSleepSyncStore(impl: PrefsSleepSyncStore): SleepSyncStore

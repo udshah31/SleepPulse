@@ -1,6 +1,7 @@
 package com.sleeppulse.app.data.repository
 
 import com.sleeppulse.app.ui.settings.DataSourceMode
+import com.sleeppulse.app.ui.settings.TemperatureUnit
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Test
@@ -47,5 +48,38 @@ class SettingsRepositoryTest {
         repository.setAmoledBlack(true)
         assertEquals(true, repository.amoledBlack.value)
         assertEquals(23, repository.targetBedtimeHour.value)
+    }
+
+    @Test
+    fun `every setting survives a restart through the store`() {
+        val store = InMemorySettingsStore()
+        SettingsRepository(store).apply {
+            setDataSourceMode(DataSourceMode.BLE)
+            setTargetBedtime(23, 15)
+            setTargetWakeup(6, 45, 20)
+            setAmoledBlack(true)
+            setTemperatureUnit(TemperatureUnit.FAHRENHEIT)
+            setBleDevice("AA:BB", "Strap (AA:BB)")
+        }
+
+        val restarted = SettingsRepository(store)
+
+        assertEquals(DataSourceMode.BLE, restarted.dataSourceMode.value)
+        assertEquals(23, restarted.targetBedtimeHour.value)
+        assertEquals(15, restarted.targetBedtimeMinute.value)
+        assertEquals(6, restarted.targetWakeupHour.value)
+        assertEquals(45, restarted.targetWakeupMinute.value)
+        assertEquals(20, restarted.wakeWindowMinutes.value)
+        assertEquals(true, restarted.amoledBlack.value)
+        assertEquals(TemperatureUnit.FAHRENHEIT, restarted.temperatureUnit.value)
+        assertEquals("AA:BB", restarted.bleDeviceAddress.value)
+        assertEquals("Strap (AA:BB)", restarted.bleDeviceLabel.value)
+    }
+
+    @Test
+    fun `an unknown stored enum name falls back to the default instead of crashing`() {
+        assertEquals(DataSourceMode.SIMULATED, enumOrDefault("REMOVED_MODE", DataSourceMode.SIMULATED))
+        assertEquals(TemperatureUnit.FAHRENHEIT, enumOrDefault("FAHRENHEIT", TemperatureUnit.CELSIUS))
+        assertEquals(TemperatureUnit.CELSIUS, enumOrDefault(null, TemperatureUnit.CELSIUS))
     }
 }

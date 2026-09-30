@@ -76,7 +76,7 @@ touch Room or `SensorDataSource` directly.
   which — on the application scope, so it outlives the service — records the summary,
   computes the recovery score, posts the summary notification, and refreshes the widget.
 
-Settings (`SettingsRepository`) are in-memory only and reset on restart.
+Settings (`SettingsRepository`) are saved to SharedPreferences, including the chosen BLE sensor, so BLE mode reconnects after a restart.
 
 ### Dependency injection
 
@@ -122,7 +122,6 @@ in CI.
 
 - HRV and sleep stage from a real BLE strap are placeholders (see above); stage prediction
   is a simple HR/HRV/movement threshold heuristic.
-- Settings are not persisted.
 - Room uses destructive migration and doesn't export schemas — a version bump wipes data.
 - Single `:app` module (no `:data`/`:domain` split); the `data/`, `ui/`, `di/` packages
   mirror where the boundaries would go.
