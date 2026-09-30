@@ -25,7 +25,7 @@ SleepPulse: a native Android sleep/recovery tracking app (Kotlin + Jetpack Compo
 ./gradlew lint
 ```
 
-CI (`.github/workflows/ci.yml`, master + PRs) runs `lint`, `:app:test`, `:app:assembleDebug`. Requires Android SDK path in `local.properties` (`sdk.dir`) and JDK 17+. minSdk 26, targetSdk 34.
+CI (`.github/workflows/ci.yml`, master + PRs) runs `lint`, `:app:test`, `:app:assembleDebug`. Requires Android SDK path in `local.properties` (`sdk.dir`) and JDK 17+. `:app` is minSdk 26, compileSdk 36, targetSdk 34 (`:wear` stays on compileSdk 34). Health Connect is `connect-client:1.1.0` (stable), which requires compileSdk 36 and AGP ≥ 8.9.1 — hence AGP 8.9.3 / Gradle 8.11.1. In 1.1.0 records must use the `Metadata.autoRecorded(...)`-style factories (the constructor is internal, so tests can't set `dataOrigin`; `fromOtherApps` takes an `originOf` seam for that).
 
 ## Architecture
 

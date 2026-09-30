@@ -2,6 +2,7 @@ package com.sleeppulse.app.tracking
 
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.records.SleepSessionRecord
+import androidx.health.connect.client.records.metadata.Device
 import androidx.health.connect.client.records.metadata.Metadata
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
@@ -25,6 +26,7 @@ class HealthConnectReadTest {
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
     private val manager = HealthConnectManager(context)
     private val client = HealthConnectClient.getOrCreate(context)
+    private val unknownDevice = Device(type = Device.TYPE_UNKNOWN)
 
     @Test
     fun readPathSeesTheRecordButFiltersOutOurOwnWrite() = runBlocking {
@@ -35,7 +37,7 @@ class HealthConnectReadTest {
         val end = start.plusSeconds(7 * 3600)
         val id = "sleeppulse-readtest-${start.toEpochMilli()}"
         val insertedId = client.insertRecords(
-            listOf(SleepSessionRecord(start, null, end, null, metadata = Metadata(clientRecordId = id)))
+            listOf(SleepSessionRecord(start, null, end, null, metadata = Metadata.autoRecorded(unknownDevice, id, 0L)))
         ).recordIdsList.single()
 
         val raw = client.readRecords(
@@ -57,7 +59,7 @@ class HealthConnectReadTest {
 
         val start = Instant.now().minusSeconds(20 * 3600)
         val inserted = client.insertRecords(
-            listOf(SleepSessionRecord(start, null, start.plusSeconds(3600), null))
+            listOf(SleepSessionRecord(start, null, start.plusSeconds(3600), null, metadata = Metadata.autoRecorded(unknownDevice)))
         ).recordIdsList.single()
 
         val afterInsert = manager.getSleepChanges(token!!)

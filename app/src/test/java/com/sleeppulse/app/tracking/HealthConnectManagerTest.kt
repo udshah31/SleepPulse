@@ -1,7 +1,7 @@
 package com.sleeppulse.app.tracking
 
 import androidx.health.connect.client.records.SleepSessionRecord
-import androidx.health.connect.client.records.metadata.DataOrigin
+import androidx.health.connect.client.records.metadata.Device
 import androidx.health.connect.client.records.metadata.Metadata
 import com.sleeppulse.app.data.model.NightlySummary
 import com.sleeppulse.app.data.model.SensorReading
@@ -49,6 +49,7 @@ class HealthConnectManagerTest {
             record.stages.map { it.stage },
         )
         assertEquals("sleeppulse-$start", record.metadata.clientRecordId)
+        assertEquals(Metadata.RECORDING_METHOD_AUTOMATICALLY_RECORDED, record.metadata.recordingMethod)
     }
 
     @Test
@@ -80,13 +81,16 @@ class HealthConnectManagerTest {
         assertEquals(ZoneOffset.ofHours(-5), record.startZoneOffset)
     }
 
+    private val originOf = { r: SleepSessionRecord -> r.metadata.clientRecordId!! }
+
     private fun hcRecord(pkg: String, stages: List<SleepSessionRecord.Stage> = emptyList()) = SleepSessionRecord(
         startTime = Instant.ofEpochMilli(start),
         startZoneOffset = null,
         endTime = Instant.ofEpochMilli(start + 8 * 3_600_000L),
         endZoneOffset = null,
         stages = stages,
-        metadata = Metadata(dataOrigin = DataOrigin(pkg)),
+        // Carries the fake origin; see originOf below.
+        metadata = Metadata.autoRecorded(Device(type = Device.TYPE_UNKNOWN), clientRecordId = pkg, clientRecordVersion = 0L),
     )
 
     @Test
@@ -105,7 +109,7 @@ class HealthConnectManagerTest {
             ),
         )
 
-        val sessions = HealthConnectManager.fromOtherApps(records, ownPackage = "com.sleeppulse.app")
+        val sessions = HealthConnectManager.fromOtherApps(records, ownPackage = "com.sleeppulse.app", originOf = originOf)
 
         val only = sessions.single()
         assertEquals("com.samsung.android.wear.shealth", only.sourcePackage)
@@ -116,7 +120,7 @@ class HealthConnectManagerTest {
 
     @Test
     fun `a record without stages reports zero deep and rem rather than a guess`() {
-        val only = HealthConnectManager.fromOtherApps(listOf(hcRecord("other.app")), "com.sleeppulse.app").single()
+        val only = HealthConnectManager.fromOtherApps(listOf(hcRecord("other.app")), "com.sleeppulse.app", originOf).single()
         assertEquals(0, only.deepSleepMinutes)
         assertEquals(0, only.remSleepMinutes)
     }

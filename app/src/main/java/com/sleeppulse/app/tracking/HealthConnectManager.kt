@@ -5,6 +5,7 @@ import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.HeartRateRecord
 import androidx.health.connect.client.records.SleepSessionRecord
+import androidx.health.connect.client.records.metadata.Device
 import androidx.health.connect.client.records.metadata.Metadata
 import androidx.health.connect.client.changes.DeletionChange
 import androidx.health.connect.client.changes.UpsertionChange
@@ -53,9 +54,15 @@ class HealthConnectManager(private val context: Context) {
          * to what the app uses. Deep/REM minutes come from the record's stages; a record with no
          * stages reports 0 for both rather than guessing.
          */
-        fun fromOtherApps(records: List<SleepSessionRecord>, ownPackage: String): List<ExternalSleepSession> =
+        fun fromOtherApps(
+            records: List<SleepSessionRecord>,
+            ownPackage: String,
+            // Only Health Connect can stamp a record's origin (its Metadata constructor is
+            // internal), so tests supply the origin some other way.
+            originOf: (SleepSessionRecord) -> String = { it.metadata.dataOrigin.packageName },
+        ): List<ExternalSleepSession> =
             records
-                .filter { it.metadata.dataOrigin.packageName != ownPackage }
+                .filter { originOf(it) != ownPackage }
                 .map { r ->
                     fun minutesOf(type: Int) = r.stages.filter { it.stage == type }
                         .sumOf { java.time.Duration.between(it.startTime, it.endTime).toMinutes() }.toInt()
@@ -65,7 +72,7 @@ class HealthConnectManager(private val context: Context) {
                         endMillis = r.endTime.toEpochMilli(),
                         deepSleepMinutes = minutesOf(SleepSessionRecord.STAGE_TYPE_DEEP),
                         remSleepMinutes = minutesOf(SleepSessionRecord.STAGE_TYPE_REM),
-                        sourcePackage = r.metadata.dataOrigin.packageName,
+                        sourcePackage = originOf(r),
                     )
                 }
 
@@ -98,7 +105,7 @@ class HealthConnectManager(private val context: Context) {
                     if (e <= s) null
                     else SleepSessionRecord.Stage(Instant.ofEpochMilli(s), Instant.ofEpochMilli(e), seg.stage.toHcStage())
                 },
-                metadata = Metadata(clientRecordId = "sleeppulse-$startMillis"),
+                metadata = sensorMetadata("sleeppulse-$startMillis"),
             )
         }
 
@@ -137,9 +144,17 @@ class HealthConnectManager(private val context: Context) {
                 endTime = end,
                 endZoneOffset = zone.rules.getOffset(end),
                 samples = samples,
-                metadata = Metadata(clientRecordId = "sleeppulse-hr-$startMillis"),
+                metadata = sensorMetadata("sleeppulse-hr-$startMillis"),
             )
         }
+
+        /**
+         * Sensor data, so "automatically recorded". The device type is unknown: readings come
+         * from whichever source is active (simulated, or any BLE heart-rate strap). A fixed
+         * [clientRecordId] makes a retried insert replace the record instead of duplicating it.
+         */
+        private fun sensorMetadata(clientRecordId: String) =
+            Metadata.autoRecorded(Device(type = Device.TYPE_UNKNOWN), clientRecordId, clientRecordVersion = 0L)
 
         private fun SleepStage.toHcStage() = when (this) {
             SleepStage.AWAKE -> SleepSessionRecord.STAGE_TYPE_AWAKE
