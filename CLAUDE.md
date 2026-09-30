@@ -25,7 +25,7 @@ SleepPulse: a native Android sleep/recovery tracking app (Kotlin + Jetpack Compo
 ./gradlew lint
 ```
 
-CI (`.github/workflows/ci.yml`, master + PRs) runs `lint`, `:app:test`, `:app:assembleDebug`. Requires Android SDK path in `local.properties` (`sdk.dir`) and JDK 17+. `:app` is minSdk 26, compileSdk 36, targetSdk 34 (`:wear` stays on compileSdk 34). Health Connect is `connect-client:1.1.0` (stable), which requires compileSdk 36 and AGP ≥ 8.9.1 — hence AGP 8.9.3 / Gradle 8.11.1. In 1.1.0 records must use the `Metadata.autoRecorded(...)`-style factories (the constructor is internal, so tests can't set `dataOrigin`; `fromOtherApps` takes an `originOf` seam for that).
+CI (`.github/workflows/ci.yml`, master + PRs) runs `lint`, `:app:test`, `:app:assembleDebug`. Requires Android SDK path in `local.properties` (`sdk.dir`) and JDK 17+. `:app` is minSdk 26, compileSdk 36, targetSdk 36 (`:wear` stays on compileSdk/targetSdk 34). targetSdk 35+ forces edge-to-edge: screens stay clear of the system bars only because `SleepPulseApp`'s `Scaffold` padding is applied to the `NavHost` — keep new screens inside it. The launch splash is still white (the XML theme parent is `Theme.Material.Light.NoActionBar`). Health Connect is `connect-client:1.1.0` (stable), which requires compileSdk 36 and AGP ≥ 8.9.1 — hence AGP 8.9.3 / Gradle 8.11.1. In 1.1.0 records must use the `Metadata.autoRecorded(...)`-style factories (the constructor is internal, so tests can't set `dataOrigin`; `fromOtherApps` takes an `originOf` seam for that).
 
 ## Architecture
 
