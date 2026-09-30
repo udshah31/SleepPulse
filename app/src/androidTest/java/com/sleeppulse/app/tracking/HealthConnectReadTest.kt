@@ -1,6 +1,7 @@
 package com.sleeppulse.app.tracking
 
 import androidx.health.connect.client.HealthConnectClient
+import androidx.health.connect.client.records.HeartRateRecord
 import androidx.health.connect.client.records.SleepSessionRecord
 import androidx.health.connect.client.records.metadata.Device
 import androidx.health.connect.client.records.metadata.Metadata
@@ -10,6 +11,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import java.time.Instant
 import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -72,5 +75,30 @@ class HealthConnectReadTest {
         val afterDelete = manager.getSleepChanges(afterInsert.nextToken)
         assertTrue("expected Changes, got $afterDelete", afterDelete is SleepChanges.Changes)
         assertTrue("deletion not reported", (afterDelete as SleepChanges.Changes).deletedIds.contains(inserted))
+    }
+
+    /** Needs READ_HEART_RATE and WRITE_HEART_RATE granted too. */
+    @Test
+    fun averageHeartRateIsFilteredToTheSessionsOwnApp() = runBlocking {
+        val start = Instant.now().minusSeconds(30 * 3600)
+        val end = start.plusSeconds(600)
+        val inserted = client.insertRecords(
+            listOf(
+                HeartRateRecord(
+                    startTime = start, startZoneOffset = null, endTime = end, endZoneOffset = null,
+                    samples = listOf(HeartRateRecord.Sample(start, 50), HeartRateRecord.Sample(end, 70)),
+                    metadata = Metadata.autoRecorded(unknownDevice),
+                )
+            )
+        ).recordIdsList.single()
+
+        fun session(pkg: String) =
+            ExternalSleepSession("x", start.toEpochMilli(), end.toEpochMilli() + 1, 0, 0, pkg)
+        try {
+            assertEquals(60L, manager.averageHeartRate(session(context.packageName)))
+            assertNull(manager.averageHeartRate(session("com.example.not.installed")))
+        } finally {
+            client.deleteRecords(HeartRateRecord::class, listOf(inserted), emptyList())
+        }
     }
 }

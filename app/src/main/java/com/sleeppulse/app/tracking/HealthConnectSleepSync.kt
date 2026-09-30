@@ -44,7 +44,10 @@ class HealthConnectSleepSync @Inject constructor(
         try {
             val token = store.token
             when (val result = token?.let { manager.getSleepChanges(it) }) {
-                is SleepChanges.Changes -> save(applyChanges(_sessions.value, result), result.nextToken)
+                is SleepChanges.Changes -> save(
+                    applyChanges(_sessions.value, result.copy(upserted = withHeartRate(result.upserted))),
+                    result.nextToken,
+                )
                 SleepChanges.NoPermission -> clear()
                 SleepChanges.TokenExpired, null -> fullResync()
             }
@@ -60,8 +63,13 @@ class HealthConnectSleepSync @Inject constructor(
     private suspend fun fullResync() {
         val token = manager.getChangesToken() ?: return clear()
         val now = Instant.ofEpochMilli(nowMillis())
-        save(manager.readSleepSessions(now.minus(WINDOW), now), token)
+        save(withHeartRate(manager.readSleepSessions(now.minus(WINDOW), now)), token)
     }
+
+    // ponytail: heart rate is read once, when the session arrives; the token only tracks sleep
+    // records, so heart rate an app uploads after its session isn't picked up until a full resync.
+    private suspend fun withHeartRate(sessions: List<ExternalSleepSession>) =
+        sessions.map { it.copy(avgHeartRateBpm = manager.averageHeartRate(it)) }
 
     private fun save(sessions: List<ExternalSleepSession>, token: String) {
         store.sessions = sessions
@@ -113,6 +121,7 @@ class PrefsSleepSyncStore @Inject constructor(@ApplicationContext context: Conte
                     deepSleepMinutes = o.getInt("deep"),
                     remSleepMinutes = o.getInt("rem"),
                     sourcePackage = o.getString("source"),
+                    avgHeartRateBpm = if (o.has("hr")) o.getLong("hr") else null,
                 )
             }
         }
@@ -124,6 +133,7 @@ class PrefsSleepSyncStore @Inject constructor(@ApplicationContext context: Conte
                         .put("id", it.id).put("start", it.startMillis).put("end", it.endMillis)
                         .put("deep", it.deepSleepMinutes).put("rem", it.remSleepMinutes)
                         .put("source", it.sourcePackage)
+                        .apply { it.avgHeartRateBpm?.let { hr -> put("hr", hr) } }
                 )
             }
             prefs.edit().putString(KEY_SESSIONS, array.toString()).apply()

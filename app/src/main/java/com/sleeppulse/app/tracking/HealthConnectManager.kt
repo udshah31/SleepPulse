@@ -6,10 +6,12 @@ import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.HeartRateRecord
 import androidx.health.connect.client.records.HeartRateVariabilityRmssdRecord
 import androidx.health.connect.client.records.SleepSessionRecord
+import androidx.health.connect.client.records.metadata.DataOrigin
 import androidx.health.connect.client.records.metadata.Device
 import androidx.health.connect.client.records.metadata.Metadata
 import androidx.health.connect.client.changes.DeletionChange
 import androidx.health.connect.client.changes.UpsertionChange
+import androidx.health.connect.client.request.AggregateRequest
 import androidx.health.connect.client.request.ChangesTokenRequest
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
@@ -17,6 +19,7 @@ import com.sleeppulse.app.data.model.NightlySummary
 import com.sleeppulse.app.data.model.SensorReading
 import com.sleeppulse.app.data.model.SleepStage
 import com.sleeppulse.app.data.model.StageSegment
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.Instant
@@ -52,7 +55,10 @@ class HealthConnectManager(private val context: Context) {
          */
         const val READ_IN_BACKGROUND = "android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND"
 
-        val REQUESTED_PERMISSIONS: Set<String> = REQUIRED_PERMISSIONS + READ_PERMISSIONS + READ_IN_BACKGROUND
+        /** Optional: other apps' heart rate for their sleep sessions. Not in [READ_PERMISSIONS], so losing it never wipes the sleep cache. */
+        private val READ_HEART_RATE = HealthPermission.getReadPermission(HeartRateRecord::class)
+
+        val REQUESTED_PERMISSIONS: Set<String> = REQUIRED_PERMISSIONS + READ_PERMISSIONS + READ_HEART_RATE + READ_IN_BACKGROUND
 
         /**
          * Keeps sleep sessions written by other apps (ours are already in Room) and reduces each
@@ -253,6 +259,35 @@ class HealthConnectManager(private val context: Context) {
     }
 
     /**
+     * The average heart rate the app that recorded [session] logged during it, or null when
+     * there's none, heart-rate read access isn't granted, or the read fails. Filtered to the
+     * session's own app so another device's readings from the same night aren't mixed in.
+     */
+    suspend fun averageHeartRate(session: ExternalSleepSession): Long? {
+        if (!hasPermission(READ_HEART_RATE)) return null
+        return try {
+            withContext(Dispatchers.IO) {
+                healthConnectClient.aggregate(
+                    AggregateRequest(
+                        metrics = setOf(HeartRateRecord.BPM_AVG),
+                        timeRangeFilter = TimeRangeFilter.between(
+                            Instant.ofEpochMilli(session.startMillis),
+                            Instant.ofEpochMilli(session.endMillis),
+                        ),
+                        dataOriginFilter = setOf(DataOrigin(session.sourcePackage)),
+                    )
+                )[HeartRateRecord.BPM_AVG]
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // e.g. a background read without background access: skip the number, keep the session.
+            android.util.Log.w("HealthConnectManager", "Heart-rate average unavailable", e)
+            null
+        }
+    }
+
+    /**
      * A token marking "now" in Health Connect's change log for sleep sessions, or null without
      * read access. Take it *before* a full read so nothing written during the read is missed —
      * a change seen by both is just an idempotent upsert.
@@ -357,6 +392,8 @@ data class ExternalSleepSession(
     val deepSleepMinutes: Int,
     val remSleepMinutes: Int,
     val sourcePackage: String,
+    /** That app's average heart rate during the session, if it logged any and we may read it. */
+    val avgHeartRateBpm: Long? = null,
 )
 
 sealed interface SleepChanges {

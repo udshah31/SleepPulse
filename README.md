@@ -94,7 +94,7 @@ Hilt wires the graph: `SleepPulseApp` (`@HiltAndroidApp`), `MainActivity`
 - **Alarm** — bedtime/wake targets, smart-alarm window (with a hard-alarm fallback), and a
   wind-down reminder.
 - **Settings** — simulated vs. BLE source, BLE device scan, targets, AMOLED-black theme.
-- **Integrations** — Health Connect: sleep sessions with stages, heart rate and HRV (HRV only from sources that measure it) written; other apps' sleep read and synced, Glance home-screen widget, Wear OS
+- **Integrations** — Health Connect: sleep sessions with stages, heart rate and HRV (HRV only from sources that measure it) written; other apps' sleep (with that app's average heart rate) read and synced, Glance home-screen widget, Wear OS
   data sync, sleep-stage heuristic (`SleepStagePredictor`).
 
 ## Running the app

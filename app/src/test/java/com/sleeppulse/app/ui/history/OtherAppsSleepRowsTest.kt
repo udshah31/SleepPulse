@@ -46,6 +46,14 @@ class OtherAppsSleepRowsTest {
         val row = toOtherAppsRows(listOf(session("a", at(28, 23), at(29, 7))), zone).single()
 
         assertNull(row.stages)
+        assertNull(row.heartRate)
         assertEquals("com.samsung.android.app.health", row.source)
+    }
+
+    @Test
+    fun `the source's average heart rate shows when it logged one`() {
+        val row = toOtherAppsRows(listOf(session("a", at(28, 23), at(29, 7)).copy(avgHeartRateBpm = 57)), zone).single()
+
+        assertEquals("Avg HR 57 bpm", row.heartRate)
     }
 }

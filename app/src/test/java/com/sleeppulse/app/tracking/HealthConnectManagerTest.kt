@@ -187,6 +187,13 @@ class HealthConnectManagerTest {
     }
 
     @Test
+    fun `heart-rate read is requested but is not a read that gates the sleep cache`() {
+        val readHr = HealthConnectManager.REQUESTED_PERMISSIONS.filter { it.endsWith("READ_HEART_RATE") }
+        assertEquals(1, readHr.size)
+        assertEquals(false, HealthConnectManager.READ_PERMISSIONS.containsAll(readHr))
+    }
+
+    @Test
     fun `required permissions cover the sleep, heart-rate and hrv writes`() {
         assertEquals(3, HealthConnectManager.REQUIRED_PERMISSIONS.size)
         assertEquals(true, HealthConnectManager.REQUIRED_PERMISSIONS.any { it.endsWith("WRITE_HEART_RATE") })

@@ -44,6 +44,24 @@ class HealthConnectSleepSyncTest {
     }
 
     @Test
+    fun `sessions arriving by full read or by changes carry their source's average heart rate`() = runTest {
+        val manager = mock<HealthConnectManager> {
+            onBlocking { getChangesToken() } doReturn "t1"
+            onBlocking { readSleepSessions(any(), any()) } doReturn listOf(session("a"))
+            onBlocking { getSleepChanges("t1") } doReturn
+                SleepChanges.Changes(upserted = listOf(session("b", 5)), deletedIds = emptyList(), nextToken = "t2")
+            onBlocking { averageHeartRate(session("a")) } doReturn 58L
+            onBlocking { averageHeartRate(session("b", 5)) } doReturn 61L
+        }
+        val sync = HealthConnectSleepSync(manager, MemoryStore()) { now }
+
+        sync.sync()
+        sync.sync()
+
+        assertEquals(listOf(58L, 61L), sync.sessions.value.map { it.avgHeartRateBpm })
+    }
+
+    @Test
     fun `later syncs apply only the changes and advance the token`() = runTest {
         val manager = mock<HealthConnectManager> {
             onBlocking { getSleepChanges("t1") } doReturn

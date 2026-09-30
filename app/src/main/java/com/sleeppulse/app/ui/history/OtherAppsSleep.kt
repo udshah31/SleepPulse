@@ -37,13 +37,15 @@ data class OtherAppsSleepRow(
     val date: String,
     val duration: String,
     val stages: String?,
+    val heartRate: String?,
     val source: String,
 )
 
 /**
  * Newest first. [label] turns a package name into what the user sees (the app's name when
  * it's visible to us, else the package itself). Stage text is omitted when the source wrote
- * no deep/REM data, rather than showing "Deep 0m".
+ * no deep/REM data, rather than showing "Deep 0m";
+ * likewise heart rate when the source logged none.
  */
 fun toOtherAppsRows(
     sessions: List<ExternalSleepSession>,
@@ -58,6 +60,7 @@ fun toOtherAppsRows(
             duration = hoursMinutes(((s.endMillis - s.startMillis) / 60_000L).toInt()),
             stages = if (s.deepSleepMinutes == 0 && s.remSleepMinutes == 0) null
             else "Deep ${hoursMinutes(s.deepSleepMinutes)} · REM ${hoursMinutes(s.remSleepMinutes)}",
+            heartRate = s.avgHeartRateBpm?.let { "Avg HR $it bpm" },
             source = label(s.sourcePackage),
         )
     }
@@ -106,7 +109,7 @@ fun OtherAppsSleepSection(viewModel: OtherAppsSleepViewModel = hiltViewModel()) 
                 Column(modifier = Modifier.padding(14.dp)) {
                     Text(row.date, style = MaterialTheme.typography.titleMedium)
                     Text(
-                        text = listOfNotNull(row.duration, row.stages).joinToString(" · "),
+                        text = listOfNotNull(row.duration, row.stages, row.heartRate).joinToString(" · "),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
