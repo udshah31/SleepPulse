@@ -4,6 +4,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import androidx.core.app.NotificationCompat
+import com.sleeppulse.app.R
 import com.sleeppulse.app.data.model.NightlySummary
 import com.sleeppulse.app.ui.dashboard.RecoveryResult
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -46,7 +47,7 @@ class SleepSummaryNotifierImpl @Inject constructor(
         }
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(body)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))

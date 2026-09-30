@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Status-bar version of ic_launcher_foreground: same paths, cropped to the artwork, white (only alpha is used). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="58"
+    android:viewportHeight="58">
+    <group
+        android:translateX="-25"
+        android:translateY="-22">
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M58,24 A20,20 0 1,0 74,54 A17,17 0 0,1 58,24 Z" />
+        <path
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="4"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:pathData="M28,70 H44 L49,62 L55,78 L60,66 H80" />
+    </group>
+</vector>

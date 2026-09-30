@@ -73,7 +73,7 @@ class SmartAlarmSchedulerImpl @Inject constructor(
 
     override fun fireAlarmNow() {
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("Wake Up!")
             .setContentText("It's time to wake up. You are in light sleep.")
             .setPriority(NotificationCompat.PRIORITY_MAX)

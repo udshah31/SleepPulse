@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import com.sleeppulse.app.MainActivity
+import com.sleeppulse.app.R
 import com.sleeppulse.app.data.repository.SleepRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -142,7 +143,7 @@ class SleepTrackingService : Service() {
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("SleepPulse is tracking")
             .setContentText("Monitoring your sleep data...")
-            .setSmallIcon(android.R.drawable.ic_menu_myplaces)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
             .build()

@@ -6,6 +6,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
+import com.sleeppulse.app.R
 import java.util.Calendar
 
 class WindDownReceiver : BroadcastReceiver() {
@@ -23,7 +24,7 @@ class WindDownReceiver : BroadcastReceiver() {
         notificationManager.createNotificationChannel(channel)
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("Time to wind down")
             .setContentText("It's almost your target bedtime. Start winding down!")
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
