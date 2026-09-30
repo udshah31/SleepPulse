@@ -1,3 +1,7 @@
 <resources>
-    <style name="Theme.SleepPulse" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- Dark parent + the Compose theme's background (CalmNightBackground) so the launch splash
+         and any pre-Compose frame match the app instead of flashing white. -->
+    <style name="Theme.SleepPulse" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/calm_night_background</item>
+    </style>
 </resources>

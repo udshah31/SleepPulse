@@ -1,0 +1,4 @@
+<resources>
+    <!-- Keep in sync with CalmNightBackground in ui/theme/Theme.kt. -->
+    <color name="calm_night_background">#FF0B0F22</color>
+</resources>
