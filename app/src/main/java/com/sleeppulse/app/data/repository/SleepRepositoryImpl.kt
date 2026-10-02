@@ -47,7 +47,6 @@ class SleepRepositoryImpl @Inject constructor(
     private val sessionDao: SleepSessionDao,
     private val appScope: CoroutineScope,
     private val healthConnectManager: HealthConnectManager,
-    private val settings: SettingsRepository = SettingsRepository(),
     private val nowMillis: () -> Long = System::currentTimeMillis,
 ) : SleepRepository {
 

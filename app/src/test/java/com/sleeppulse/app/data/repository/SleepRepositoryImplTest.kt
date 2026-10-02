@@ -413,28 +413,25 @@ class SleepRepositoryImplTest {
     }
 
     @Test
-    fun `hrv readings go to Health Connect in every data-source mode`() = runTest {
-        for (mode in com.sleeppulse.app.ui.settings.DataSourceMode.entries) {
-            val sessionDao = FakeSleepSessionDao()
-            val healthConnect: com.sleeppulse.app.tracking.HealthConnectManager = mock()
-            val settings = SettingsRepository().apply { setDataSourceMode(mode) }
-            val repository = SleepRepositoryImpl(FakeSensorDataSource(), FakeNightlySummaryDao(), sessionDao, backgroundScope, healthConnect, settings) { 1_000L }
+    fun `hrv readings are handed to Health Connect, which drops unknown and out-of-range values`() = runTest {
+        val sessionDao = FakeSleepSessionDao()
+        val healthConnect: com.sleeppulse.app.tracking.HealthConnectManager = mock()
+        val repository = SleepRepositoryImpl(FakeSensorDataSource(), FakeNightlySummaryDao(), sessionDao, backgroundScope, healthConnect) { 1_000L }
 
-            repository.connectSensor()
-            sessionDao.insertReadings(
-                listOf(0L, 1_000L).map {
-                    com.sleeppulse.app.data.local.SessionReadingEntity(
-                        sessionId = sessionDao.sessions.single().sessionId, timestampMillis = it,
-                        heartRateBpm = 60, hrvMillis = 42.5, sleepStage = SleepStage.LIGHT,
-                    )
-                },
-            )
-            repository.disconnectSensor()
+        repository.connectSensor()
+        sessionDao.insertReadings(
+            listOf(0L, 1_000L).map {
+                com.sleeppulse.app.data.local.SessionReadingEntity(
+                    sessionId = sessionDao.sessions.single().sessionId, timestampMillis = it,
+                    heartRateBpm = 60, hrvMillis = 42.5, sleepStage = SleepStage.LIGHT,
+                )
+            },
+        )
+        repository.disconnectSensor()
 
-            // Filtering out unknown / out-of-range HRV is HealthConnectManager.buildHrvRecords' job.
-            verify(healthConnect).writeHrv(argThat { size == 2 })
-            verify(healthConnect).writeHeartRate(any())
-        }
+        // Filtering out unknown / out-of-range HRV is HealthConnectManager.buildHrvRecords' job.
+        verify(healthConnect).writeHrv(argThat { size == 2 })
+        verify(healthConnect).writeHeartRate(any())
     }
 
     @Test
