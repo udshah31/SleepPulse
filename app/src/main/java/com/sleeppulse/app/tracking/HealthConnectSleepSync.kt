@@ -48,7 +48,7 @@ class HealthConnectSleepSync @Inject constructor(
                     applyChanges(_sessions.value, result.copy(upserted = withHeartRate(result.upserted))),
                     result.nextToken,
                 )
-                SleepChanges.NoPermission -> clear()
+                SleepChanges.NoPermission -> clear("read access gone")
                 SleepChanges.TokenExpired, null -> fullResync()
             }
             true
@@ -61,7 +61,7 @@ class HealthConnectSleepSync @Inject constructor(
     }
 
     private suspend fun fullResync() {
-        val token = manager.getChangesToken() ?: return clear()
+        val token = manager.getChangesToken() ?: return clear("no read access")
         val now = Instant.ofEpochMilli(nowMillis())
         save(withHeartRate(manager.readSleepSessions(now.minus(WINDOW), now)), token)
     }
@@ -77,7 +77,8 @@ class HealthConnectSleepSync @Inject constructor(
         _sessions.value = sessions
     }
 
-    private fun clear() {
+    private fun clear(reason: String) {
+        android.util.Log.i("SleepPulse", "Health Connect sleep sync: $reason; cleared cached sessions")
         store.token = null
         store.sessions = emptyList()
         _sessions.value = emptyList()
