@@ -81,7 +81,8 @@ class BleSensorDataSource @Inject constructor(
             return
         }
 
-        gatt = device.connectGatt(context, false, gattCallback)
+        // LE explicitly: with AUTO, Android may pick classic BR/EDR for a dual-mode peripheral and fail with 133.
+        gatt = device.connectGatt(context, false, gattCallback, BluetoothDevice.TRANSPORT_LE)
     }
 
     @SuppressLint("MissingPermission")
