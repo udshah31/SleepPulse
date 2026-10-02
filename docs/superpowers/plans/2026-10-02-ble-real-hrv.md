@@ -787,7 +787,7 @@ In `SleepPulseDatabaseMigrationTest.kt` add (imports: `org.junit.Assert.assertEq
     fun migration4to5KeepsRealHrvAndNullsThePlaceholder() {
         helper.createDatabase(TEST_DB, 4).apply {
             execSQL("INSERT INTO nightly_summary VALUES (1, 100, 80, 55, 62.25, 400, 80, 90, 'caffeine,late meal')")
-            execSQL("INSERT INTO nightly_summary VALUES (2, 200, 70, 58, 50.0, 380, 70, 80, '[]')")
+            execSQL("INSERT INTO nightly_summary VALUES (2, 200, 70, 58, 50.0, 380, 70, 80, '')")
             execSQL("INSERT INTO sleep_session VALUES (1, 1000, 0)")
             execSQL("INSERT INTO session_reading VALUES (1, 1, 1000, 60, 41.5, 'LIGHT')")
             execSQL("INSERT INTO session_reading VALUES (2, 1, 2000, 60, 50.0, 'LIGHT')")
