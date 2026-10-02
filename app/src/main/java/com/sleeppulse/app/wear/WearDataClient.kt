@@ -22,7 +22,7 @@ class WearDataClient @Inject constructor(
         val putDataMapReq = PutDataMapRequest.create("/sensor_data").apply {
             dataMap.putLong("timestamp", reading.timestampMillis)
             dataMap.putInt("heartRate", reading.heartRateBpm)
-            dataMap.putDouble("hrv", reading.hrvMillis)
+            reading.hrvMillis?.let { dataMap.putDouble("hrv", it) }
             dataMap.putString("sleepStage", reading.sleepStage.name)
         }
         

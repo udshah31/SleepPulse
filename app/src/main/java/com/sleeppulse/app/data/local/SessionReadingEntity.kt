@@ -11,6 +11,6 @@ data class SessionReadingEntity(
     val sessionId: Long,
     val timestampMillis: Long,
     val heartRateBpm: Int,
-    val hrvMillis: Double,
+    val hrvMillis: Double?,
     val sleepStage: SleepStage,
 )

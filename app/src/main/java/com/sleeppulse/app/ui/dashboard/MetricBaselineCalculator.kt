@@ -8,7 +8,7 @@ private const val MIN_NIGHTS_FOR_BASELINE = 3
 /** 7-day rolling HR/HRV averages, used to show tonight's live reading vs. baseline. */
 data class MetricBaselineResult(
     val avgHeartRateBpm: Double,
-    val avgHrvMillis: Double,
+    val avgHrvMillis: Double?,
 )
 
 /**
@@ -30,7 +30,7 @@ object MetricBaselineCalculator {
         val window = nights.take(WINDOW_NIGHTS)
         return MetricBaselineResult(
             avgHeartRateBpm = window.map { it.avgHeartRateBpm }.average(),
-            avgHrvMillis = window.map { it.avgHrvMillis }.average(),
+            avgHrvMillis = window.mapNotNull { it.avgHrvMillis }.average().takeUnless { it.isNaN() },
         )
     }
 

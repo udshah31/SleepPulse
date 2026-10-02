@@ -29,7 +29,9 @@ object SleepVariabilityCalculator {
         if (nights.size < WINDOW_NIGHTS) return null
 
         val window = nights.take(WINDOW_NIGHTS)
-        val hrvStdDev = stdDev(window.map { it.avgHrvMillis })
+        val hrv = window.mapNotNull { it.avgHrvMillis }
+        if (hrv.size < WINDOW_NIGHTS) return null
+        val hrvStdDev = stdDev(hrv)
         val hrStdDev = stdDev(window.map { it.avgHeartRateBpm.toDouble() })
 
         val level = when {

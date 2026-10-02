@@ -5,6 +5,7 @@ import com.sleeppulse.app.data.model.SleepStage
 import com.sleeppulse.app.data.model.StageSegment
 import com.sleeppulse.app.ui.dashboard.SleepScoreCalculator
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 import java.time.LocalDate
 
@@ -29,7 +30,7 @@ class NightSummaryBuilderTest {
 
         assertEquals(date, summary.date)
         assertEquals(60, summary.avgHeartRateBpm)
-        assertEquals(57.5, summary.avgHrvMillis, 0.0001)
+        assertEquals(57.5, summary.avgHrvMillis!!, 0.0001)
     }
 
     @Test
@@ -121,5 +122,13 @@ class NightSummaryBuilderTest {
             )
             assertEquals(emptyList<String>(), summary.tags)
         }
+    }
+
+    @Test
+    fun `average hrv ignores unknown readings and is null when none are known`() {
+        val date = LocalDate.of(2026, 1, 1)
+        fun r(t: Long, hrv: Double?) = SensorReading(t, 60, hrv, SleepStage.LIGHT)
+        assertEquals(40.0, NightSummaryBuilder.build(listOf(r(0, 40.0), r(1_000, null), r(2_000, 40.0)), date).avgHrvMillis!!, 0.0001)
+        assertNull(NightSummaryBuilder.build(listOf(r(0, null), r(1_000, null)), date).avgHrvMillis)
     }
 }

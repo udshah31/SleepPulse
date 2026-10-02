@@ -28,13 +28,12 @@ interface BleTargetDeviceSink {
 
 /**
  * Real BLE implementation, structured around Android's GATT client APIs so a physical
- * heart-rate/HRV peripheral (e.g. a chest strap or ring exposing the standard Heart Rate
- * Service, 0x180D) can be dropped in later.
+ * heart-rate peripheral (e.g. a chest strap or ring exposing the standard Heart Rate
+ * Service, 0x180D) can be dropped in.
  *
- * Service/characteristic discovery and parsing are wired correctly, but [connect] targets
- * a device address that must be supplied by a real scan result — until that's plumbed in
- * (see README, "Swapping in a real BLE peripheral"), this source stays unused at runtime
- * and [SimulatedSensorDataSource] is bound instead.
+ * Service/characteristic discovery and parsing are wired correctly; [connect] targets
+ * a device address that must be supplied by a real scan result.
+ * BLE mode is selectable in Settings; HRV is real only when the strap sends RR-intervals.
  */
 class BleSensorDataSource @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -52,6 +51,7 @@ class BleSensorDataSource @Inject constructor(
 
     private var gatt: BluetoothGatt? = null
     private var targetDeviceAddress: String? = null
+    private val rmssd = RmssdCalculator()
 
     /** Standard Bluetooth SIG Heart Rate Service/Characteristic UUIDs. */
     private object Ble {
@@ -93,9 +93,9 @@ class BleSensorDataSource @Inject constructor(
     }
 
     /**
-     * Live readings from the connected peripheral. Only heart rate is available from the
-     * standard Heart Rate Service; HRV and sleep stage would come from a vendor-specific
-     * characteristic on real hardware and default to neutral placeholders here.
+     * Live readings from the connected peripheral. Heart rate and RR-intervals come from the
+     * standard Heart Rate Service; HRV is the rolling RMSSD of those RR-intervals (null when
+     * the device sends none); sleep stage is predicted from heart rate and HRV.
      *
      * This is shared because the GATT callback belongs to the connection, not to an individual
      * collector. Creating a callback inside this method would allow a later collector to replace
@@ -110,6 +110,7 @@ class BleSensorDataSource @Inject constructor(
                 BluetoothProfile.STATE_CONNECTED -> {
                     _connectionState.value =
                         SensorConnectionState.Connected(deviceName = g.device.name ?: g.device.address)
+                    rmssd.reset()
                     g.discoverServices()
                 }
                 BluetoothProfile.STATE_DISCONNECTED -> {
@@ -134,33 +135,26 @@ class BleSensorDataSource @Inject constructor(
             g: BluetoothGatt,
             characteristic: BluetoothGattCharacteristic,
         ) {
-            val bpm = parseHeartRate(characteristic) ?: return
+            val packet = HeartRateMeasurementParser.parse(characteristic.value) ?: return
+            val now = System.currentTimeMillis()
+            packet.rrIntervalsMillis.forEach { rmssd.add(now, it) }
+            val hrvMillis = rmssd.rmssd(now) // null until the strap has sent enough RR-intervals
 
             val predictedStage = predictor.predict(
-                heartRateBpm = bpm,
-                hrvMillis = 50, // mock HRV for BLE source
-                movement = 0.5f // mock movement
+                heartRateBpm = packet.bpm,
+                hrvMillis = hrvMillis?.toLong(),
+                movement = 0.5f, // ponytail: movement is still a placeholder; real BLE movement is a separate piece of work
             )
 
             _readings.tryEmit(
                 SensorReading(
-                    timestampMillis = System.currentTimeMillis(),
-                    heartRateBpm = bpm,
-                    hrvMillis = 50.0, // not available from the standard HR characteristic
+                    timestampMillis = now,
+                    heartRateBpm = packet.bpm,
+                    hrvMillis = hrvMillis,
                     sleepStage = predictedStage,
                 )
             )
         }
-    }
-
-    private fun parseHeartRate(characteristic: BluetoothGattCharacteristic): Int? {
-        val flags = characteristic.value?.getOrNull(0)?.toInt() ?: return null
-        val format = if (flags and 0x01 != 0) {
-            BluetoothGattCharacteristic.FORMAT_UINT16
-        } else {
-            BluetoothGattCharacteristic.FORMAT_UINT8
-        }
-        return characteristic.getIntValue(format, 1)
     }
 
     companion object {

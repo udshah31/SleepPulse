@@ -28,8 +28,11 @@ object HrvTrendCalculator {
         val recentWindow = nights.take(WINDOW_NIGHTS)
         val priorWindow = nights.drop(WINDOW_NIGHTS).take(WINDOW_NIGHTS)
 
-        val recentAvg = recentWindow.map { it.avgHrvMillis }.average()
-        val priorAvg = priorWindow.map { it.avgHrvMillis }.average()
+        val recentHrv = recentWindow.mapNotNull { it.avgHrvMillis }
+        val priorHrv = priorWindow.mapNotNull { it.avgHrvMillis }
+        if (recentHrv.isEmpty() || priorHrv.isEmpty()) return null
+        val recentAvg = recentHrv.average()
+        val priorAvg = priorHrv.average()
 
         val change = (recentAvg - priorAvg) / priorAvg
         val direction = when {

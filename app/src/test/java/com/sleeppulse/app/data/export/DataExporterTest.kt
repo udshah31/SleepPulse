@@ -71,4 +71,14 @@ class DataExporterTest {
 
         assertNull(file)
     }
+
+    @Test
+    fun `exportToCsv leaves the hrv cell empty when unknown`() = runTest {
+        val dir = tempFolder.newFolder("downloads3")
+        val context = mock<Context> { on { getExternalFilesDir(anyOrNull()) } doReturn dir }
+
+        val file = exporterFor(context).exportToCsv(listOf(sample().copy(avgHrvMillis = null)))
+
+        assertEquals("2026-07-21,1000,87,58,,420,90,60,caffeine|late-workout", file!!.readLines()[1])
+    }
 }

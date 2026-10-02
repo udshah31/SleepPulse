@@ -56,7 +56,7 @@ class SleepRepositoryImplTest {
         assertEquals(date.toEpochDay(), stored.dateEpochDay)
         assertEquals(88, stored.sleepScore)
         assertEquals(58, stored.avgHeartRateBpm)
-        assertEquals(72.5, stored.avgHrvMillis, 0.0001)
+        assertEquals(72.5, stored.avgHrvMillis!!, 0.0001)
         assertEquals(410, stored.totalSleepMinutes)
         assertEquals(95, stored.deepSleepMinutes)
         assertEquals(105, stored.remSleepMinutes)
@@ -89,7 +89,7 @@ class SleepRepositoryImplTest {
             assertEquals(date, nights[0].date)
             assertEquals(72, nights[0].sleepScore)
             assertEquals(61, nights[0].avgHeartRateBpm)
-            assertEquals(65.0, nights[0].avgHrvMillis, 0.0001)
+            assertEquals(65.0, nights[0].avgHrvMillis!!, 0.0001)
             assertEquals(400, nights[0].totalSleepMinutes)
             assertEquals(80, nights[0].deepSleepMinutes)
             assertEquals(90, nights[0].remSleepMinutes)
@@ -413,7 +413,7 @@ class SleepRepositoryImplTest {
     }
 
     @Test
-    fun `hrv goes to Health Connect only when the source measures it, not from a BLE strap's placeholder`() = runTest {
+    fun `hrv readings go to Health Connect in every data-source mode`() = runTest {
         for (mode in com.sleeppulse.app.ui.settings.DataSourceMode.entries) {
             val sessionDao = FakeSleepSessionDao()
             val healthConnect: com.sleeppulse.app.tracking.HealthConnectManager = mock()
@@ -425,17 +425,14 @@ class SleepRepositoryImplTest {
                 listOf(0L, 1_000L).map {
                     com.sleeppulse.app.data.local.SessionReadingEntity(
                         sessionId = sessionDao.sessions.single().sessionId, timestampMillis = it,
-                        heartRateBpm = 60, hrvMillis = 50.0, sleepStage = SleepStage.LIGHT,
+                        heartRateBpm = 60, hrvMillis = 42.5, sleepStage = SleepStage.LIGHT,
                     )
                 },
             )
             repository.disconnectSensor()
 
-            if (mode == com.sleeppulse.app.ui.settings.DataSourceMode.BLE) {
-                verify(healthConnect, org.mockito.kotlin.never()).writeHrv(any())
-            } else {
-                verify(healthConnect).writeHrv(argThat { size == 2 })
-            }
+            // Filtering out unknown / out-of-range HRV is HealthConnectManager.buildHrvRecords' job.
+            verify(healthConnect).writeHrv(argThat { size == 2 })
             verify(healthConnect).writeHeartRate(any())
         }
     }

@@ -199,4 +199,14 @@ class HealthConnectManagerTest {
         assertEquals(true, HealthConnectManager.REQUIRED_PERMISSIONS.any { it.endsWith("WRITE_HEART_RATE") })
         assertEquals(true, HealthConnectManager.REQUIRED_PERMISSIONS.any { it.endsWith("WRITE_HEART_RATE_VARIABILITY") })
     }
+
+    @Test
+    fun `readings with unknown hrv produce no hrv records`() {
+        val readings = listOf(
+            SensorReading(0, 60, null, SleepStage.LIGHT),
+            SensorReading(1_000, 60, 45.0, SleepStage.LIGHT),
+        )
+        assertEquals(listOf(45.0), HealthConnectManager.buildHrvRecords(readings, zone).map { it.heartRateVariabilityMillis })
+        assertEquals(emptyList<Any>(), HealthConnectManager.buildHrvRecords(listOf(SensorReading(0, 60, null, SleepStage.LIGHT)), zone))
+    }
 }
