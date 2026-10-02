@@ -51,7 +51,7 @@ class RmssdCalculatorTest {
 
         // Prove eviction: out-of-pattern beat at t=0 should be evicted at now=69_000
         val calc5a = RmssdCalculator()
-        calc5a.add(0L, 1500.0)  // Out-of-pattern beat
+        calc5a.add(0L, 1200.0)  // Out-of-pattern beat (within 20% of the next, so the relative filter keeps it)
         for (n in 1..24) {
             val rr = if (n % 2 == 0) 1000.0 else 1010.0
             calc5a.add((n * 1_000L), rr)
@@ -62,13 +62,13 @@ class RmssdCalculatorTest {
 
         // Prove no eviction at now=24_000: out-of-pattern beat influences result
         val calc5b = RmssdCalculator()
-        calc5b.add(0L, 1500.0)  // Out-of-pattern beat
+        calc5b.add(0L, 1200.0)  // Out-of-pattern beat (within 20% of the next, so the relative filter keeps it)
         for (n in 1..24) {
             val rr = if (n % 2 == 0) 1000.0 else 1010.0
             calc5b.add((n * 1_000L), rr)
         }
-        // At now=24_000, all 25 beats remain, including the 1500 beat
-        // First difference is 500 ms, rest are 10 ms, so RMSSD will be much > 10.0
+        // At now=24_000, all 25 beats remain, including the 1200 beat
+        // First difference is 190 ms, rest are 10 ms, so RMSSD will be much > 10.0
         val resultAt24K = calc5b.rmssd(nowMillis = 24_000L)!!
         assertTrue(Math.abs(resultAt24K - 10.0) > 1.0)
     }
@@ -87,6 +87,24 @@ class RmssdCalculatorTest {
         calc.add(13_000L, 1010.0)
         // 11 differences, all 10 ms
         assertEquals(10.0, calc.rmssd(nowMillis = 13_000L)!!, 0.0001)
+    }
+
+    @Test
+    fun `an in-range ectopic beat and its follower are dropped by the relative filter`() {
+        val calc = RmssdCalculator()
+        for (n in 0 until 20) {
+            val rr = if (n == 8) 1800.0 else if (n % 2 == 0) 1000.0 else 1010.0
+            calc.add(n * 1_000L, rr)
+        }
+        // 19 pairs minus (7,8),(8,9),(9,10) = 16 differences, all 10 ms
+        assertEquals(10.0, calc.rmssd(nowMillis = 19_000L)!!, 0.0001)
+    }
+
+    @Test
+    fun `a genuine step change rejects one beat and does not lock the filter out`() {
+        val calc = RmssdCalculator()
+        for (n in 0 until 24) calc.add(n * 1_000L, if (n < 12) 1000.0 else 1300.0)
+        assertEquals(0.0, calc.rmssd(nowMillis = 23_000L)!!, 0.0001)
     }
 
     @Test

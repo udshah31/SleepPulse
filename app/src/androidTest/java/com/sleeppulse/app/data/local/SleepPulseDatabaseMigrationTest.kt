@@ -6,6 +6,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -13,7 +14,7 @@ import org.junit.runner.RunWith
 /**
  * Runs every entry of [SleepPulseDatabase.MIGRATIONS] against the exported schemas, so a new
  * migration is covered the moment it is added (not in CI: `./gradlew :app:connectedAndroidTest`).
- * Data-preservation checks for a specific migration belong in their own test next to it.
+ * Data-preservation checks for a specific migration are separate tests in this class (see the 4 to 5 one).
  */
 @RunWith(AndroidJUnit4::class)
 class SleepPulseDatabaseMigrationTest {
@@ -67,7 +68,7 @@ class SleepPulseDatabaseMigrationTest {
             assertEquals(62.25, it.getDouble(3), 0.0001)
             it.moveToNext()
             assertEquals(70, it.getInt(1))
-            assertEquals(true, it.isNull(3)) // placeholder 50.0 is now unknown
+            assertTrue(it.isNull(3)) // placeholder 50.0 is now unknown
         }
         db.query("SELECT hrvMillis, sleepStage FROM session_reading ORDER BY id").use {
             assertEquals(2, it.count)
@@ -75,7 +76,7 @@ class SleepPulseDatabaseMigrationTest {
             assertEquals(41.5, it.getDouble(0), 0.0001)
             assertEquals("LIGHT", it.getString(1))
             it.moveToNext()
-            assertEquals(true, it.isNull(0))
+            assertTrue(it.isNull(0))
         }
         db.close()
     }

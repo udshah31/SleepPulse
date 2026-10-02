@@ -28,10 +28,11 @@ HRV characteristics; any network/AI service (HRV is arithmetic and stays on-devi
 - `HeartRateMeasurement.parse(bytes): HeartRateMeasurement?` — pure function over the characteristic
   bytes. Replaces `parseHeartRate`. Returns `bpm` and `rrIntervalsMillis: List<Double>`; handles the
   UINT8/UINT16 bpm flag, the energy-expended field (bit 3, 2 bytes, skipped) and the RR field
-  (bit 4, 1/1024 s → ms). A truncated packet yields `null`, not a crash.
+  (bit 4, 1/1024 s → ms). A packet missing its bpm yields `null`; a truncated energy/RR tail yields the bpm with no RR-intervals.
 - `RmssdCalculator` — keeps a rolling window (60 s) of RR-intervals; `add(timestampMillis, rrMs)`
-  and `rmssd(nowMillis): Double?`. Beats outside 300..2000 ms are dropped, and a successive pair is
-  skipped if either beat was dropped. Returns `null` with fewer than 10 valid successive
+  and `rmssd(nowMillis): Double?`. Beats outside 300..2000 ms are dropped, as is a beat more than 20% off the
+  previous raw beat (compared with the previous raw beat, not the last valid one, so a step change
+  cannot lock the filter out); a successive pair is skipped if either beat was dropped. Returns `null` with fewer than 10 valid successive
   differences. Owned by `BleSensorDataSource`, reset on (re)connect.
 - `BleSensorDataSource.onCharacteristicChanged` emits `hrvMillis = rmssd` (null while unknown). The
   fixed `50.0` placeholder is deleted. The predictor receives the real value or null; the fixed
@@ -65,7 +66,7 @@ rather keep old values untouched.)
 | `SleepStagePredictor` | `hrvMillis: Long?`; HR/movement-only rules when null (never `DEEP`/`REM` on the HRV conditions) |
 | `RecoveryScoreCalculator`, `RecoveryReadinessCalculator` | HRV term dropped when the night's or the baseline's HRV is unknown (baseline needs ≥3 nights with HRV, else HR-only); the existing `null`-under-3-nights rule is unchanged |
 | `HrvTrendCalculator`, `MetricBaselineCalculator`, `SleepVariabilityCalculator` | Average/std-dev over non-null nights; result `null`/absent if fewer than the existing minimum |
-| Dashboard, `RecoveryScoreCard`, History row | Show "—" and no HRV chart line instead of a number |
+| Dashboard, History row, `RecoveryScoreCard` | Dashboard and History show "—" (and no HRV chart line); `RecoveryScoreCard` hides the HRV delta row when either the live HRV or the baseline HRV is unknown |
 | `DataExporter` (CSV) | Empty cell |
 | `WearDataClient` | Omit the `hrv` key when null |
 | `HealthConnectManager.buildHrvRecords` | The existing 1..200 ms filter becomes `hrvMillis != null && in 1.0..200.0`; the "skip in BLE mode" rule is replaced by this per-reading rule, so a strap with real RR data now writes HRV to Health Connect and a strap without writes none. Placeholder values are never written |
@@ -89,3 +90,6 @@ rather keep old values untouched.)
 - RMSSD from a wrist/ring HR stream that sends no RR is simply unavailable; that is intended.
 - Straps differ in whether they send RR while moving; the minimum-beats rule means HRV may flicker
   to unknown, which is the honest outcome.
+- Nights recorded before the upgrade in BLE mode keep their old `sleepScore` (computed with the fake
+  HRV, capped near 70) while new HR-only nights are rescored to the full 0..100 range, so History's
+  trend arrow can jump once for BLE users. Accepted.

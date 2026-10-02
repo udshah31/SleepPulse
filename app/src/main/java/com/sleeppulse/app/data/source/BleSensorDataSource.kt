@@ -11,8 +11,6 @@ import android.content.Context
 import com.sleeppulse.app.data.model.SensorConnectionState
 import com.sleeppulse.app.data.model.SensorReading
 import com.sleeppulse.app.data.model.SleepStage
-import com.sleeppulse.app.data.source.HeartRateMeasurementParser
-import com.sleeppulse.app.data.source.RmssdCalculator
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -35,8 +33,7 @@ interface BleTargetDeviceSink {
  *
  * Service/characteristic discovery and parsing are wired correctly; [connect] targets
  * a device address that must be supplied by a real scan result.
- * Until that's plumbed in (see README, "Swapping in a real BLE peripheral"), this source
- * stays unused at runtime and [SimulatedSensorDataSource] is bound instead.
+ * BLE mode is selectable in Settings; HRV is real only when the strap sends RR-intervals.
  */
 class BleSensorDataSource @Inject constructor(
     @ApplicationContext private val context: Context,
