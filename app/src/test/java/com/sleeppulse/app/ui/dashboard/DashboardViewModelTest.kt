@@ -47,6 +47,40 @@ class DashboardViewModelTest {
     }
 
     @Test
+    fun `a new connection starts with an empty chart and score instead of the last session's readings`() = runTest {
+        val repository = FakeSleepRepository()
+        val viewModel = DashboardViewModel(mock(), repository, mock())
+        viewModel.onIntent(DashboardIntent.Start)
+        advanceUntilIdle()
+
+        repository.connectionStateFlow.value = SensorConnectionState.Connected("fake-device")
+        advanceUntilIdle()
+        repository.readingsFlow.emit(reading(bpm = 50, hrv = 100.0))
+        advanceUntilIdle()
+        assertEquals(1, viewModel.state.value.recentReadings.size)
+        assertEquals(100, viewModel.state.value.sleepScore)
+
+        // After a disconnect the last values stay on screen.
+        repository.connectionStateFlow.value = SensorConnectionState.Disconnected
+        advanceUntilIdle()
+        assertEquals(1, viewModel.state.value.recentReadings.size)
+        assertEquals(100, viewModel.state.value.sleepScore)
+
+        // A new connection starts clean: no leftover points, no leftover score.
+        repository.connectionStateFlow.value = SensorConnectionState.Connected("fake-device")
+        advanceUntilIdle()
+        assertEquals(emptyList<SensorReading>(), viewModel.state.value.recentReadings)
+        assertNull(viewModel.state.value.latestReading)
+        assertEquals(0, viewModel.state.value.sleepScore)
+
+        // The score is built from the new session's readings only.
+        repository.readingsFlow.emit(reading(bpm = 90, hrv = 0.0))
+        advanceUntilIdle()
+        assertEquals(1, viewModel.state.value.recentReadings.size)
+        assertEquals(0, viewModel.state.value.sleepScore)
+    }
+
+    @Test
     fun `Start collects connection state and readings into state`() = runTest {
         val repository = FakeSleepRepository()
         val context: Context = mock()

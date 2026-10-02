@@ -3,6 +3,7 @@ package com.sleeppulse.app.ui.dashboard
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sleeppulse.app.data.model.NightlySummary
+import com.sleeppulse.app.data.model.SensorConnectionState
 import com.sleeppulse.app.data.model.SensorReading
 import com.sleeppulse.app.data.repository.SleepRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -82,7 +83,14 @@ class DashboardViewModel @Inject constructor(
         if (connectionJob?.isActive != true) {
             connectionJob = viewModelScope.launch {
                 repository.connectionState.collect { connection ->
-                    _state.update { it.copy(connectionState = connection, isLoading = false) }
+                    _state.update { current ->
+                        val updated = current.copy(connectionState = connection, isLoading = false)
+                        // A new session must not inherit the last one's chart points or live score
+                        // (both are built from recentReadings); after a disconnect they stay visible.
+                        val newSession = connection is SensorConnectionState.Connected &&
+                            current.connectionState !is SensorConnectionState.Connected
+                        if (newSession) updated.copy(recentReadings = emptyList(), latestReading = null, sleepScore = 0) else updated
+                    }
                 }
             }
         }
