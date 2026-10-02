@@ -9,7 +9,7 @@ import java.time.LocalDate
 
 class MetricBaselineCalculatorTest {
 
-    private fun night(hrv: Double, hr: Int) = NightlySummary(
+    private fun night(hrv: Double?, hr: Int) = NightlySummary(
         date = LocalDate.of(2026, 7, 18),
         sleepScore = 70,
         avgHeartRateBpm = hr,
@@ -35,7 +35,7 @@ class MetricBaselineCalculatorTest {
         val result = MetricBaselineCalculator.compute(nights)
 
         assertNotNull(result)
-        assertEquals(50.0, result!!.avgHrvMillis, 0.001)
+        assertEquals(50.0, result!!.avgHrvMillis!!, 0.001)
         assertEquals(60.0, result.avgHeartRateBpm, 0.001)
     }
 
@@ -47,7 +47,7 @@ class MetricBaselineCalculatorTest {
         val result = MetricBaselineCalculator.compute(recentSeven + olderNights)
 
         assertNotNull(result)
-        assertEquals(60.0, result!!.avgHrvMillis, 0.001)
+        assertEquals(60.0, result!!.avgHrvMillis!!, 0.001)
         assertEquals(50.0, result.avgHeartRateBpm, 0.001)
     }
 
@@ -56,5 +56,11 @@ class MetricBaselineCalculatorTest {
         assertEquals(10.0, MetricBaselineCalculator.percentDelta(actual = 55.0, baseline = 50.0), 0.001)
         assertEquals(-10.0, MetricBaselineCalculator.percentDelta(actual = 45.0, baseline = 50.0), 0.001)
         assertEquals(0.0, MetricBaselineCalculator.percentDelta(actual = 50.0, baseline = 0.0), 0.001)
+    }
+
+    @Test
+    fun `baseline hrv is null when no night has one`() {
+        val result = MetricBaselineCalculator.compute(List(3) { night(hrv = null, hr = 60) })!!
+        assertNull(result.avgHrvMillis)
     }
 }

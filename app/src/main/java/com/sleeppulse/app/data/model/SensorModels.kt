@@ -5,11 +5,14 @@ enum class SleepStage {
     AWAKE, LIGHT, DEEP, REM
 }
 
-/** A single instantaneous reading from a sensor source (real or simulated). */
+/**
+ * A single instantaneous reading from a sensor source (real or simulated).
+ * [hrvMillis] is null when the source can't measure it; never a placeholder.
+ */
 data class SensorReading(
     val timestampMillis: Long,
     val heartRateBpm: Int,
-    val hrvMillis: Double,
+    val hrvMillis: Double?,
     val sleepStage: SleepStage,
 )
 

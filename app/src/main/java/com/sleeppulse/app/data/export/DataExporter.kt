@@ -30,7 +30,7 @@ class DataExporter @Inject constructor(
                     val tags = night.tags.joinToString("|")
                     writer.append(
                         "${night.date},${night.bedtimeEpochMillis},${night.sleepScore}," +
-                        "${night.avgHeartRateBpm},${night.avgHrvMillis},${night.totalSleepMinutes}," +
+                        "${night.avgHeartRateBpm},${night.avgHrvMillis ?: ""},${night.totalSleepMinutes}," +
                         "${night.deepSleepMinutes},${night.remSleepMinutes},$tags\n"
                     )
                 }

@@ -8,7 +8,7 @@ import java.time.LocalDate
 
 class HrvTrendCalculatorTest {
 
-    private fun night(daysAgo: Int, hrv: Double) = NightlySummary(
+    private fun night(daysAgo: Int, hrv: Double?) = NightlySummary(
         date = LocalDate.now().minusDays(daysAgo.toLong()),
         sleepScore = 80,
         avgHeartRateBpm = 55,
@@ -51,5 +51,11 @@ class HrvTrendCalculatorTest {
         val result = HrvTrendCalculator.analyze(recent + prior)
 
         assertEquals(TrendDirection.STABLE, result?.direction)
+    }
+
+    @Test
+    fun `a window with no hrv at all gives no trend`() {
+        val nights = (0 until 7).map { night(it, null) } + (7 until 14).map { night(it, 50.0) }
+        assertNull(HrvTrendCalculator.analyze(nights))
     }
 }

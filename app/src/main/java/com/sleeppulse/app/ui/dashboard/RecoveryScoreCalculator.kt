@@ -9,7 +9,7 @@ data class RecoveryResult(
     val score: Int,
     val tier: RecoveryTier,
     val guidance: String,
-    val hrvDeviation: Double,
+    val hrvDeviation: Double?,
     val rhrDeviation: Double,
 )
 
@@ -26,16 +26,26 @@ object RecoveryScoreCalculator {
     fun score(lastNight: NightlySummary, baseline: List<NightlySummary>): RecoveryResult? {
         if (baseline.size < MIN_BASELINE_NIGHTS) return null
 
-        val baselineAvgHrv = baseline.map { it.avgHrvMillis }.average()
+        val baselineHrv = baseline.mapNotNull { it.avgHrvMillis }
         val baselineAvgHr = baseline.map { it.avgHeartRateBpm }.average()
 
-        val hrvDeviation = (lastNight.avgHrvMillis - baselineAvgHrv) / baselineAvgHrv
+        // HRV needs both last night's value and enough baseline nights with one.
+        val lastHrv = lastNight.avgHrvMillis
+        val hrvDeviation = if (lastHrv != null && baselineHrv.size >= MIN_BASELINE_NIGHTS) {
+            val baselineAvgHrv = baselineHrv.average()
+            (lastHrv - baselineAvgHrv) / baselineAvgHrv
+        } else {
+            null
+        }
         val rhrDeviation = (baselineAvgHr - lastNight.avgHeartRateBpm) / baselineAvgHr
 
-        val hrvComponent = (50 + hrvDeviation * 200).coerceIn(0.0, 100.0)
         val rhrComponent = (50 + rhrDeviation * 200).coerceIn(0.0, 100.0)
-
-        val score = (hrvComponent * 0.6 + rhrComponent * 0.4).toInt().coerceIn(0, 100)
+        val score = if (hrvDeviation != null) {
+            val hrvComponent = (50 + hrvDeviation * 200).coerceIn(0.0, 100.0)
+            (hrvComponent * 0.6 + rhrComponent * 0.4).toInt()
+        } else {
+            rhrComponent.toInt()
+        }.coerceIn(0, 100)
         val tier = tierFor(score)
         return RecoveryResult(
             score = score,
@@ -71,8 +81,8 @@ object RecoveryScoreCalculator {
      * sign is flipped relative to hrvDeviation's "positive is favorable" convention above
      * it, matching how these two are already combined in [score].
      */
-    private fun guidanceFor(tier: RecoveryTier, hrvDeviation: Double, rhrDeviation: Double): String {
-        val hrvMagnitude = abs(hrvDeviation)
+    private fun guidanceFor(tier: RecoveryTier, hrvDeviation: Double?, rhrDeviation: Double): String {
+        val hrvMagnitude = hrvDeviation?.let { abs(it) } ?: 0.0
         val rhrMagnitude = abs(rhrDeviation)
 
         if (hrvMagnitude < NEUTRAL_DEVIATION_THRESHOLD && rhrMagnitude < NEUTRAL_DEVIATION_THRESHOLD) {
@@ -83,7 +93,7 @@ object RecoveryScoreCalculator {
         val isFavorableTier = tier == RecoveryTier.OPTIMAL || tier == RecoveryTier.ADEQUATE
         val recommendationClause = if (isFavorableTier) "suggesting strong recovery." else "consider an easier day."
 
-        return if (hrvMagnitude >= rhrMagnitude) {
+        return if (hrvDeviation != null && hrvMagnitude >= rhrMagnitude) {
             val direction = if (hrvDeviation >= 0) "above" else "below"
             "Your HRV is ${percentText(hrvDeviation)} $direction your weekly average, $recommendationClause"
         } else {

@@ -169,17 +169,19 @@ class HealthConnectManager(private val context: Context) {
             readings: List<SensorReading>,
             zone: ZoneId = ZoneId.systemDefault(),
         ): List<HeartRateVariabilityRmssdRecord> {
-            val valid = readings.filter { it.hrvMillis in 1.0..200.0 }
-            val firstMillis = valid.firstOrNull()?.timestampMillis ?: return emptyList()
+            val valid = readings.mapNotNull { r ->
+                r.hrvMillis?.takeIf { it in 1.0..200.0 }?.let { r.timestampMillis to it }
+            }
+            val firstMillis = valid.firstOrNull()?.first ?: return emptyList()
             return valid
-                .groupBy { (it.timestampMillis - firstMillis) / HRV_WINDOW_MILLIS }
+                .groupBy { (it.first - firstMillis) / HRV_WINDOW_MILLIS }
                 .toSortedMap()
                 .map { (_, window) ->
-                    val time = Instant.ofEpochMilli(window.first().timestampMillis)
+                    val time = Instant.ofEpochMilli(window.first().first)
                     HeartRateVariabilityRmssdRecord(
                         time = time,
                         zoneOffset = zone.rules.getOffset(time),
-                        heartRateVariabilityMillis = window.map { it.hrvMillis }.average(),
+                        heartRateVariabilityMillis = window.map { it.second }.average(),
                         metadata = sensorMetadata("sleeppulse-hrv-${time.toEpochMilli()}"),
                     )
                 }

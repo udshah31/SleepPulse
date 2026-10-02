@@ -15,7 +15,7 @@ object NightSummaryBuilder {
 
     fun build(readings: List<SensorReading>, date: LocalDate): NightlySummary {
         val avgHeartRateBpm = readings.map { it.heartRateBpm }.average().toInt()
-        val avgHrvMillis = readings.map { it.hrvMillis }.average()
+        val avgHrvMillis = readings.mapNotNull { it.hrvMillis }.average().takeUnless { it.isNaN() }
 
         // Accumulate milliseconds and convert once: readings arrive about once a second, so
         // truncating each gap to whole minutes would round every gap (and the night) to zero.

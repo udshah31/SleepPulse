@@ -8,7 +8,7 @@ import org.junit.Test
 
 class SleepScoreCalculatorTest {
 
-    private fun reading(heartRateBpm: Int, hrvMillis: Double) = SensorReading(
+    private fun reading(heartRateBpm: Int, hrvMillis: Double?) = SensorReading(
         timestampMillis = 0L,
         heartRateBpm = heartRateBpm,
         hrvMillis = hrvMillis,
@@ -47,5 +47,19 @@ class SleepScoreCalculatorTest {
         val extremeLow = listOf(reading(heartRateBpm = 500, hrvMillis = -100.0))
         assertEquals(100, SleepScoreCalculator.score(extremeHigh))
         assertEquals(0, SleepScoreCalculator.score(extremeLow))
+    }
+
+    @Test
+    fun `without any hrv the score is the heart-rate component rescaled to 0 to 100`() {
+        assertEquals(100, SleepScoreCalculator.score(listOf(reading(heartRateBpm = 50, hrvMillis = null))))
+        assertEquals(0, SleepScoreCalculator.score(listOf(reading(heartRateBpm = 90, hrvMillis = null))))
+        assertEquals(50, SleepScoreCalculator.score(listOf(reading(heartRateBpm = 70, hrvMillis = null))))
+    }
+
+    @Test
+    fun `readings without hrv are left out of the hrv average`() {
+        val withNulls = SleepScoreCalculator.score(listOf(reading(50, 100.0), reading(50, null)))
+        val without = SleepScoreCalculator.score(listOf(reading(50, 100.0)))
+        assertEquals(without, withNulls)
     }
 }

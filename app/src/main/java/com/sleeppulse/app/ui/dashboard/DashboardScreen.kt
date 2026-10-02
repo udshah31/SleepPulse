@@ -186,9 +186,9 @@ fun DashboardScreen(
                 )
                 DashboardMetricCard(
                     label = "HRV",
-                    value = "${reading.hrvMillis.toInt()}",
-                    unit = "ms",
-                    values = smoothed(state.recentReadings.map { it.hrvMillis.toFloat() }),
+                    value = reading.hrvMillis?.let { "${it.toInt()}" } ?: "—",
+                    unit = if (reading.hrvMillis != null) "ms" else "",
+                    values = smoothed(state.recentReadings.mapNotNull { it.hrvMillis?.toFloat() }),
                     color = RecoveryGreen,
                     modifier = Modifier.weight(1f),
                 )

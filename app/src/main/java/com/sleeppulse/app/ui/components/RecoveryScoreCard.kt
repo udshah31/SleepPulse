@@ -83,15 +83,16 @@ fun RecoveryScoreCard(
                 ),
                 favorableWhenPositive = false,
             )
-            MetricRow(
-                label = "HRV",
-                value = "${latestReading.hrvMillis.toInt()} ms",
-                deltaPercent = MetricBaselineCalculator.percentDelta(
-                    actual = latestReading.hrvMillis,
-                    baseline = metricBaseline.avgHrvMillis,
-                ),
-                favorableWhenPositive = true,
-            )
+            val hrv = latestReading.hrvMillis
+            val baselineHrv = metricBaseline.avgHrvMillis
+            if (hrv != null && baselineHrv != null) {
+                MetricRow(
+                    label = "HRV",
+                    value = "${hrv.toInt()} ms",
+                    deltaPercent = MetricBaselineCalculator.percentDelta(actual = hrv, baseline = baselineHrv),
+                    favorableWhenPositive = true,
+                )
+            }
         }
     }
 }

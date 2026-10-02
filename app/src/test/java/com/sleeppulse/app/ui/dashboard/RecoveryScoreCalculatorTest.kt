@@ -9,7 +9,7 @@ import java.time.LocalDate
 
 class RecoveryScoreCalculatorTest {
 
-    private fun night(hrv: Double, hr: Int) = NightlySummary(
+    private fun night(hrv: Double?, hr: Int) = NightlySummary(
         date = LocalDate.of(2026, 7, 18),
         sleepScore = 70,
         avgHeartRateBpm = hr,
@@ -137,7 +137,7 @@ class RecoveryScoreCalculatorTest {
 
         val result = RecoveryScoreCalculator.score(lastNight, baseline)!!
 
-        assertEquals(0.25, result.hrvDeviation, 0.001)
+        assertEquals(0.25, result.hrvDeviation!!, 0.001)
         assertEquals(0.10, result.rhrDeviation, 0.001)
     }
 
@@ -168,5 +168,22 @@ class RecoveryScoreCalculatorTest {
         val result = RecoveryScoreCalculator.scoreLatest(listOf(lastNight) + neutralBaseline + poisonNights)
 
         assertEquals(RecoveryTier.OPTIMAL, result?.tier)
+    }
+
+    @Test
+    fun `without a known hrv the score comes from resting heart rate alone`() {
+        val baseline = List(3) { night(hrv = null, hr = 60) }
+        val result = RecoveryScoreCalculator.score(night(hrv = null, hr = 54), baseline)!!
+        assertNull(result.hrvDeviation)
+        // rhrDeviation = (60-54)/60 = 0.10 -> rhrComponent = 70, score = 70 (no 60/40 mix)
+        assertEquals(70, result.score)
+    }
+
+    @Test
+    fun `hrv is ignored when fewer than three baseline nights have it`() {
+        val baseline = listOf(night(50.0, 60), night(null, 60), night(null, 60))
+        val result = RecoveryScoreCalculator.score(night(80.0, 54), baseline)!!
+        assertNull(result.hrvDeviation)
+        assertEquals(70, result.score)
     }
 }

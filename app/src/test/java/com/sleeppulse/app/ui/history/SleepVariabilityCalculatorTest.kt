@@ -8,7 +8,7 @@ import java.time.LocalDate
 
 class SleepVariabilityCalculatorTest {
 
-    private fun night(daysAgo: Int, hrv: Double) = NightlySummary(
+    private fun night(daysAgo: Int, hrv: Double?) = NightlySummary(
         date = LocalDate.now().minusDays(daysAgo.toLong()),
         sleepScore = 80,
         avgHeartRateBpm = 55,
@@ -49,5 +49,11 @@ class SleepVariabilityCalculatorTest {
         val result = SleepVariabilityCalculator.analyze(recentStable + oldErratic)
 
         assertEquals(VariabilityLevel.LOW, result?.level)
+    }
+
+    @Test
+    fun `fewer than seven nights with hrv gives no variability`() {
+        val nights = (0 until 6).map { night(it, 50.0) } + night(6, null)
+        assertNull(SleepVariabilityCalculator.analyze(nights))
     }
 }

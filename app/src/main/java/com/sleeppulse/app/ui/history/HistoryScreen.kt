@@ -198,7 +198,7 @@ private fun NightRow(night: NightWithTrend) {
                     style = MaterialTheme.typography.titleMedium,
                 )
                 Text(
-                    text = "${formatDuration(night.summary.totalSleepMinutes)} · HRV ${night.summary.avgHrvMillis.toInt()} ms",
+                    text = "${formatDuration(night.summary.totalSleepMinutes)} · HRV ${night.summary.avgHrvMillis?.let { "${it.toInt()} ms" } ?: "—"}",
                     style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
                     color = CalmNightTextSecondary,
                     modifier = Modifier.padding(top = 3.dp),

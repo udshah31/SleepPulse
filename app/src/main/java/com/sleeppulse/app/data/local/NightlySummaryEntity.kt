@@ -10,7 +10,7 @@ data class NightlySummaryEntity(
     val bedtimeEpochMillis: Long = 0L,
     val sleepScore: Int,
     val avgHeartRateBpm: Int,
-    val avgHrvMillis: Double,
+    val avgHrvMillis: Double?,
     val totalSleepMinutes: Int,
     val deepSleepMinutes: Int,
     val remSleepMinutes: Int,
