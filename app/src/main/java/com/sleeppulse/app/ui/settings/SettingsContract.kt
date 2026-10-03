@@ -11,6 +11,7 @@ sealed class SettingsIntent {
     data class SetTargetBedtime(val hour: Int, val minute: Int) : SettingsIntent()
     data class SetTargetWakeup(val hour: Int, val minute: Int, val windowMinutes: Int) : SettingsIntent()
     data class SetAmoledBlack(val enabled: Boolean) : SettingsIntent()
+    data class SetPhoneMovementEnabled(val enabled: Boolean) : SettingsIntent()
 }
 
 data class SettingsState(
@@ -23,4 +24,5 @@ data class SettingsState(
     val targetWakeupMinute: Int = 0,
     val wakeWindowMinutes: Int = 30,
     val amoledBlack: Boolean = false,
+    val phoneMovementEnabled: Boolean = false,
 )
