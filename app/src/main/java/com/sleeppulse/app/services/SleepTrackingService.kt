@@ -31,6 +31,10 @@ import com.sleeppulse.app.notifications.SmartAlarmScheduler
 import com.sleeppulse.app.notifications.SleepSessionFinalizer
 import com.sleeppulse.app.data.model.SleepStage
 import com.sleeppulse.app.tracking.NoiseMonitor
+import com.sleeppulse.app.tracking.PhoneMotionMonitor
+import com.sleeppulse.app.tracking.PhoneMovement
+import com.sleeppulse.app.ui.settings.DataSourceMode
+import android.hardware.SensorManager
 import com.sleeppulse.app.wear.WearDataClient
 
 @AndroidEntryPoint
@@ -51,8 +55,12 @@ class SleepTrackingService : Service() {
     @Inject
     lateinit var sleepSessionFinalizer: SleepSessionFinalizer
 
+    @Inject
+    lateinit var phoneMovement: PhoneMovement
+
     private var hasFiredSmartAlarm = false
     private var noiseMonitor: NoiseMonitor? = null
+    private var phoneMotionMonitor: PhoneMotionMonitor? = null
     
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -123,6 +131,18 @@ class SleepTrackingService : Service() {
             }
         }
 
+        // Phone-on-the-bed movement: only for BLE mode with the option on, and never registered twice
+        // (onStartCommand runs again on a repeated Connect or a sticky restart).
+        if (phoneMotionMonitor == null &&
+            settingsRepository.phoneMovementEnabled.value &&
+            settingsRepository.dataSourceMode.value == DataSourceMode.BLE
+        ) {
+            val monitor = PhoneMotionMonitor(getSystemService(SensorManager::class.java))
+            if (monitor.start { score -> phoneMovement.publish(score, System.currentTimeMillis()) }) {
+                phoneMotionMonitor = monitor
+            }
+        }
+
         return START_STICKY
     }
 
@@ -135,6 +155,9 @@ class SleepTrackingService : Service() {
         // Room read + upsert + Health Connect write + widget refresh complete.
         sleepSessionFinalizer.finalizeAsync()
         noiseMonitor?.stopMonitoring()
+        phoneMotionMonitor?.stop()
+        phoneMotionMonitor = null
+        phoneMovement.publish(null, System.currentTimeMillis())
         scope.cancel()
         super.onDestroy()
     }
