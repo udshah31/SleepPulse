@@ -144,7 +144,7 @@ class BleSensorDataSource @Inject constructor(
             val predictedStage = predictor.predict(
                 heartRateBpm = packet.bpm,
                 hrvMillis = hrvMillis?.toLong(),
-                movement = 0.5f, // ponytail: movement is still a placeholder; real BLE movement is a separate piece of work
+                movement = null, // the Heart Rate Service carries no movement; a real source is separate work
             )
 
             _readings.tryEmit(

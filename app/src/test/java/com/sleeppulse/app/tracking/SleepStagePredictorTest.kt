@@ -35,6 +35,15 @@ class SleepStagePredictorTest {
     }
 
     @Test
+    fun `unknown movement never predicts AWAKE and leaves the hr and hrv rules in charge`() {
+        assertEquals(SleepStage.DEEP, predictor.predict(heartRateBpm = 45, hrvMillis = 65, movement = null))
+        assertEquals(SleepStage.REM, predictor.predict(heartRateBpm = 58, hrvMillis = 30, movement = null))
+        assertEquals(SleepStage.LIGHT, predictor.predict(heartRateBpm = 70, hrvMillis = 50, movement = null))
+        // Nothing known at all: still a stage, never AWAKE.
+        assertEquals(SleepStage.LIGHT, predictor.predict(heartRateBpm = 45, hrvMillis = null, movement = null))
+    }
+
+    @Test
     fun `unknown hrv never predicts DEEP or REM`() {
         assertEquals(SleepStage.LIGHT, predictor.predict(heartRateBpm = 45, hrvMillis = null, movement = 0.1f))
         assertEquals(SleepStage.LIGHT, predictor.predict(heartRateBpm = 58, hrvMillis = null, movement = 0.1f))
