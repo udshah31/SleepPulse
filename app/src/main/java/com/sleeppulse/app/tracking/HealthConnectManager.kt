@@ -88,6 +88,13 @@ class HealthConnectManager(private val context: Context) {
                 }
 
         /**
+         * The standalone Health Connect app (Android 13 and below) ends the last page with an
+         * empty token, not null; looping on `!= null` re-read page one forever until Health
+         * Connect rate-limited every read. Blank means "no more pages".
+         */
+        fun nextPageToken(token: String?): String? = token?.takeIf { it.isNotBlank() }
+
+        /**
          * Builds the record Health Connect stores for a night, or null if there is no positive
          * duration (Health Connect rejects end <= start). The end comes from the last stage
          * segment when there are any, else start + total minutes; segments are clamped into
@@ -254,7 +261,7 @@ class HealthConnectManager(private val context: Context) {
                     )
                 )
                 records += response.records
-                pageToken = response.pageToken
+                pageToken = nextPageToken(response.pageToken)
             } while (pageToken != null)
             fromOtherApps(records, context.packageName)
         }

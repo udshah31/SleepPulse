@@ -187,6 +187,14 @@ class HealthConnectManagerTest {
     }
 
     @Test
+    fun `an empty page token ends paging like null does`() {
+        assertNull(HealthConnectManager.nextPageToken(null))
+        assertNull(HealthConnectManager.nextPageToken(""))
+        assertNull(HealthConnectManager.nextPageToken(" "))
+        assertEquals("abc", HealthConnectManager.nextPageToken("abc"))
+    }
+
+    @Test
     fun `heart-rate read is requested but is not a read that gates the sleep cache`() {
         val readHr = HealthConnectManager.REQUESTED_PERMISSIONS.filter { it.endsWith("READ_HEART_RATE") }
         assertEquals(1, readHr.size)
