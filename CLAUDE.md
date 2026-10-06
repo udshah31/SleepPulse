@@ -33,7 +33,7 @@ Package root: `com.sleeppulse.app`.
 
 **MVI per screen** — each screen under `ui/<screen>/` has a `*Contract.kt` (sealed `Intent` + immutable `State`), a `*ViewModel.kt` (reduces `Intent` → `State` via `onIntent()`, publishes through `StateFlow`), and a Composable that only calls `collectAsState()` — no business logic in Composables. Breathe is the exception (Composable only, no ViewModel).
 
-**Screens** (`ui/SleepPulseApp.kt`, Compose Navigation): bottom-nav Dashboard ("Home"), History, Recovery, Alarm, Settings; plus non-tab routes Scan (BLE device picker, opened from Settings, returns the chosen address) and Breathe (opened from Dashboard).
+**Screens** (`ui/SleepPulseApp.kt`, Compose Navigation): bottom-nav Dashboard ("Home"), History, Recovery, Alarm, Settings; plus non-tab routes Scan (BLE device picker, opened from Settings, returns the chosen address) and Breathe (opened from Dashboard). At ≥600dp window width (tablets, foldables, landscape phones) the bottom bar becomes a `NavigationRail`, and every screen is capped at 840dp wide and centred — both in `ui/SleepPulseApp.kt`, so screens stay phone-width layouts.
 - Dashboard: sleep-score gauge (`ui/components/SleepScoreGauge.kt`), live HR/HRV charts, wind-down flow, metric row + guidance banner (`DashboardMetricRow`, `DashboardGuidanceBanner`).
 - History: cached nights, trends, and analytics calculators (`SleepConsistency/SleepDebt/SleepVariability/TagCorrelationCalculator`); nights can be tagged (`SleepRepository.updateTags`) and exported to CSV (`data/export/DataExporter`).
 - Recovery: `RecoveryReadinessCalculator`.
