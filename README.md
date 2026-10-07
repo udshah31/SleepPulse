@@ -113,7 +113,7 @@ Requires the Android SDK at the path in `local.properties` (`sdk.dir`); JDK 17+;
 ## Testing and CI
 
 ```
-./gradlew :shared:testDebugUnitTest   # domain-core tests (shared/src/commonTest)
+./gradlew :shared:testAndroidHostTest # domain-core tests (shared/src/commonTest)
 ./gradlew :app:test                   # Android unit tests, hand-written fakes in app/src/test/.../testutil
 ./gradlew lint
 ```

@@ -29,7 +29,7 @@ jobs:
 
       - name: Unit tests
         # :shared holds the domain logic and its tests; :app:test alone would skip them.
-        run: ./gradlew :shared:testDebugUnitTest :app:test
+        run: ./gradlew :shared:testAndroidHostTest :app:test
 
       - name: Assemble debug APK
         run: ./gradlew :app:assembleDebug
@@ -49,5 +49,5 @@ jobs:
           name: test-report
           path: |
             app/build/reports/tests/testDebugUnitTest/
-            shared/build/reports/tests/testDebugUnitTest/
+            shared/build/reports/tests/testAndroidHostTest/
           if-no-files-found: ignore
