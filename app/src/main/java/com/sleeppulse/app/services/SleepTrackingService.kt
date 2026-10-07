@@ -17,7 +17,7 @@ import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import com.sleeppulse.app.MainActivity
 import com.sleeppulse.app.R
-import com.sleeppulse.app.data.repository.SleepRepository
+import com.sleeppulse.shared.repository.SleepRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -29,7 +29,7 @@ import javax.inject.Inject
 import com.sleeppulse.app.data.repository.SettingsRepository
 import com.sleeppulse.app.notifications.SmartAlarmScheduler
 import com.sleeppulse.app.notifications.SleepSessionFinalizer
-import com.sleeppulse.app.data.model.SleepStage
+import com.sleeppulse.shared.model.SleepStage
 import com.sleeppulse.app.tracking.NoiseMonitor
 import com.sleeppulse.app.tracking.PhoneMotionMonitor
 import com.sleeppulse.app.tracking.PhoneMovement

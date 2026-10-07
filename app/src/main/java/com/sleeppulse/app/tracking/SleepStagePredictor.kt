@@ -1,7 +1,7 @@
 package com.sleeppulse.app.tracking
 
 import android.content.Context
-import com.sleeppulse.app.data.model.SleepStage
+import com.sleeppulse.shared.model.SleepStage
 
 class SleepStagePredictor(private val context: Context) {
 

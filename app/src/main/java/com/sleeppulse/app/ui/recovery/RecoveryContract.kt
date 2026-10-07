@@ -1,12 +1,13 @@
 package com.sleeppulse.app.ui.recovery
 
-import com.sleeppulse.app.data.model.NightlySummary
-import com.sleeppulse.app.ui.dashboard.HrvTrendResult
-import com.sleeppulse.app.ui.dashboard.RecoveryResult
-import com.sleeppulse.app.ui.dashboard.RestingHeartRateTrendResult
-import com.sleeppulse.app.ui.history.SleepDebt
-import com.sleeppulse.app.ui.history.SleepVariabilityResult
-import com.sleeppulse.app.ui.history.TagCorrelation
+import com.sleeppulse.shared.model.NightlySummary
+import com.sleeppulse.shared.scoring.HrvTrendResult
+import com.sleeppulse.shared.scoring.RecoveryResult
+import com.sleeppulse.shared.scoring.RestingHeartRateTrendResult
+import com.sleeppulse.shared.analytics.SleepDebt
+import com.sleeppulse.shared.analytics.SleepVariabilityResult
+import com.sleeppulse.shared.analytics.TagCorrelation
+import com.sleeppulse.shared.analytics.ReadinessResult
 
 data class RecoveryState(
     val isLoading: Boolean = true,

@@ -3,10 +3,11 @@ package com.sleeppulse.app.tracking
 import androidx.health.connect.client.records.SleepSessionRecord
 import androidx.health.connect.client.records.metadata.Device
 import androidx.health.connect.client.records.metadata.Metadata
-import com.sleeppulse.app.data.model.NightlySummary
-import com.sleeppulse.app.data.model.SensorReading
-import com.sleeppulse.app.data.model.SleepStage
-import com.sleeppulse.app.data.model.StageSegment
+import com.sleeppulse.shared.model.NightlySummary
+import com.sleeppulse.shared.model.SensorReading
+import com.sleeppulse.shared.model.SleepStage
+import com.sleeppulse.shared.model.StageSegment
+import kotlinx.datetime.LocalDate as KmpLocalDate
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -22,7 +23,7 @@ class HealthConnectManagerTest {
     private val start = 1_780_000_000_000L
 
     private fun summary(bedtime: Long = start, minutes: Int = 60) = NightlySummary(
-        date = LocalDate.of(2026, 7, 18),
+        date = KmpLocalDate(2026, 7, 18),
         bedtimeEpochMillis = bedtime,
         sleepScore = 80,
         avgHeartRateBpm = 55,
@@ -184,6 +185,14 @@ class HealthConnectManagerTest {
 
         assertEquals(listOf(45.0), HealthConnectManager.buildHrvRecords(readings, zone).map { it.heartRateVariabilityMillis })
         assertEquals(emptyList<Any>(), HealthConnectManager.buildHrvRecords(listOf(hrv(0, 0.0)), zone))
+    }
+
+    @Test
+    fun `an empty page token ends paging like null does`() {
+        assertNull(HealthConnectManager.nextPageToken(null))
+        assertNull(HealthConnectManager.nextPageToken(""))
+        assertNull(HealthConnectManager.nextPageToken(" "))
+        assertEquals("abc", HealthConnectManager.nextPageToken("abc"))
     }
 
     @Test

@@ -13,10 +13,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
-import com.sleeppulse.app.data.model.SensorReading
-import com.sleeppulse.app.ui.dashboard.MetricBaselineCalculator
-import com.sleeppulse.app.ui.dashboard.MetricBaselineResult
-import com.sleeppulse.app.ui.dashboard.RecoveryResult
+import com.sleeppulse.shared.model.SensorReading
+import com.sleeppulse.shared.scoring.MetricBaselineCalculator
+import com.sleeppulse.shared.scoring.MetricBaselineResult
+import com.sleeppulse.shared.scoring.RecoveryResult
 import com.sleeppulse.app.ui.theme.CalmNightSurfaceDim
 import com.sleeppulse.app.ui.theme.CalmNightTextSecondary
 import com.sleeppulse.app.ui.theme.SleepIndigo

@@ -1,7 +1,7 @@
 package com.sleeppulse.app.data.export
 
 import android.content.Context
-import com.sleeppulse.app.data.model.NightlySummary
+import com.sleeppulse.shared.model.NightlySummary
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -13,7 +13,7 @@ import org.junit.rules.TemporaryFolder
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import java.time.LocalDate
+import kotlinx.datetime.LocalDate
 
 class DataExporterTest {
 
@@ -23,7 +23,7 @@ class DataExporterTest {
     private fun exporterFor(context: Context) = DataExporter(context)
 
     private fun sample() = NightlySummary(
-        date = LocalDate.of(2026, 7, 21),
+        date = LocalDate(2026, 7, 21),
         bedtimeEpochMillis = 1000L,
         sleepScore = 87,
         avgHeartRateBpm = 58,

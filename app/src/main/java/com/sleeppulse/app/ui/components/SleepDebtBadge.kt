@@ -15,8 +15,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.sleeppulse.app.ui.history.DebtLevel
-import com.sleeppulse.app.ui.history.SleepDebt
+import com.sleeppulse.shared.analytics.DebtLevel
+import com.sleeppulse.shared.analytics.SleepDebt
 import com.sleeppulse.app.ui.theme.AlertCoral
 import com.sleeppulse.app.ui.theme.CalmNightTextSecondary
 import com.sleeppulse.app.ui.theme.CautionAmber
@@ -63,11 +63,7 @@ private fun formatDeficit(minutes: Int): String {
     if (minutes == 0) return "Caught up"
     val h = minutes / 60
     val m = minutes % 60
-    return buildString {
-        if (h > 0) append("${h}h ")
-        if (m > 0) append("${m}m")
-        append(" short")
-    }.trim()
+    return listOfNotNull(if (h > 0) "${h}h" else null, if (m > 0) "${m}m" else null, "short").joinToString(" ")
 }
 
 private fun debtColor(level: DebtLevel): Color = when (level) {

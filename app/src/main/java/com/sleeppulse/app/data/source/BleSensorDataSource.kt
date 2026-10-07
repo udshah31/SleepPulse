@@ -8,9 +8,10 @@ import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothProfile
 import android.content.Context
-import com.sleeppulse.app.data.model.SensorConnectionState
-import com.sleeppulse.app.data.model.SensorReading
-import com.sleeppulse.app.data.model.SleepStage
+import com.sleeppulse.shared.model.SensorConnectionState
+import com.sleeppulse.shared.model.SensorReading
+import com.sleeppulse.shared.model.SleepStage
+import com.sleeppulse.shared.sensor.SensorDataSource
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow

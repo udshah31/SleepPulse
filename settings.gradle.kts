@@ -10,7 +10,9 @@ plugins {
 }
 
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    // Kotlin Multiplatform adds its Kotlin/Native distribution repository for
+    // iOS targets at the project level.
+    repositoriesMode.set(RepositoriesMode.PREFER_PROJECT)
     repositories {
         google()
         mavenCentral()
@@ -20,3 +22,4 @@ dependencyResolutionManagement {
 rootProject.name = "SleepPulse"
 include(":app")
 include(":wear")
+include(":shared")

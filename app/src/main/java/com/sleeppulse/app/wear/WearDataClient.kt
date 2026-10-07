@@ -6,7 +6,7 @@ import com.google.android.gms.common.api.CommonStatusCodes
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.wearable.PutDataMapRequest
 import com.google.android.gms.wearable.Wearable
-import com.sleeppulse.app.data.model.SensorReading
+import com.sleeppulse.shared.model.SensorReading
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 

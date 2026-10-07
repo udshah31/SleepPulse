@@ -4,18 +4,19 @@ import android.app.AlarmManager
 import android.app.NotificationManager
 import android.content.Context
 import androidx.room.Room
-import com.sleeppulse.app.data.local.NightlySummaryDao
-import com.sleeppulse.app.data.local.SleepPulseDatabase
-import com.sleeppulse.app.data.local.SleepSessionDao
+import androidx.sqlite.driver.bundled.BundledSQLiteDriver
+import com.sleeppulse.shared.db.NightlySummaryDao
+import com.sleeppulse.shared.db.SleepPulseDatabase
+import com.sleeppulse.shared.db.SleepSessionDao
 import com.sleeppulse.app.data.repository.PrefsSettingsStore
 import com.sleeppulse.app.data.repository.SettingsStore
-import com.sleeppulse.app.data.repository.SleepRepository
+import com.sleeppulse.shared.repository.SleepRepository
 import com.sleeppulse.app.data.repository.SleepRepositoryImpl
 import com.sleeppulse.app.data.source.BleDeviceScanner
 import com.sleeppulse.app.data.source.BleScanSource
 import com.sleeppulse.app.data.source.BleSensorDataSource
 import com.sleeppulse.app.data.source.BleTargetDeviceSink
-import com.sleeppulse.app.data.source.SensorDataSource
+import com.sleeppulse.shared.sensor.SensorDataSource
 import com.sleeppulse.app.data.source.SensorSourceManager
 import com.sleeppulse.app.data.source.SimulatedSensorDataSource
 import com.sleeppulse.app.notifications.SleepSummaryNotifier
@@ -92,10 +93,13 @@ object DatabaseModule {
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): SleepPulseDatabase =
         Room.databaseBuilder(context, SleepPulseDatabase::class.java, "sleeppulse.db")
+            // Room KMP: the bundled driver runs the shared (SQLiteConnection) migrations; same file as before.
+            .setDriver(BundledSQLiteDriver())
+            .setQueryCoroutineContext(Dispatchers.IO)
             .addMigrations(*SleepPulseDatabase.MIGRATIONS)
             // Only the pre-export versions may be wiped; from FIRST_EXPORTED_VERSION on, a
             // missing migration fails loudly instead of silently deleting users' history.
-            .fallbackToDestructiveMigrationFrom(*SleepPulseDatabase.UNMIGRATABLE_VERSIONS)
+            .fallbackToDestructiveMigrationFrom(true, *SleepPulseDatabase.UNMIGRATABLE_VERSIONS)
             .build()
 
     @Provides

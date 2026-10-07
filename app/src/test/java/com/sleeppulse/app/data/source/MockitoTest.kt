@@ -1,6 +1,6 @@
 package com.sleeppulse.app.data.source
 
-import com.sleeppulse.app.data.model.SensorConnectionState
+import com.sleeppulse.shared.model.SensorConnectionState
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Test
 import org.mockito.kotlin.doReturn

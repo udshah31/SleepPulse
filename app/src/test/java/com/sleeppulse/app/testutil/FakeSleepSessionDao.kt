@@ -1,8 +1,8 @@
 package com.sleeppulse.app.testutil
 
-import com.sleeppulse.app.data.local.SessionReadingEntity
-import com.sleeppulse.app.data.local.SleepSessionDao
-import com.sleeppulse.app.data.local.SleepSessionEntity
+import com.sleeppulse.shared.db.SessionReadingEntity
+import com.sleeppulse.shared.db.SleepSessionDao
+import com.sleeppulse.shared.db.SleepSessionEntity
 
 class FakeSleepSessionDao : SleepSessionDao {
     val sessions: MutableList<SleepSessionEntity> = mutableListOf()

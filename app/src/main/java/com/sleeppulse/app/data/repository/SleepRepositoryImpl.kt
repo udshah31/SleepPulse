@@ -1,18 +1,20 @@
 package com.sleeppulse.app.data.repository
 
-import com.sleeppulse.app.data.NightSummaryBuilder
-import com.sleeppulse.app.data.local.NightlySummaryDao
-import com.sleeppulse.app.data.local.NightlySummaryEntity
-import com.sleeppulse.app.data.local.SessionReadingEntity
-import com.sleeppulse.app.data.local.SleepSessionDao
-import com.sleeppulse.app.data.local.SleepSessionEntity
-import com.sleeppulse.app.data.model.NightlySummary
-import com.sleeppulse.app.data.model.SensorConnectionState
-import com.sleeppulse.app.data.model.SensorReading
-import com.sleeppulse.app.data.model.StageSegment
-import com.sleeppulse.app.data.source.SensorDataSource
+import com.sleeppulse.shared.sleep.NightSummaryBuilder
+import com.sleeppulse.shared.db.NightlySummaryDao
+import com.sleeppulse.shared.db.NightlySummaryEntity
+import com.sleeppulse.shared.db.SessionReadingEntity
+import com.sleeppulse.shared.db.SleepSessionDao
+import com.sleeppulse.shared.db.SleepSessionEntity
+import com.sleeppulse.shared.model.NightlySummary
+import com.sleeppulse.shared.model.SensorConnectionState
+import com.sleeppulse.shared.model.SensorReading
+import com.sleeppulse.shared.model.StageSegment
+import com.sleeppulse.shared.model.localDateAt
+import com.sleeppulse.shared.sensor.SensorDataSource
+import com.sleeppulse.shared.repository.SleepRepository
 import com.sleeppulse.app.tracking.HealthConnectManager
-import java.time.LocalDate
+import kotlinx.datetime.LocalDate
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -139,7 +141,7 @@ class SleepRepositoryImpl @Inject constructor(
         stages: List<StageSegment>,
         readings: List<SensorReading> = emptyList(),
     ) {
-        dao.upsert(nightToKeep(dao.getByDate(summary.date.toEpochDay())?.toDomain(), summary).toEntity())
+        dao.upsert(nightToKeep(dao.getByDate(summary.date.toEpochDays().toLong())?.toDomain(), summary).toEntity())
         dao.trimToLast30Days()
         healthConnectManager.writeSleepSession(summary, stages)
         if (readings.isNotEmpty()) healthConnectManager.writeHeartRate(readings)
@@ -148,7 +150,7 @@ class SleepRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updateTags(date: LocalDate, tags: List<String>) {
-        dao.updateTags(date.toEpochDay(), tags)
+        dao.updateTags(date.toEpochDays().toLong(), tags)
     }
 
     suspend fun recoverUnfinalizedSessions() {
@@ -177,9 +179,7 @@ class SleepRepositoryImpl @Inject constructor(
             sessionDao.finalizeAndClear(sessionId)
             return null
         }
-        val date = java.time.Instant.ofEpochMilli(startEpochMillis)
-            .atZone(java.time.ZoneId.systemDefault())
-            .toLocalDate()
+        val date = localDateAt(startEpochMillis)
         val summary = NightSummaryBuilder.build(readings, date)
         record(summary, NightSummaryBuilder.segments(readings), readings)
         sessionDao.finalizeAndClear(sessionId)
@@ -202,7 +202,7 @@ class SleepRepositoryImpl @Inject constructor(
     )
 
     private fun NightlySummaryEntity.toDomain() = NightlySummary(
-        date = LocalDate.ofEpochDay(dateEpochDay),
+        date = LocalDate.fromEpochDays(Math.toIntExact(dateEpochDay)),
         bedtimeEpochMillis = bedtimeEpochMillis,
         sleepScore = sleepScore,
         avgHeartRateBpm = avgHeartRateBpm,
@@ -214,7 +214,7 @@ class SleepRepositoryImpl @Inject constructor(
     )
 
     private fun NightlySummary.toEntity() = NightlySummaryEntity(
-        dateEpochDay = date.toEpochDay(),
+        dateEpochDay = date.toEpochDays().toLong(),
         bedtimeEpochMillis = bedtimeEpochMillis,
         sleepScore = sleepScore,
         avgHeartRateBpm = avgHeartRateBpm,

@@ -1,9 +1,9 @@
 package com.sleeppulse.app.data.source
 
 import app.cash.turbine.test
-import com.sleeppulse.app.data.model.SensorConnectionState
-import com.sleeppulse.app.data.model.SensorReading
-import com.sleeppulse.app.data.model.SleepStage
+import com.sleeppulse.shared.model.SensorConnectionState
+import com.sleeppulse.shared.model.SensorReading
+import com.sleeppulse.shared.model.SleepStage
 import com.sleeppulse.app.data.repository.SettingsRepository
 import com.sleeppulse.app.testutil.MainDispatcherRule
 import com.sleeppulse.app.tracking.PhoneMovement

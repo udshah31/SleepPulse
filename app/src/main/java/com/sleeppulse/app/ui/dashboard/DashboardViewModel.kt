@@ -2,10 +2,14 @@ package com.sleeppulse.app.ui.dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.sleeppulse.app.data.model.NightlySummary
-import com.sleeppulse.app.data.model.SensorConnectionState
-import com.sleeppulse.app.data.model.SensorReading
-import com.sleeppulse.app.data.repository.SleepRepository
+import com.sleeppulse.shared.model.NightlySummary
+import com.sleeppulse.shared.model.SensorConnectionState
+import com.sleeppulse.shared.model.SensorReading
+import com.sleeppulse.shared.repository.SleepRepository
+import com.sleeppulse.shared.scoring.RecoveryResult
+import com.sleeppulse.shared.scoring.RecoveryScoreCalculator
+import com.sleeppulse.shared.scoring.SleepScoreCalculator
+import com.sleeppulse.shared.scoring.MetricBaselineCalculator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow

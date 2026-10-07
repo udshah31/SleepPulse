@@ -15,10 +15,10 @@ import androidx.health.connect.client.request.AggregateRequest
 import androidx.health.connect.client.request.ChangesTokenRequest
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
-import com.sleeppulse.app.data.model.NightlySummary
-import com.sleeppulse.app.data.model.SensorReading
-import com.sleeppulse.app.data.model.SleepStage
-import com.sleeppulse.app.data.model.StageSegment
+import com.sleeppulse.shared.model.NightlySummary
+import com.sleeppulse.shared.model.SensorReading
+import com.sleeppulse.shared.model.SleepStage
+import com.sleeppulse.shared.model.StageSegment
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -86,6 +86,13 @@ class HealthConnectManager(private val context: Context) {
                         sourcePackage = originOf(r),
                     )
                 }
+
+        /**
+         * The standalone Health Connect app (Android 13 and below) ends the last page with an
+         * empty token, not null; looping on `!= null` re-read page one forever until Health
+         * Connect rate-limited every read. Blank means "no more pages".
+         */
+        fun nextPageToken(token: String?): String? = token?.takeIf { it.isNotBlank() }
 
         /**
          * Builds the record Health Connect stores for a night, or null if there is no positive
@@ -254,7 +261,7 @@ class HealthConnectManager(private val context: Context) {
                     )
                 )
                 records += response.records
-                pageToken = response.pageToken
+                pageToken = nextPageToken(response.pageToken)
             } while (pageToken != null)
             fromOtherApps(records, context.packageName)
         }

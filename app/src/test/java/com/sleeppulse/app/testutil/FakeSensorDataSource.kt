@@ -1,8 +1,8 @@
 package com.sleeppulse.app.testutil
 
-import com.sleeppulse.app.data.model.SensorConnectionState
-import com.sleeppulse.app.data.model.SensorReading
-import com.sleeppulse.app.data.source.SensorDataSource
+import com.sleeppulse.shared.model.SensorConnectionState
+import com.sleeppulse.shared.model.SensorReading
+import com.sleeppulse.shared.sensor.SensorDataSource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow

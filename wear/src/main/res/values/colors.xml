@@ -1,0 +1,4 @@
+<resources>
+    <!-- Keep in sync with :app's calm_night_background. -->
+    <color name="ic_launcher_background">#FF0B0F22</color>
+</resources>

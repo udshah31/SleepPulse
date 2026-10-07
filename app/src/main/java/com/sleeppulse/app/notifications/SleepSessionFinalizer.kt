@@ -1,7 +1,7 @@
 package com.sleeppulse.app.notifications
 
-import com.sleeppulse.app.data.repository.SleepRepository
-import com.sleeppulse.app.ui.dashboard.RecoveryScoreCalculator
+import com.sleeppulse.shared.repository.SleepRepository
+import com.sleeppulse.shared.scoring.RecoveryScoreCalculator
 import com.sleeppulse.app.widget.WidgetRefresher
 import javax.inject.Inject
 import javax.inject.Singleton

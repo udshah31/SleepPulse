@@ -1,7 +1,9 @@
 package com.sleeppulse.app.ui.dashboard
 
-import com.sleeppulse.app.data.model.SensorConnectionState
-import com.sleeppulse.app.data.model.SensorReading
+import com.sleeppulse.shared.model.SensorConnectionState
+import com.sleeppulse.shared.model.SensorReading
+import com.sleeppulse.shared.scoring.RecoveryResult
+import com.sleeppulse.shared.scoring.MetricBaselineResult
 
 /** User-triggered actions on the Dashboard screen. */
 sealed class DashboardIntent {

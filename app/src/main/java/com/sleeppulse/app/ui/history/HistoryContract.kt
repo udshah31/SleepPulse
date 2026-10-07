@@ -1,6 +1,7 @@
 package com.sleeppulse.app.ui.history
 
-import com.sleeppulse.app.data.model.NightlySummary
+import com.sleeppulse.shared.model.NightlySummary
+import com.sleeppulse.shared.analytics.SleepDebt
 
 sealed class HistoryIntent {
     data object Load : HistoryIntent()

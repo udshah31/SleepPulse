@@ -5,7 +5,9 @@
 A native Android sleep/recovery tracking companion app (Kotlin, Jetpack Compose), in the
 spirit of Eight Sleep or Whoop. It tracks a night from a heart-rate sensor (simulated, or a
 real BLE heart-rate strap), scores sleep and recovery, and keeps a 30-night history. A
-minimal Wear OS module (`:wear`) sits alongside the phone app (`:app`).
+minimal Wear OS module (`:wear`) sits alongside the phone app (`:app`). The platform-independent
+core — models, scoring and analytics, night-summary construction, and the repository/sensor
+interfaces — lives in a Kotlin Multiplatform module (`:shared`), ready for a future iOS app.
 
 ## Architecture
 
@@ -33,7 +35,7 @@ flags across the Composable and reasoning about their combinations by hand.
 
 ### Data source abstraction
 
-`data/source/SensorDataSource` is the interface the rest of the app depends on:
+`SensorDataSource` (in `:shared`) is the interface the rest of the app depends on:
 
 ```kotlin
 interface SensorDataSource {
@@ -51,9 +53,10 @@ Two implementations:
   `AWAKE → LIGHT → DEEP → LIGHT → REM → LIGHT`, so a demo session looks like a
   plausible night rather than white noise.
 - **`BleSensorDataSource`** — a `BluetoothGatt` client for the standard Bluetooth SIG Heart
-  Rate Service (`0x180D`)/Measurement Characteristic (`0x2A37`). `hrvMillis` and
-  `sleepStage` are not part of that service, so it emits placeholder values for them (a
-  real product needs a vendor characteristic or second sensor).
+  Rate Service (`0x180D`)/Measurement Characteristic (`0x2A37`). HRV is a rolling RMSSD
+  computed from the RR-intervals the strap sends (`null` until it has sent enough, or if it
+  sends none); the service carries no sleep stage or movement, so the stage comes from the
+  `SleepStagePredictor` heuristic.
 
 `SensorSourceManager` is what Hilt binds to `SensorDataSource`. It delegates to the simulated
 or BLE source depending on the data-source mode in Settings. Picking a device goes through
@@ -66,7 +69,7 @@ chosen address to `BleSensorDataSource` via `BleTargetDeviceSink`. Nothing downs
 `SleepRepository` sits between the data source/Room and the ViewModels; ViewModels never
 touch Room or `SensorDataSource` directly.
 
-- `data/local/` — Room (DB version 4, schemas exported to `app/schemas/`, explicit migrations from 4 on): `NightlySummaryEntity` (last
+- Room database in `:shared` (`db/`, Room KMP with the bundled SQLite driver; DB version 5, schemas exported to `shared/schemas/`, explicit migrations from 4 on): `NightlySummaryEntity` (last
   30 nights, with user tags) plus `SleepSessionEntity`/`SessionReadingEntity`, which persist
   an in-progress session so a night survives process death.
 - On disconnect the summary is built from the persisted readings (`NightSummaryBuilder`);
@@ -110,7 +113,8 @@ Requires the Android SDK at the path in `local.properties` (`sdk.dir`); JDK 17+;
 ## Testing and CI
 
 ```
-./gradlew :app:test    # unit tests, hand-written fakes in app/src/test/.../testutil
+./gradlew :shared:testAndroidHostTest # domain-core tests (shared/src/commonTest)
+./gradlew :app:test                   # Android unit tests, hand-written fakes in app/src/test/.../testutil
 ./gradlew lint
 ```
 
@@ -120,10 +124,10 @@ in CI.
 
 ## Known limitations
 
-- HRV and sleep stage from a real BLE strap are placeholders (see above); stage prediction
-  is a simple HR/HRV/movement threshold heuristic.
-- Single `:app` module (no `:data`/`:domain` split); the `data/`, `ui/`, `di/` packages
-  mirror where the boundaries would go.
+- With a BLE strap, sleep stage is a simple HR/HRV threshold heuristic (the standard
+  Heart Rate Service has no stage or movement data).
+- Only the domain core is shared (`:shared`); Android integrations (Room, BLE, Health Connect,
+  services, widget) stay in `:app`, and there is no iOS app yet.
 - The `:wear` module is a minimal shell.
 
 ## Project history
