@@ -9,3 +9,7 @@ build/
 .cxx
 local.properties
 .claude/
+.worktrees/
+DerivedData/
+xcuserdata/
+*.xcuserstate
