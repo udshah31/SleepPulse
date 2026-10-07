@@ -395,7 +395,7 @@ git diff --check
 
 Do not include local configuration, credentials, `.superpowers/brainstorm/`, or `__agent__/` in any migration change.
 
-- [ ] **Step 5: Runtime smoke test Android behavior**
+- [x] **Step 5: Runtime smoke test Android behavior**
 
 On an available emulator or device, verify startup, Dashboard navigation, simulated sensor connect/disconnect, History, Recovery, Alarm, Settings, Breathe, and Scan entry. Confirm no database migration was generated and no Android-only feature was removed.
 
@@ -413,5 +413,5 @@ On an available emulator or device, verify startup, Dashboard navigation, simula
 - `:shared:testDebugUnitTest` 74 pass; `:app:testDebugUnitTest` 153 pass; `lint`, `:app:assembleDebug`, `:wear:assembleDebug` pass; `git diff --check` clean.
 - No Room schema or database-version change.
 - CI now runs `:shared:testDebugUnitTest` alongside `:app:test`.
-- Open: Task 7 Step 5 (runtime smoke test on a device).
+- Task 7 Step 5 (Pixel 8a emulator, Android 17, upgraded in place from a DB v4 install): startup, Dashboard, simulated connect/disconnect (night recorded), History, Recovery, Alarm, Settings, Breathe all work. It found one migration regression — History crashed (`Type of the key 2026-09-30 is not supported`) because its LazyColumn keyed on `kotlinx.datetime.LocalDate`, which isn't Bundle-storable; fixed by keying on `toEpochDays()`.
 

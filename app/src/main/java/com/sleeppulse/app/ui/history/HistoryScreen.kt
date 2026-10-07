@@ -112,7 +112,8 @@ fun HistoryScreen(
                         EmptyHistoryState()
                     }
                 } else {
-                    items(state.nights, key = { it.summary.date }) { night ->
+                    // Lazy keys must be Bundle-storable; kotlinx LocalDate isn't (java.time's was).
+                    items(state.nights, key = { it.summary.date.toEpochDays() }) { night ->
                         NightRow(night)
                     }
                 }

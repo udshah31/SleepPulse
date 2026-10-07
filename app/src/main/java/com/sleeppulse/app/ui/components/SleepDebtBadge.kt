@@ -63,11 +63,7 @@ private fun formatDeficit(minutes: Int): String {
     if (minutes == 0) return "Caught up"
     val h = minutes / 60
     val m = minutes % 60
-    return buildString {
-        if (h > 0) append("${h}h ")
-        if (m > 0) append("${m}m")
-        append(" short")
-    }.trim()
+    return listOfNotNull(if (h > 0) "${h}h" else null, if (m > 0) "${m}m" else null, "short").joinToString(" ")
 }
 
 private fun debtColor(level: DebtLevel): Color = when (level) {
