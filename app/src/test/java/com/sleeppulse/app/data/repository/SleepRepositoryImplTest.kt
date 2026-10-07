@@ -1,7 +1,7 @@
 package com.sleeppulse.app.data.repository
 
 import app.cash.turbine.test
-import com.sleeppulse.app.data.local.NightlySummaryEntity
+import com.sleeppulse.shared.db.NightlySummaryEntity
 import com.sleeppulse.shared.model.NightlySummary
 import com.sleeppulse.shared.model.SensorReading
 import com.sleeppulse.shared.model.SleepStage
@@ -255,7 +255,7 @@ class SleepRepositoryImplTest {
         val startMillis = java.time.LocalDate.of(2026, 7, 18).atStartOfDay(java.time.ZoneId.systemDefault())
             .toInstant().toEpochMilli()
         sessionDao.sessions.add(
-            com.sleeppulse.app.data.local.SleepSessionEntity(
+            com.sleeppulse.shared.db.SleepSessionEntity(
                 sessionId = 5L,
                 startEpochMillis = startMillis,
                 finalized = false,
@@ -263,11 +263,11 @@ class SleepRepositoryImplTest {
         )
         sessionDao.readings.addAll(
             listOf(
-                com.sleeppulse.app.data.local.SessionReadingEntity(
+                com.sleeppulse.shared.db.SessionReadingEntity(
                     id = 1L, sessionId = 5L, timestampMillis = startMillis,
                     heartRateBpm = 58, hrvMillis = 70.0, sleepStage = SleepStage.LIGHT,
                 ),
-                com.sleeppulse.app.data.local.SessionReadingEntity(
+                com.sleeppulse.shared.db.SessionReadingEntity(
                     id = 2L, sessionId = 5L, timestampMillis = startMillis + 60_000,
                     heartRateBpm = 56, hrvMillis = 72.0, sleepStage = SleepStage.DEEP,
                 ),
@@ -290,7 +290,7 @@ class SleepRepositoryImplTest {
         val dao = FakeNightlySummaryDao()
         val sessionDao = FakeSleepSessionDao()
         sessionDao.sessions.add(
-            com.sleeppulse.app.data.local.SleepSessionEntity(
+            com.sleeppulse.shared.db.SleepSessionEntity(
                 sessionId = 9L, startEpochMillis = 0L, finalized = false,
             )
         )
@@ -312,7 +312,7 @@ class SleepRepositoryImplTest {
 
         // Session 5: corrupt / unreadable — readingsFor throws for it.
         sessionDao.sessions.add(
-            com.sleeppulse.app.data.local.SleepSessionEntity(
+            com.sleeppulse.shared.db.SleepSessionEntity(
                 sessionId = 5L,
                 startEpochMillis = startMillis,
                 finalized = false,
@@ -322,7 +322,7 @@ class SleepRepositoryImplTest {
 
         // Session 6: healthy leftover session with real readings.
         sessionDao.sessions.add(
-            com.sleeppulse.app.data.local.SleepSessionEntity(
+            com.sleeppulse.shared.db.SleepSessionEntity(
                 sessionId = 6L,
                 startEpochMillis = startMillis,
                 finalized = false,
@@ -330,11 +330,11 @@ class SleepRepositoryImplTest {
         )
         sessionDao.readings.addAll(
             listOf(
-                com.sleeppulse.app.data.local.SessionReadingEntity(
+                com.sleeppulse.shared.db.SessionReadingEntity(
                     id = 1L, sessionId = 6L, timestampMillis = startMillis,
                     heartRateBpm = 58, hrvMillis = 70.0, sleepStage = SleepStage.LIGHT,
                 ),
-                com.sleeppulse.app.data.local.SessionReadingEntity(
+                com.sleeppulse.shared.db.SessionReadingEntity(
                     id = 2L, sessionId = 6L, timestampMillis = startMillis + 60_000,
                     heartRateBpm = 56, hrvMillis = 72.0, sleepStage = SleepStage.DEEP,
                 ),
@@ -398,7 +398,7 @@ class SleepRepositoryImplTest {
         val sessionId = sessionDao.sessions.single().sessionId
         sessionDao.insertReadings(
             listOf(0L, 1_000L, 2_000L).map {
-                com.sleeppulse.app.data.local.SessionReadingEntity(
+                com.sleeppulse.shared.db.SessionReadingEntity(
                     sessionId = sessionId, timestampMillis = it, heartRateBpm = 60, hrvMillis = 60.0, sleepStage = SleepStage.LIGHT,
                 )
             },
@@ -421,7 +421,7 @@ class SleepRepositoryImplTest {
         repository.connectSensor()
         sessionDao.insertReadings(
             listOf(0L, 1_000L).map {
-                com.sleeppulse.app.data.local.SessionReadingEntity(
+                com.sleeppulse.shared.db.SessionReadingEntity(
                     sessionId = sessionDao.sessions.single().sessionId, timestampMillis = it,
                     heartRateBpm = 60, hrvMillis = 42.5, sleepStage = SleepStage.LIGHT,
                 )

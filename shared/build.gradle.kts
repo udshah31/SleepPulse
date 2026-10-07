@@ -1,6 +1,8 @@
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.multiplatform")
+    id("com.google.devtools.ksp")
+    id("androidx.room")
 }
 
 repositories {
@@ -15,10 +17,8 @@ val enableIosTargets = providers.gradleProperty("enableIosTargets")
 
 kotlin {
     androidTarget {
-        compilations.all {
-            kotlinOptions {
-                jvmTarget = "17"
-            }
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
         }
     }
     if (enableIosTargets) {
@@ -34,6 +34,9 @@ kotlin {
             dependencies {
                 api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
                 api("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0")
+                // :app builds the database and implements the DAOs' consumers, so Room is part of the API.
+                api("androidx.room:room-runtime:2.8.4")
+                api("androidx.sqlite:sqlite-bundled:2.5.1")
             }
         }
         val commonTest by getting {
@@ -56,5 +59,20 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+}
+
+// Committed; app's SleepPulseDatabaseMigrationsTest checks it against the DB version, and the
+// instrumented migration test reads it as assets.
+room {
+    schemaDirectory("$projectDir/schemas")
+}
+
+dependencies {
+    add("kspAndroid", "androidx.room:room-compiler:2.8.4")
+    if (enableIosTargets) {
+        add("kspIosX64", "androidx.room:room-compiler:2.8.4")
+        add("kspIosArm64", "androidx.room:room-compiler:2.8.4")
+        add("kspIosSimulatorArm64", "androidx.room:room-compiler:2.8.4")
     }
 }
