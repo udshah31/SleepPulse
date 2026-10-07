@@ -2,9 +2,17 @@
 
 ## Status
 
-Proposed design for the first KMP migration milestone. This milestone extracts
-the platform-independent domain/core layer only; it does not add an iOS app or
-rewrite the existing Android UI.
+Implemented for the first KMP migration milestone. The design below records the
+original domain-core extraction scope; it did not add an iOS app or rewrite the
+existing Android UI.
+
+As of 2026-10-07, later changes also moved the Room database into `:shared` using
+Room KMP and the bundled SQLite driver. Room KMP and `androidx.sqlite` are now
+allowed common dependencies; the original Room-in-`:app` boundary below is historical.
+The toolchain is Kotlin 2.3.21 / AGP 9.0.1 / Gradle 9.1.0, and shared Android tests
+run with `:shared:testAndroidHostTest`. The shared library and its 74 common tests
+have been validated on the iOS simulator; there is still no iOS app.
+See `README.md` and the plan's current-status section for current commands and ownership.
 
 ## Goal
 

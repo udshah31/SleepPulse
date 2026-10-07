@@ -6,8 +6,9 @@ A native Android sleep/recovery tracking companion app (Kotlin, Jetpack Compose)
 spirit of Eight Sleep or Whoop. It tracks a night from a heart-rate sensor (simulated, or a
 real BLE heart-rate strap), scores sleep and recovery, and keeps a 30-night history. A
 minimal Wear OS module (`:wear`) sits alongside the phone app (`:app`). The platform-independent
-core — models, scoring and analytics, night-summary construction, and the repository/sensor
-interfaces — lives in a Kotlin Multiplatform module (`:shared`), ready for a future iOS app.
+core — models, scoring and analytics, night-summary construction, the repository/sensor
+interfaces, and the Room database — lives in a Kotlin Multiplatform module (`:shared`).
+The shared module builds and its tests run on iOS; an iOS app has not been created yet.
 
 ## Architecture
 
@@ -110,24 +111,48 @@ Hilt wires the graph: `SleepPulseApp` (`@HiltAndroidApp`), `MainActivity`
 
 Requires the Android SDK at the path in `local.properties` (`sdk.dir`); JDK 17+; minSdk 26.
 
+The current toolchain is Kotlin 2.3.21, AGP 9.0.1, Gradle 9.1.0, KSP 2.3.11,
+Hilt 2.60.1, and Room 2.8.4. The shared module uses AGP's
+`com.android.kotlin.multiplatform.library` plugin with a single Android variant;
+its domain tests run as Android host tests.
+
 ## Testing and CI
 
 ```
 ./gradlew :shared:testAndroidHostTest # domain-core tests (shared/src/commonTest)
 ./gradlew :app:test                   # Android unit tests, hand-written fakes in app/src/test/.../testutil
 ./gradlew lint
+./gradlew :app:assembleDebug :wear:assembleDebug
 ```
 
 GitHub Actions (`.github/workflows/ci.yml`) runs lint, unit tests, and `assembleDebug` on
-pushes and PRs to `master`. Instrumented tests live in `app/src/androidTest` and are not run
-in CI.
+pushes and PRs to `master`. Both `:shared:testAndroidHostTest` and `:app:test` are included.
+Instrumented tests live in `app/src/androidTest` and are not run in CI.
+
+### Shared iOS validation
+
+iOS targets are opt-in so Android development does not require Xcode. On a Mac with
+full Xcode selected and an iOS simulator runtime installed, run:
+
+```
+./gradlew -PenableIosTargets=true :shared:compileKotlinIosSimulatorArm64
+./gradlew -PenableIosTargets=true :shared:iosSimulatorArm64Test
+```
+
+The shared iOS simulator suite passed with 74 tests on 2026-10-07. These tests exercise
+the shared library; they do not launch an iOS app. iOS tests are not currently in CI.
+This machine's Xcode installation lives on the Secondary volume, which must be mounted.
+Use `xcode-select -p` and `xcodebuild -version` to check the selected installation.
+
+Use Kotlin/Native-safe common-test names: avoid `(`, `)`, and `,` in backtick function names.
 
 ## Known limitations
 
 - With a BLE strap, sleep stage is a simple HR/HRV threshold heuristic (the standard
   Heart Rate Service has no stage or movement data).
-- Only the domain core is shared (`:shared`); Android integrations (Room, BLE, Health Connect,
-  services, widget) stay in `:app`, and there is no iOS app yet.
+- Domain logic and the Room database are shared (`:shared`); Android UI, database construction,
+  repository/sensor implementations, BLE, Health Connect, services, and the widget stay in
+  `:app`. iOS app UI and platform adapters are still to be implemented.
 - The `:wear` module is a minimal shell.
 
 ## Project history
