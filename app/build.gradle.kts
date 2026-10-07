@@ -112,6 +112,13 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
 }
 
+// Some unit tests read files Gradle can't see (the manifest guard in SleepTrackingServiceTest, the schema
+// guard in SleepPulseDatabaseMigrationsTest); declare them so editing them re-runs the tests.
+tasks.withType<Test>().configureEach {
+    inputs.file("src/main/AndroidManifest.xml")
+    inputs.dir(rootProject.file("shared/schemas"))
+}
+
 // Test code uses kotlinx-coroutines-test's experimental APIs (setMain, advanceUntilIdle, ...) throughout.
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
     if (name.contains("UnitTest")) {
