@@ -22,6 +22,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -54,6 +57,9 @@ class SleepRepositoryImpl @Inject constructor(
 
     override val connectionState: Flow<SensorConnectionState> = sensorDataSource.connectionState
 
+    private val _isTracking = MutableStateFlow(false)
+    override val isTracking: StateFlow<Boolean> = _isTracking.asStateFlow()
+
     override fun liveReadings(): Flow<SensorReading> = sensorDataSource.readings()
 
     override fun recentNights(): Flow<List<NightlySummary>> =
@@ -77,6 +83,8 @@ class SleepRepositoryImpl @Inject constructor(
     }
 
     override suspend fun connectSensor() {
+        // Set first: from here the session must be stoppable, even if the sensor never connects.
+        _isTracking.value = true
         sensorDataSource.connect()
         val startMillis = nowMillis()
         val sessionId = sessionDao.createSession(
@@ -115,6 +123,7 @@ class SleepRepositoryImpl @Inject constructor(
             activeSessionStartMillis = null
             id to start
         }
+        _isTracking.value = false
         sensorDataSource.disconnect()
         return if (sessionId != null && startMillis != null) {
             finalizeSession(sessionId, startMillis)

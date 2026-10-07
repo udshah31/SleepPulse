@@ -208,7 +208,7 @@ fun DashboardScreen(
                     modifier = Modifier.weight(1f),
                     border = BorderStroke(1.dp, SleepIndigo.copy(alpha = 0.55f)),
                 ) {
-                    Text(if (state.isConnected) "Disconnect" else "Connect")
+                    Text(if (state.isTracking) "Disconnect" else "Connect")
                 }
                 Button(
                     onClick = {
@@ -314,6 +314,7 @@ private fun scoreDescription(state: DashboardState): String = if (state.recovery
 private fun connectionLabel(state: DashboardState): String = when {
     state.isLoading -> "Starting"
     state.isConnected -> "Live"
+    state.isTracking -> "Connecting"
     else -> "Offline"
 }
 

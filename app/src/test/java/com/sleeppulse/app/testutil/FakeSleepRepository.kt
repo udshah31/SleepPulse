@@ -7,6 +7,7 @@ import com.sleeppulse.shared.repository.SleepRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
 class FakeSleepRepository : SleepRepository {
     val connectionStateFlow = MutableStateFlow<SensorConnectionState>(SensorConnectionState.Disconnected)
@@ -25,6 +26,8 @@ class FakeSleepRepository : SleepRepository {
     var nextDisconnectSummary: NightlySummary? = null
 
     override val connectionState: Flow<SensorConnectionState> = connectionStateFlow
+    val isTrackingFlow = MutableStateFlow(false)
+    override val isTracking: StateFlow<Boolean> = isTrackingFlow
 
     override fun liveReadings(): Flow<SensorReading> {
         liveReadingsCallCount++
@@ -38,11 +41,13 @@ class FakeSleepRepository : SleepRepository {
 
     override suspend fun connectSensor() {
         connectSensorCallCount++
+        isTrackingFlow.value = true
         connectionStateFlow.value = SensorConnectionState.Connected(deviceName = "fake-device")
     }
 
     override suspend fun disconnectSensor(): NightlySummary? {
         disconnectSensorCallCount++
+        isTrackingFlow.value = false
         connectionStateFlow.value = SensorConnectionState.Disconnected
         val summary = nextDisconnectSummary
         if (summary != null) {
