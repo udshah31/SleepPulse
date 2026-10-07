@@ -1,6 +1,6 @@
 plugins {
-    id("com.android.library")
     id("org.jetbrains.kotlin.multiplatform")
+    id("com.android.kotlin.multiplatform.library")
     id("com.google.devtools.ksp")
     id("androidx.room")
 }
@@ -16,7 +16,13 @@ val enableIosTargets = providers.gradleProperty("enableIosTargets")
     .get()
 
 kotlin {
-    androidTarget {
+    // AGP 9 KMP library plugin (single variant). commonTest runs as Android host tests:
+    // ./gradlew :shared:testAndroidHostTest
+    androidLibrary {
+        namespace = "com.sleeppulse.shared"
+        compileSdk = 36
+        minSdk = 26
+        withHostTest {}
         compilerOptions {
             jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
         }
@@ -48,19 +54,6 @@ kotlin {
     }
 }
 
-android {
-    namespace = "com.sleeppulse.shared"
-    compileSdk = 36
-
-    defaultConfig {
-        minSdk = 26
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-}
 
 // Committed; app's SleepPulseDatabaseMigrationsTest checks it against the DB version, and the
 // instrumented migration test reads it as assets.
