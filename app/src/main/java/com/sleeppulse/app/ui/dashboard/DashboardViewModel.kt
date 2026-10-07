@@ -46,6 +46,7 @@ class DashboardViewModel @Inject constructor(
     val healthConnectPermissionRequests: Flow<Set<String>> = _healthConnectPermissionRequests.receiveAsFlow()
     private var askedHealthConnect = false
     private var connectionJob: Job? = null
+    private var trackingJob: Job? = null
     private var readingsJob: Job? = null
     private var nightsJob: Job? = null
 
@@ -98,6 +99,11 @@ class DashboardViewModel @Inject constructor(
                 }
             }
         }
+        if (trackingJob?.isActive != true) {
+            trackingJob = viewModelScope.launch {
+                repository.isTracking.collect { tracking -> _state.update { it.copy(isTracking = tracking) } }
+            }
+        }
         if (readingsJob?.isActive != true) {
             readingsJob = viewModelScope.launch {
                 repository.liveReadings().collect { reading ->
@@ -133,7 +139,9 @@ class DashboardViewModel @Inject constructor(
 
     private fun toggleConnection() {
         viewModelScope.launch {
-            if (_state.value.isConnected) {
+            // Keyed on the session, not the sensor: a BLE session whose strap never connects
+            // must still be stoppable.
+            if (_state.value.isTracking) {
                 val stopIntent = Intent(context, SleepTrackingService::class.java).apply {
                     action = SleepTrackingService.ACTION_STOP_TRACKING
                 }

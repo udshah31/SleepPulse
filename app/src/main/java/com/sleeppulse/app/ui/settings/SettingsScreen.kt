@@ -95,6 +95,27 @@ fun SettingsScreen(
                     state.selectedBleDeviceLabel?.let { label ->
                         Text(text = "Selected: $label", style = MaterialTheme.typography.bodySmall)
                     }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(text = "Phone on the bed", style = MaterialTheme.typography.bodyLarge)
+                            Text(
+                                text = "Uses the phone's motion sensor to spot waking; applies from the next session",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = CalmNightTextSecondary,
+                            )
+                        }
+                        Switch(
+                            checked = state.phoneMovementEnabled,
+                            onCheckedChange = { viewModel.onIntent(SettingsIntent.SetPhoneMovementEnabled(it)) },
+                            colors = settingsSwitchColors(),
+                        )
+                    }
                 }
             }
         }
@@ -176,19 +197,22 @@ fun SettingsScreen(
                 Switch(
                     checked = state.amoledBlack,
                     onCheckedChange = { viewModel.onIntent(SettingsIntent.SetAmoledBlack(it)) },
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = CalmNightBackground,
-                        checkedTrackColor = SleepIndigo,
-                        checkedBorderColor = SleepIndigo,
-                        uncheckedThumbColor = CalmNightTextSecondary,
-                        uncheckedTrackColor = CalmNightSurfaceDim,
-                        uncheckedBorderColor = CalmNightTextSecondary.copy(alpha = 0.35f),
-                    ),
+                    colors = settingsSwitchColors(),
                 )
             }
         }
     }
 }
+
+@Composable
+private fun settingsSwitchColors() = SwitchDefaults.colors(
+    checkedThumbColor = CalmNightBackground,
+    checkedTrackColor = SleepIndigo,
+    checkedBorderColor = SleepIndigo,
+    uncheckedThumbColor = CalmNightTextSecondary,
+    uncheckedTrackColor = CalmNightSurfaceDim,
+    uncheckedBorderColor = CalmNightTextSecondary.copy(alpha = 0.35f),
+)
 
 @Composable
 private fun SettingsSection(title: String, content: @Composable ColumnScope.() -> Unit) {

@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.util.UUID
 import javax.inject.Inject
+import com.sleeppulse.app.tracking.PhoneMovement
 import com.sleeppulse.app.tracking.SleepStagePredictor
 
 /** Testable seam over [BleSensorDataSource.setTargetDevice] so [com.sleeppulse.app.ui.scan.ScanViewModel] can be unit-tested with a fake. */
@@ -35,10 +36,13 @@ interface BleTargetDeviceSink {
  * Service/characteristic discovery and parsing are wired correctly; [connect] targets
  * a device address that must be supplied by a real scan result.
  * BLE mode is selectable in Settings; HRV is real only when the strap sends RR-intervals.
+ * Movement comes from the phone's accelerometer ([PhoneMovement]) when the "Phone on the bed" option is on,
+ * otherwise it is unknown (null).
  */
 class BleSensorDataSource @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val predictor: SleepStagePredictor
+    private val predictor: SleepStagePredictor,
+    private val phoneMovement: PhoneMovement,
 ) : SensorDataSource, BleTargetDeviceSink {
 
     private val _connectionState =
@@ -145,7 +149,7 @@ class BleSensorDataSource @Inject constructor(
             val predictedStage = predictor.predict(
                 heartRateBpm = packet.bpm,
                 hrvMillis = hrvMillis?.toLong(),
-                movement = null, // the Heart Rate Service carries no movement; a real source is separate work
+                movement = phoneMovement.current(now), // null unless the phone-on-the-bed option is running
             )
 
             _readings.tryEmit(

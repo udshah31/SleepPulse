@@ -148,6 +148,7 @@ class DashboardViewModelTest {
         val viewModel = DashboardViewModel(context, repository, mock())
         viewModel.onIntent(DashboardIntent.Start)
         advanceUntilIdle()
+        repository.isTrackingFlow.value = true
         repository.connectionStateFlow.value = SensorConnectionState.Connected("fake-device")
         advanceUntilIdle()
 
@@ -155,6 +156,25 @@ class DashboardViewModelTest {
         advanceUntilIdle()
 
         verify(context).startService(any())
+    }
+
+    @Test
+    fun `a running session whose sensor never connects can still be stopped`() = runTest {
+        // BLE mode with the strap out of range: the service is tracking, the sensor stays Disconnected.
+        val repository = FakeSleepRepository()
+        val context: Context = mock()
+        val viewModel = DashboardViewModel(context, repository, mock())
+        viewModel.onIntent(DashboardIntent.Start)
+        repository.isTrackingFlow.value = true
+        advanceUntilIdle()
+
+        assertEquals(true, viewModel.state.value.isTracking)
+        assertEquals(false, viewModel.state.value.isConnected)
+        viewModel.onIntent(DashboardIntent.ToggleSensorConnection)
+        advanceUntilIdle()
+
+        verify(context).startService(any())
+        verify(context, org.mockito.kotlin.never()).startForegroundService(any())
     }
 
     @Test

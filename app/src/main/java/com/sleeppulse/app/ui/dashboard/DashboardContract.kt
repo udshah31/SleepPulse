@@ -21,6 +21,8 @@ enum class WindDownStep { BREATHE, DIM_LIGHTS, SET_ALARM, DONE }
 data class DashboardState(
     val isLoading: Boolean = true,
     val connectionState: SensorConnectionState = SensorConnectionState.Disconnected,
+    /** A session is running (the tracking service is on), connected or not. */
+    val isTracking: Boolean = false,
     val sleepScore: Int = 0,
     val latestReading: SensorReading? = null,
     val recentReadings: List<SensorReading> = emptyList(),

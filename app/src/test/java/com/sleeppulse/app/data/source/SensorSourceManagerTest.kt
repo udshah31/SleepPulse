@@ -6,6 +6,7 @@ import com.sleeppulse.shared.model.SensorReading
 import com.sleeppulse.shared.model.SleepStage
 import com.sleeppulse.app.data.repository.SettingsRepository
 import com.sleeppulse.app.testutil.MainDispatcherRule
+import com.sleeppulse.app.tracking.PhoneMovement
 import com.sleeppulse.app.tracking.SleepStagePredictor
 import com.sleeppulse.app.ui.settings.DataSourceMode
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,7 +33,7 @@ class SensorSourceManagerTest {
         val repo = SettingsRepository()
         val mockContext = mock<android.content.Context>()
         val simulated = SimulatedSensorDataSource(mock<SleepStagePredictor>())
-        val ble = BleSensorDataSource(mockContext, mock<SleepStagePredictor>())
+        val ble = BleSensorDataSource(mockContext, mock<SleepStagePredictor>(), PhoneMovement())
         val manager = SensorSourceManager(repo, simulated, ble)
 
         manager.connectionState.test {
@@ -64,7 +65,7 @@ class SensorSourceManagerTest {
         val repo = SettingsRepository()
         val mockContext = mock<android.content.Context>()
         val simulated = SimulatedSensorDataSource(mock<SleepStagePredictor>())
-        val ble = BleSensorDataSource(mockContext, mock<SleepStagePredictor>())
+        val ble = BleSensorDataSource(mockContext, mock<SleepStagePredictor>(), PhoneMovement())
         val manager = SensorSourceManager(repo, simulated, ble)
 
         // Default is SIMULATED
@@ -94,7 +95,7 @@ class SensorSourceManagerTest {
         val repo = SettingsRepository()
         val mockContext = mock<android.content.Context>()
         val simulated = SimulatedSensorDataSource(mock<SleepStagePredictor>())
-        val ble = BleSensorDataSource(mockContext, mock<SleepStagePredictor>())
+        val ble = BleSensorDataSource(mockContext, mock<SleepStagePredictor>(), PhoneMovement())
         val manager = SensorSourceManager(repo, simulated, ble)
 
         manager.connect()

@@ -19,6 +19,7 @@ class SettingsRepositoryTest {
         assertEquals(0, repository.targetWakeupMinute.value)
         assertEquals(30, repository.wakeWindowMinutes.value)
         assertFalse(repository.amoledBlack.value)
+        assertFalse(repository.phoneMovementEnabled.value)
     }
 
     @Test
@@ -51,6 +52,14 @@ class SettingsRepositoryTest {
     }
 
     @Test
+    fun `setPhoneMovementEnabled toggles independently of other settings`() {
+        repository.setTargetBedtime(23, 15)
+        repository.setPhoneMovementEnabled(true)
+        assertEquals(true, repository.phoneMovementEnabled.value)
+        assertEquals(23, repository.targetBedtimeHour.value)
+    }
+
+    @Test
     fun `every setting survives a restart through the store`() {
         val store = InMemorySettingsStore()
         SettingsRepository(store).apply {
@@ -60,6 +69,7 @@ class SettingsRepositoryTest {
             setAmoledBlack(true)
             setTemperatureUnit(TemperatureUnit.FAHRENHEIT)
             setBleDevice("AA:BB", "Strap (AA:BB)")
+            setPhoneMovementEnabled(true)
         }
 
         val restarted = SettingsRepository(store)
@@ -74,6 +84,7 @@ class SettingsRepositoryTest {
         assertEquals(TemperatureUnit.FAHRENHEIT, restarted.temperatureUnit.value)
         assertEquals("AA:BB", restarted.bleDeviceAddress.value)
         assertEquals("Strap (AA:BB)", restarted.bleDeviceLabel.value)
+        assertEquals(true, restarted.phoneMovementEnabled.value)
     }
 
     @Test

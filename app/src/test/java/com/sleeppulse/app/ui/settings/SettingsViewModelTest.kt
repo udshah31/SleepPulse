@@ -74,6 +74,19 @@ class SettingsViewModelTest {
     }
 
     @Test
+    fun `SetPhoneMovementEnabled updates only phoneMovementEnabled and defaults to off`() = runTest {
+        val viewModel = SettingsViewModel(mockContext, SettingsRepository(), mockWindDownScheduler, mockSmartAlarmScheduler)
+        advanceUntilIdle()
+        assertEquals(false, viewModel.state.value.phoneMovementEnabled)
+
+        viewModel.onIntent(SettingsIntent.SetPhoneMovementEnabled(true))
+        advanceUntilIdle()
+
+        assertEquals(true, viewModel.state.value.phoneMovementEnabled)
+        assertEquals(DataSourceMode.SIMULATED, viewModel.state.value.dataSourceMode)
+    }
+
+    @Test
     fun `SetTargetBedtime updates only targetBedtime and schedules reminder`() = runTest {
         val viewModel = SettingsViewModel(mockContext, SettingsRepository(), mockWindDownScheduler, mockSmartAlarmScheduler)
         viewModel.onIntent(SettingsIntent.SetTargetBedtime(23, 15))

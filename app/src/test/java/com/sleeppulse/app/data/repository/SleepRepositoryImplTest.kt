@@ -4,6 +4,7 @@ import app.cash.turbine.test
 import com.sleeppulse.shared.db.NightlySummaryEntity
 import com.sleeppulse.shared.model.NightlySummary
 import com.sleeppulse.shared.model.SensorReading
+import com.sleeppulse.shared.model.SensorConnectionState
 import com.sleeppulse.shared.model.SleepStage
 import com.sleeppulse.app.testutil.FakeNightlySummaryDao
 import com.sleeppulse.app.testutil.FakeSensorDataSource
@@ -112,6 +113,21 @@ class SleepRepositoryImplTest {
 
         repository.disconnectSensor()
         assertEquals(1, sensorDataSource.disconnectCallCount)
+    }
+
+    @Test
+    fun `isTracking covers the whole session even if the sensor never connects`() = runTest {
+        val sensorDataSource = FakeSensorDataSource()
+        val repository = SleepRepositoryImpl(sensorDataSource, FakeNightlySummaryDao(), FakeSleepSessionDao(), backgroundScope, mock()) { 1_000L }
+        assertEquals(false, repository.isTracking.value)
+
+        repository.connectSensor()
+        // A BLE strap out of range: the session runs while the sensor stays disconnected.
+        sensorDataSource.connectionStateFlow.value = SensorConnectionState.Disconnected
+        assertEquals(true, repository.isTracking.value)
+
+        repository.disconnectSensor()
+        assertEquals(false, repository.isTracking.value)
     }
 
     @Test

@@ -69,6 +69,11 @@ class SettingsViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
+            repository.phoneMovementEnabled.collect { enabled ->
+                _state.update { it.copy(phoneMovementEnabled = enabled) }
+            }
+        }
+        viewModelScope.launch {
             repository.temperatureUnit.collect { unit ->
                 _state.update { it.copy(temperatureUnit = unit) }
             }
@@ -98,6 +103,7 @@ class SettingsViewModel @Inject constructor(
             is SettingsIntent.SetAmoledBlack -> {
                 repository.setAmoledBlack(intent.enabled)
             }
+            is SettingsIntent.SetPhoneMovementEnabled -> repository.setPhoneMovementEnabled(intent.enabled)
         }
     }
 }

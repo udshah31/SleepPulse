@@ -23,6 +23,8 @@ data class Settings(
     /** The BLE sensor picked on the Scan screen; BLE mode can't connect without it. */
     val bleDeviceAddress: String? = null,
     val bleDeviceLabel: String? = null,
+    /** Use the phone's accelerometer as the BLE movement source (phone on the bed). Applies from the next session. */
+    val phoneMovementEnabled: Boolean = false,
 )
 
 /**
@@ -67,6 +69,9 @@ class SettingsRepository @Inject constructor(private val store: SettingsStore) {
     private val _bleDeviceLabel = MutableStateFlow(initial.bleDeviceLabel)
     val bleDeviceLabel: StateFlow<String?> = _bleDeviceLabel.asStateFlow()
 
+    private val _phoneMovementEnabled = MutableStateFlow(initial.phoneMovementEnabled)
+    val phoneMovementEnabled: StateFlow<Boolean> = _phoneMovementEnabled.asStateFlow()
+
     fun setDataSourceMode(mode: DataSourceMode) {
         _dataSourceMode.value = mode
         save()
@@ -87,6 +92,11 @@ class SettingsRepository @Inject constructor(private val store: SettingsStore) {
 
     fun setAmoledBlack(enabled: Boolean) {
         _amoledBlack.value = enabled
+        save()
+    }
+
+    fun setPhoneMovementEnabled(enabled: Boolean) {
+        _phoneMovementEnabled.value = enabled
         save()
     }
 
@@ -113,6 +123,7 @@ class SettingsRepository @Inject constructor(private val store: SettingsStore) {
             temperatureUnit = _temperatureUnit.value,
             bleDeviceAddress = _bleDeviceAddress.value,
             bleDeviceLabel = _bleDeviceLabel.value,
+            phoneMovementEnabled = _phoneMovementEnabled.value,
         )
     )
 }
@@ -146,6 +157,7 @@ class PrefsSettingsStore @Inject constructor(@ApplicationContext context: Contex
             temperatureUnit = enumOrDefault(prefs.getString("temperature_unit", null), d.temperatureUnit),
             bleDeviceAddress = prefs.getString("ble_device_address", null),
             bleDeviceLabel = prefs.getString("ble_device_label", null),
+            phoneMovementEnabled = prefs.getBoolean("phone_movement_enabled", d.phoneMovementEnabled),
         )
     }
 
@@ -161,6 +173,7 @@ class PrefsSettingsStore @Inject constructor(@ApplicationContext context: Contex
             .putString("temperature_unit", settings.temperatureUnit.name)
             .putString("ble_device_address", settings.bleDeviceAddress)
             .putString("ble_device_label", settings.bleDeviceLabel)
+            .putBoolean("phone_movement_enabled", settings.phoneMovementEnabled)
             .apply()
     }
 }
