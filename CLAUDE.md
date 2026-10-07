@@ -67,6 +67,7 @@ There are two `SleepPulseApp.kt` files — `com.sleeppulse.app.SleepPulseApp` (t
 - Compose lazy-list keys and `rememberSaveable` values must be Bundle-storable on Android: shared models use `kotlinx.datetime.LocalDate`, which isn't (`java.time`'s was), so key on `date.toEpochDays()` — a `LocalDate` key crashes History as soon as a night exists, and unit tests don't catch it.
 - Domain-core tests live in `shared/src/commonTest` and use `kotlin.test` (no JUnit rules or Mockito there — those stay in `app/src/test`); run them with `./gradlew :shared:testAndroidHostTest`.
 - Unit-test compilation opts into `kotlinx.coroutines.ExperimentalCoroutinesApi` globally (`app/build.gradle.kts`), so tests don't need per-file `@OptIn` for `setMain`/`advanceUntilIdle`/etc.
+- BLE mode without a strap: `tools/fake-hr-strap/run.sh` turns this Mac into a simulated heart-rate strap ("SleepPulse-Test-HR", HR + RR-intervals) — pick it in Scan; the app's HRV should read 39 ms. See its README.
 - Orchestration classes are kept plain Kotlin behind interfaces (`SleepSummaryNotifier`, `WidgetRefresher`, `*Scheduler`) so they test without Robolectric — the Service/Receiver stays a thin shell.
 
 ## Docs / workflow
