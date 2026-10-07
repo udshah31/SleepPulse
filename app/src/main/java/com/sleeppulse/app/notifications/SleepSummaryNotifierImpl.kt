@@ -5,8 +5,8 @@ import android.app.NotificationManager
 import android.content.Context
 import androidx.core.app.NotificationCompat
 import com.sleeppulse.app.R
-import com.sleeppulse.app.data.model.NightlySummary
-import com.sleeppulse.app.ui.dashboard.RecoveryResult
+import com.sleeppulse.shared.model.NightlySummary
+import com.sleeppulse.shared.scoring.RecoveryResult
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton

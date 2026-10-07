@@ -2,7 +2,7 @@ package com.sleeppulse.app.data.export
 
 import android.content.Context
 import android.os.Environment
-import com.sleeppulse.app.data.model.NightlySummary
+import com.sleeppulse.shared.model.NightlySummary
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File

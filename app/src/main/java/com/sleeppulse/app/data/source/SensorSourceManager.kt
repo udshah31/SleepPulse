@@ -1,7 +1,8 @@
 package com.sleeppulse.app.data.source
 
-import com.sleeppulse.app.data.model.SensorConnectionState
-import com.sleeppulse.app.data.model.SensorReading
+import com.sleeppulse.shared.model.SensorConnectionState
+import com.sleeppulse.shared.model.SensorReading
+import com.sleeppulse.shared.sensor.SensorDataSource
 import com.sleeppulse.app.data.repository.SettingsRepository
 import com.sleeppulse.app.ui.settings.DataSourceMode
 import kotlinx.coroutines.ExperimentalCoroutinesApi

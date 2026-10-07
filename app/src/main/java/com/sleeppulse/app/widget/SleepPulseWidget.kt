@@ -19,7 +19,7 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.sleeppulse.app.data.repository.SettingsRepository
-import com.sleeppulse.app.data.repository.SleepRepository
+import com.sleeppulse.shared.repository.SleepRepository
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors

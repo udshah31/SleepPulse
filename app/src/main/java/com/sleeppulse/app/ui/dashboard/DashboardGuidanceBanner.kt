@@ -1,5 +1,7 @@
 package com.sleeppulse.app.ui.dashboard
 
+import com.sleeppulse.shared.scoring.RecoveryResult
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.fillMaxWidth

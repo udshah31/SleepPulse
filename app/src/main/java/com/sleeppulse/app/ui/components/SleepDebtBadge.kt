@@ -15,8 +15,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.sleeppulse.app.ui.history.DebtLevel
-import com.sleeppulse.app.ui.history.SleepDebt
+import com.sleeppulse.shared.analytics.DebtLevel
+import com.sleeppulse.shared.analytics.SleepDebt
 import com.sleeppulse.app.ui.theme.AlertCoral
 import com.sleeppulse.app.ui.theme.CalmNightTextSecondary
 import com.sleeppulse.app.ui.theme.CautionAmber

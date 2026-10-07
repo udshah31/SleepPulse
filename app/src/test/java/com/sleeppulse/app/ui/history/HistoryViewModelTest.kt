@@ -2,10 +2,11 @@ package com.sleeppulse.app.ui.history
 
 import app.cash.turbine.test
 import com.sleeppulse.app.data.export.DataExporter
-import com.sleeppulse.app.data.model.NightlySummary
+import com.sleeppulse.shared.model.NightlySummary
+import com.sleeppulse.shared.analytics.DebtLevel
 import com.sleeppulse.app.testutil.FakeSleepRepository
 import com.sleeppulse.app.testutil.MainDispatcherRule
-import java.time.LocalDate
+import kotlinx.datetime.LocalDate
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -64,9 +65,9 @@ class HistoryViewModelTest {
         // Newest-first, as recentNights() promises: today (score 80), yesterday (score 60), day before (score 63)
         // trendAgainst() uses a >2-point threshold, so day-before must differ from yesterday by more than
         // 2 points to produce DOWN (the brief's literal score of 61 would only be a 1-point drop -> FLAT).
-        val today = summary(LocalDate.of(2026, 7, 17), score = 80)
-        val yesterday = summary(LocalDate.of(2026, 7, 16), score = 60)
-        val dayBefore = summary(LocalDate.of(2026, 7, 15), score = 63)
+        val today = summary(LocalDate(2026, 7, 17), score = 80)
+        val yesterday = summary(LocalDate(2026, 7, 16), score = 60)
+        val dayBefore = summary(LocalDate(2026, 7, 15), score = 63)
         repository.nightsFlow.value = listOf(today, yesterday, dayBefore)
 
         val viewModel = HistoryViewModel(repository, mock<DataExporter>())
@@ -107,7 +108,7 @@ class HistoryViewModelTest {
     fun `Load computes sleepDebt from recentNights`() = runTest {
         val repository = FakeSleepRepository()
         // Three nights each 60 min short of the 480-min target → 180 min total → MODERATE
-        val shortNight = summary(LocalDate.of(2026, 7, 21), score = 70)
+        val shortNight = summary(LocalDate(2026, 7, 21), score = 70)
             .copy(totalSleepMinutes = 420)
         repository.nightsFlow.value = List(3) { shortNight }
 
@@ -131,7 +132,7 @@ class HistoryViewModelTest {
     fun `Load computes consistencyScore from recentNights`() = runTest {
         val repository = FakeSleepRepository()
         // Three nights with same bedtime should give score 100
-        val nights = List(3) { summary(LocalDate.of(2026, 7, 21 - it), score = 70).copy(bedtimeEpochMillis = 0L) }
+        val nights = List(3) { summary(LocalDate(2026, 7, 21 - it), score = 70).copy(bedtimeEpochMillis = 0L) }
         repository.nightsFlow.value = nights
 
         val viewModel = HistoryViewModel(repository, mock<DataExporter>())

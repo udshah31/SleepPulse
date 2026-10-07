@@ -28,7 +28,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.sleeppulse.app.data.model.NightlySummary
 import com.sleeppulse.app.ui.components.CalmNightCard
 import com.sleeppulse.app.ui.components.CalmNightSectionLabel
 import com.sleeppulse.app.ui.components.SleepDebtBadge
@@ -41,6 +40,8 @@ import com.sleeppulse.app.ui.theme.CalmNightSurfaceDim
 import com.sleeppulse.app.ui.theme.CalmNightTextSecondary
 import com.sleeppulse.app.ui.theme.CautionAmber
 import com.sleeppulse.app.ui.theme.RecoveryGreen
+import com.sleeppulse.shared.model.NightlySummary
+import kotlinx.datetime.toJavaLocalDate
 import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -194,7 +195,7 @@ private fun NightRow(night: NightWithTrend) {
 
             Column(modifier = Modifier.weight(1f).padding(horizontal = 14.dp)) {
                 Text(
-                    text = night.summary.date.format(DateTimeFormatter.ofPattern("EEEE, MMM d")),
+                    text = night.summary.date.toJavaLocalDate().format(DateTimeFormatter.ofPattern("EEEE, MMM d")),
                     style = MaterialTheme.typography.titleMedium,
                 )
                 Text(

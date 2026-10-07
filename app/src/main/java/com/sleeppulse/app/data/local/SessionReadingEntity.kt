@@ -2,7 +2,7 @@ package com.sleeppulse.app.data.local
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.sleeppulse.app.data.model.SleepStage
+import com.sleeppulse.shared.model.SleepStage
 
 /** One raw reading, batch-flushed to disk during a live session as a recovery safety net. */
 @Entity(tableName = "session_reading")

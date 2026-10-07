@@ -1,9 +1,9 @@
 package com.sleeppulse.app.testutil
 
-import com.sleeppulse.app.data.model.NightlySummary
-import com.sleeppulse.app.data.model.SensorConnectionState
-import com.sleeppulse.app.data.model.SensorReading
-import com.sleeppulse.app.data.repository.SleepRepository
+import com.sleeppulse.shared.model.NightlySummary
+import com.sleeppulse.shared.model.SensorConnectionState
+import com.sleeppulse.shared.model.SensorReading
+import com.sleeppulse.shared.repository.SleepRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -59,7 +59,7 @@ class FakeSleepRepository : SleepRepository {
         nightsFlow.value = listOf(summary) + nightsFlow.value
     }
 
-    override suspend fun updateTags(date: java.time.LocalDate, tags: List<String>) {
+    override suspend fun updateTags(date: kotlinx.datetime.LocalDate, tags: List<String>) {
         val index = recordedSummaries.indexOfFirst { it.date == date }
         if (index != -1) {
             recordedSummaries[index] = recordedSummaries[index].copy(tags = tags)

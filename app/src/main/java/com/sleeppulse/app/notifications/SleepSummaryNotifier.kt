@@ -1,7 +1,7 @@
 package com.sleeppulse.app.notifications
 
-import com.sleeppulse.app.data.model.NightlySummary
-import com.sleeppulse.app.ui.dashboard.RecoveryResult
+import com.sleeppulse.shared.model.NightlySummary
+import com.sleeppulse.shared.scoring.RecoveryResult
 
 /**
  * Posts a local notification summarising a completed night's sleep.

@@ -1,13 +1,15 @@
 package com.sleeppulse.app.ui.dashboard
 
 import app.cash.turbine.test
-import com.sleeppulse.app.data.model.NightlySummary
-import com.sleeppulse.app.data.model.SensorConnectionState
-import com.sleeppulse.app.data.model.SensorReading
-import com.sleeppulse.app.data.model.SleepStage
+import com.sleeppulse.shared.model.NightlySummary
+import com.sleeppulse.shared.model.SensorConnectionState
+import com.sleeppulse.shared.model.SensorReading
+import com.sleeppulse.shared.model.SleepStage
+import com.sleeppulse.shared.scoring.RecoveryTier
+import com.sleeppulse.shared.scoring.SleepScoreCalculator
 import com.sleeppulse.app.testutil.FakeSleepRepository
 import com.sleeppulse.app.testutil.MainDispatcherRule
-import java.time.LocalDate
+import kotlinx.datetime.LocalDate
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -218,7 +220,7 @@ class DashboardViewModelTest {
         assertEquals(0, viewModel.state.value.recordedNightsCount)
 
         val night = NightlySummary(
-            date = LocalDate.now(),
+            date = LocalDate(2026, 7, 18),
             sleepScore = 70,
             avgHeartRateBpm = 60,
             avgHrvMillis = 50.0,
@@ -245,7 +247,7 @@ class DashboardViewModelTest {
         advanceUntilIdle()
 
         fun night(hrv: Double, hr: Int) = NightlySummary(
-            date = LocalDate.now(),
+            date = LocalDate(2026, 7, 18),
             sleepScore = 70,
             avgHeartRateBpm = hr,
             avgHrvMillis = hrv,
@@ -288,7 +290,7 @@ class DashboardViewModelTest {
         advanceUntilIdle()
 
         fun night(hrv: Double, hr: Int) = NightlySummary(
-            date = LocalDate.now(),
+            date = LocalDate(2026, 7, 18),
             sleepScore = 70,
             avgHeartRateBpm = hr,
             avgHrvMillis = hrv,

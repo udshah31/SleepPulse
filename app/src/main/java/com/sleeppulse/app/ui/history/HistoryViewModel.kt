@@ -3,7 +3,9 @@ package com.sleeppulse.app.ui.history
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sleeppulse.app.data.export.DataExporter
-import com.sleeppulse.app.data.repository.SleepRepository
+import com.sleeppulse.shared.repository.SleepRepository
+import com.sleeppulse.shared.analytics.SleepDebtCalculator
+import com.sleeppulse.shared.analytics.SleepConsistencyCalculator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

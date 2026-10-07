@@ -2,13 +2,13 @@ package com.sleeppulse.app.data.repository
 
 import app.cash.turbine.test
 import com.sleeppulse.app.data.local.NightlySummaryEntity
-import com.sleeppulse.app.data.model.NightlySummary
-import com.sleeppulse.app.data.model.SensorReading
-import com.sleeppulse.app.data.model.SleepStage
+import com.sleeppulse.shared.model.NightlySummary
+import com.sleeppulse.shared.model.SensorReading
+import com.sleeppulse.shared.model.SleepStage
 import com.sleeppulse.app.testutil.FakeNightlySummaryDao
 import com.sleeppulse.app.testutil.FakeSensorDataSource
 import com.sleeppulse.app.testutil.FakeSleepSessionDao
-import java.time.LocalDate
+import kotlinx.datetime.LocalDate
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -49,11 +49,11 @@ class SleepRepositoryImplTest {
         val sessionDao = FakeSleepSessionDao()
         val repository = SleepRepositoryImpl(sensorDataSource, dao, sessionDao, backgroundScope, mock()) { 0L }
 
-        val date = LocalDate.of(2026, 7, 17)
+        val date = LocalDate(2026, 7, 17)
         repository.recordNightlySummary(summary(date, score = 88))
 
         val stored = dao.entitiesFlow.value.single()
-        assertEquals(date.toEpochDay(), stored.dateEpochDay)
+        assertEquals(date.toEpochDays().toLong(), stored.dateEpochDay)
         assertEquals(88, stored.sleepScore)
         assertEquals(58, stored.avgHeartRateBpm)
         assertEquals(72.5, stored.avgHrvMillis!!, 0.0001)
@@ -70,10 +70,10 @@ class SleepRepositoryImplTest {
         val sessionDao = FakeSleepSessionDao()
         val repository = SleepRepositoryImpl(sensorDataSource, dao, sessionDao, backgroundScope, mock()) { 0L }
 
-        val date = LocalDate.of(2026, 7, 10)
+        val date = LocalDate(2026, 7, 10)
         dao.entitiesFlow.value = listOf(
             NightlySummaryEntity(
-                dateEpochDay = date.toEpochDay(),
+                dateEpochDay = date.toEpochDays().toLong(),
                 sleepScore = 72,
                 avgHeartRateBpm = 61,
                 avgHrvMillis = 65.0,
@@ -188,7 +188,7 @@ class SleepRepositoryImplTest {
         val sensorDataSource = FakeSensorDataSource()
         val dao = FakeNightlySummaryDao()
         val sessionDao = FakeSleepSessionDao()
-        val startMillis = LocalDate.of(2026, 7, 20).atStartOfDay(java.time.ZoneId.systemDefault())
+        val startMillis = java.time.LocalDate.of(2026, 7, 20).atStartOfDay(java.time.ZoneId.systemDefault())
             .toInstant().toEpochMilli()
         val repository = SleepRepositoryImpl(sensorDataSource, dao, sessionDao, backgroundScope, mock()) { startMillis }
 
@@ -199,7 +199,7 @@ class SleepRepositoryImplTest {
 
         val summary = repository.disconnectSensor()
 
-        assertEquals(LocalDate.of(2026, 7, 20), summary?.date)
+        assertEquals(LocalDate(2026, 7, 20), summary?.date)
         assertEquals(listOf("upsert", "trimToLast30Days"), dao.recordedCalls)
         assertTrue(sessionDao.sessions.single().finalized)
         assertEquals(0, sessionDao.readings.size)
@@ -252,7 +252,7 @@ class SleepRepositoryImplTest {
         val sensorDataSource = FakeSensorDataSource()
         val dao = FakeNightlySummaryDao()
         val sessionDao = FakeSleepSessionDao()
-        val startMillis = LocalDate.of(2026, 7, 18).atStartOfDay(java.time.ZoneId.systemDefault())
+        val startMillis = java.time.LocalDate.of(2026, 7, 18).atStartOfDay(java.time.ZoneId.systemDefault())
             .toInstant().toEpochMilli()
         sessionDao.sessions.add(
             com.sleeppulse.app.data.local.SleepSessionEntity(
@@ -279,7 +279,7 @@ class SleepRepositoryImplTest {
 
         assertEquals(listOf("upsert", "trimToLast30Days"), dao.recordedCalls)
         val stored = dao.entitiesFlow.value.single()
-        assertEquals(LocalDate.of(2026, 7, 18).toEpochDay(), stored.dateEpochDay)
+        assertEquals(LocalDate(2026, 7, 18).toEpochDays().toLong(), stored.dateEpochDay)
         assertTrue(sessionDao.sessions.single().finalized)
         assertEquals(0, sessionDao.readings.size)
     }
@@ -307,7 +307,7 @@ class SleepRepositoryImplTest {
         val sensorDataSource = FakeSensorDataSource()
         val dao = FakeNightlySummaryDao()
         val sessionDao = FakeSleepSessionDao()
-        val startMillis = LocalDate.of(2026, 7, 18).atStartOfDay(java.time.ZoneId.systemDefault())
+        val startMillis = java.time.LocalDate.of(2026, 7, 18).atStartOfDay(java.time.ZoneId.systemDefault())
             .toInstant().toEpochMilli()
 
         // Session 5: corrupt / unreadable — readingsFor throws for it.
@@ -347,7 +347,7 @@ class SleepRepositoryImplTest {
         // Session 6 was recovered and finalized despite session 5 throwing.
         assertEquals(listOf("upsert", "trimToLast30Days"), dao.recordedCalls)
         val stored = dao.entitiesFlow.value.single()
-        assertEquals(LocalDate.of(2026, 7, 18).toEpochDay(), stored.dateEpochDay)
+        assertEquals(LocalDate(2026, 7, 18).toEpochDays().toLong(), stored.dateEpochDay)
         val session6 = sessionDao.sessions.single { it.sessionId == 6L }
         assertTrue(session6.finalized)
 
@@ -361,7 +361,7 @@ class SleepRepositoryImplTest {
         val sensorDataSource = FakeSensorDataSource()
         val dao = FakeNightlySummaryDao()
         val sessionDao = FakeSleepSessionDao()
-        val startMillis = LocalDate.of(2026, 7, 20).atStartOfDay(java.time.ZoneId.systemDefault())
+        val startMillis = java.time.LocalDate.of(2026, 7, 20).atStartOfDay(java.time.ZoneId.systemDefault())
             .toInstant().toEpochMilli()
         val repository = SleepRepositoryImpl(sensorDataSource, dao, sessionDao, backgroundScope, mock()) { startMillis }
 
@@ -438,7 +438,7 @@ class SleepRepositoryImplTest {
     fun `a second session on the same date keeps the tags the user gave that night`() = runTest {
         val dao = FakeNightlySummaryDao()
         val repository = SleepRepositoryImpl(FakeSensorDataSource(), dao, FakeSleepSessionDao(), backgroundScope, mock()) { 0L }
-        val date = LocalDate.of(2026, 9, 29)
+        val date = LocalDate(2026, 9, 29)
 
         repository.recordNightlySummary(summary(date, score = 61))
         repository.updateTags(date, listOf("Caffeine", "Stress"))
@@ -453,7 +453,7 @@ class SleepRepositoryImplTest {
     fun `tags carried by a new summary are merged with existing ones without duplicates`() = runTest {
         val dao = FakeNightlySummaryDao()
         val repository = SleepRepositoryImpl(FakeSensorDataSource(), dao, FakeSleepSessionDao(), backgroundScope, mock()) { 0L }
-        val date = LocalDate.of(2026, 9, 29)
+        val date = LocalDate(2026, 9, 29)
 
         repository.recordNightlySummary(summary(date, score = 61))
         repository.updateTags(date, listOf("Caffeine"))
@@ -466,7 +466,7 @@ class SleepRepositoryImplTest {
     fun `a shorter same-day session does not overwrite the night`() = runTest {
         val dao = FakeNightlySummaryDao()
         val repository = SleepRepositoryImpl(FakeSensorDataSource(), dao, FakeSleepSessionDao(), backgroundScope, mock()) { 0L }
-        val date = LocalDate.of(2026, 9, 29)
+        val date = LocalDate(2026, 9, 29)
 
         repository.recordNightlySummary(summary(date, score = 80)) // 410 min
         repository.updateTags(date, listOf("Caffeine"))
@@ -482,7 +482,7 @@ class SleepRepositoryImplTest {
     fun `a longer same-day session replaces the night, keeping its tags`() = runTest {
         val dao = FakeNightlySummaryDao()
         val repository = SleepRepositoryImpl(FakeSensorDataSource(), dao, FakeSleepSessionDao(), backgroundScope, mock()) { 0L }
-        val date = LocalDate.of(2026, 9, 29)
+        val date = LocalDate(2026, 9, 29)
 
         repository.recordNightlySummary(summary(date, score = 55).copy(totalSleepMinutes = 20))
         repository.updateTags(date, listOf("Nap"))
@@ -496,7 +496,7 @@ class SleepRepositoryImplTest {
 
     @Test
     fun `on an equal length the newer session wins`() {
-        val date = LocalDate.of(2026, 9, 29)
+        val date = LocalDate(2026, 9, 29)
         val kept = nightToKeep(summary(date, score = 60), summary(date, score = 70))
         assertEquals(70, kept.sleepScore)
     }

@@ -1,6 +1,6 @@
 package com.sleeppulse.app.tracking
 
-import com.sleeppulse.app.data.model.SleepStage
+import com.sleeppulse.shared.model.SleepStage
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.mockito.kotlin.mock

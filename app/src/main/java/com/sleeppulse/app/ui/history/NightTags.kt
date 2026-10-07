@@ -27,10 +27,11 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.sleeppulse.app.data.model.NightlySummary
-import com.sleeppulse.app.data.repository.SleepRepository
+import com.sleeppulse.shared.model.NightlySummary
+import com.sleeppulse.shared.repository.SleepRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import java.time.LocalDate
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.toJavaLocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import javax.inject.Inject
@@ -127,7 +128,7 @@ private fun TagEditorDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Tags for ${date.format(DateTimeFormatter.ofPattern("EEE, MMM d", Locale.getDefault()))}") },
+        title = { Text("Tags for ${date.toJavaLocalDate().format(DateTimeFormatter.ofPattern("EEE, MMM d", Locale.getDefault()))}") },
         text = {
             Column {
                 Text(

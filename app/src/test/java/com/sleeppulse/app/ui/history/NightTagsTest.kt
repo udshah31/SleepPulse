@@ -1,8 +1,8 @@
 package com.sleeppulse.app.ui.history
 
-import com.sleeppulse.app.data.repository.SleepRepository
+import com.sleeppulse.shared.repository.SleepRepository
 import com.sleeppulse.app.testutil.MainDispatcherRule
-import java.time.LocalDate
+import kotlinx.datetime.LocalDate
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -51,7 +51,7 @@ class NightTagsTest {
     @Test
     fun `saving writes the tags through the repository`() = runTest {
         val repository = mock<SleepRepository>()
-        val date = LocalDate.of(2026, 9, 29)
+        val date = LocalDate(2026, 9, 29)
 
         NightTagsViewModel(repository).setTags(date, listOf("Caffeine", "Stress"))
         advanceUntilIdle()
