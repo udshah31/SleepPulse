@@ -34,7 +34,7 @@ class NightSummaryBuilderTest {
     }
 
     @Test
-    fun `sums timestamp deltas per stage into total, deep, and rem minutes`() {
+    fun `sums timestamp deltas per stage into total deep and rem minutes`() {
         // AWAKE 0->5min (5min AWAKE), LIGHT 5->15min (10min LIGHT), DEEP 15->45min (30min DEEP),
         // LIGHT 45->60min (15min LIGHT), REM 60->90min (30min REM). Total = 5+10+30+15+30 = 90.
         val readings = listOf(
@@ -66,7 +66,7 @@ class NightSummaryBuilderTest {
     }
 
     @Test
-    fun `single reading produces zero total, deep, and rem minutes`() {
+    fun `single reading produces zero total deep and rem minutes`() {
         val readings = listOf(reading(0L, SleepStage.DEEP))
 
         val summary = NightSummaryBuilder.build(readings, LocalDate(2026, 7, 18))
@@ -77,7 +77,7 @@ class NightSummaryBuilderTest {
     }
 
     @Test
-    fun `one-second cadence still yields real minutes, not zero`() {
+    fun `one-second cadence still yields real minutes not zero`() {
         // 2 hours of readings once a second: LIGHT for the first hour, DEEP for the second.
         val readings = (0..7200).map { sec ->
             reading(sec * 1_000L, if (sec < 3600) SleepStage.LIGHT else SleepStage.DEEP)

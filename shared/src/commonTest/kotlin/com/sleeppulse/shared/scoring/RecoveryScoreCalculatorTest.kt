@@ -40,7 +40,7 @@ class RecoveryScoreCalculatorTest {
     }
 
     @Test
-    fun `well-recovered inputs (higher HRV, lower RHR than baseline) score OPTIMAL`() {
+    fun `well-recovered inputs - higher HRV lower RHR than baseline score OPTIMAL`() {
         val baseline = listOf(night(50.0, 60), night(50.0, 60), night(50.0, 60))
         val lastNight = night(hrv = 62.5, hr = 54) // +25% HRV, -10% RHR vs baseline
 
@@ -51,7 +51,7 @@ class RecoveryScoreCalculatorTest {
     }
 
     @Test
-    fun `poorly-recovered inputs (lower HRV, higher RHR than baseline) score POOR`() {
+    fun `poorly-recovered inputs - lower HRV higher RHR than baseline score POOR`() {
         val baseline = listOf(night(50.0, 60), night(50.0, 60), night(50.0, 60))
         val lastNight = night(hrv = 37.5, hr = 66) // -25% HRV, +10% RHR vs baseline
 
@@ -73,7 +73,7 @@ class RecoveryScoreCalculatorTest {
     }
 
     @Test
-    fun `HRV is weighted more heavily than RHR (60-40 split)`() {
+    fun `HRV is weighted more heavily than RHR - 60-40 split`() {
         val baseline = listOf(night(50.0, 60), night(50.0, 60), night(50.0, 60))
         // HRV strongly better (+25%, pushes hrvComponent to 100), RHR strongly worse
         // (+16.67%, pushes rhrComponent to 0). A 50/50 average of 100 and 0 would be

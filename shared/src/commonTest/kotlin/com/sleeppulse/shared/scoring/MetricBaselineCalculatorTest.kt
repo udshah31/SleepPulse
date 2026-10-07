@@ -40,7 +40,7 @@ class MetricBaselineCalculatorTest {
     }
 
     @Test
-    fun `only the first 7 nights (most recent) count toward the average`() {
+    fun `only the 7 most recent nights count toward the average`() {
         val recentSeven = List(7) { night(hrv = 60.0, hr = 50) }
         val olderNights = List(5) { night(hrv = 20.0, hr = 90) }
 

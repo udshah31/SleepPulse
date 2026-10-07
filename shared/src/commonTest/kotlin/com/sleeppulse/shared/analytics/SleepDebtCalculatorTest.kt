@@ -34,7 +34,7 @@ class SleepDebtCalculatorTest {
     }
 
     @Test
-    fun `surplus sleep is clamped to zero (doesn't cancel deficit)`() {
+    fun `surplus sleep is clamped to zero - doesn't cancel deficit`() {
         // 9 hours every night — surplus, no debt
         val nights = List(3) { night(540) }
         val result = SleepDebtCalculator.calculate(nights)!!
