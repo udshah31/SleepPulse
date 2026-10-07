@@ -1,4 +1,4 @@
-package com.sleeppulse.app.data.local
+package com.sleeppulse.shared.db
 
 import androidx.room.TypeConverter
 

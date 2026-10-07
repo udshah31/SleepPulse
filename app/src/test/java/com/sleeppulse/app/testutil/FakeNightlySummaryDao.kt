@@ -1,7 +1,7 @@
 package com.sleeppulse.app.testutil
 
-import com.sleeppulse.app.data.local.NightlySummaryDao
-import com.sleeppulse.app.data.local.NightlySummaryEntity
+import com.sleeppulse.shared.db.NightlySummaryDao
+import com.sleeppulse.shared.db.NightlySummaryEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 

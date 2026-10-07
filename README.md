@@ -69,7 +69,7 @@ chosen address to `BleSensorDataSource` via `BleTargetDeviceSink`. Nothing downs
 `SleepRepository` sits between the data source/Room and the ViewModels; ViewModels never
 touch Room or `SensorDataSource` directly.
 
-- `data/local/` — Room (DB version 4, schemas exported to `app/schemas/`, explicit migrations from 4 on): `NightlySummaryEntity` (last
+- Room database in `:shared` (`db/`, Room KMP with the bundled SQLite driver; DB version 5, schemas exported to `shared/schemas/`, explicit migrations from 4 on): `NightlySummaryEntity` (last
   30 nights, with user tags) plus `SleepSessionEntity`/`SessionReadingEntity`, which persist
   an in-progress session so a night survives process death.
 - On disconnect the summary is built from the persisted readings (`NightSummaryBuilder`);

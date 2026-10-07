@@ -1,5 +1,6 @@
 package com.sleeppulse.app.data.local
 
+import com.sleeppulse.shared.db.SleepPulseDatabase
 import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -12,8 +13,9 @@ import org.junit.Test
  */
 class SleepPulseDatabaseMigrationsTest {
 
-    // Gradle runs unit tests with the module directory as the working directory.
-    private val schemaDir = File("schemas/${SleepPulseDatabase::class.java.name}")
+    // Gradle runs unit tests with the module directory as the working directory; the schemas
+    // live with the database in :shared.
+    private val schemaDir = File("../shared/schemas/${SleepPulseDatabase::class.java.name}")
 
     @Test
     fun `schema export is on and has caught up with the current version`() {

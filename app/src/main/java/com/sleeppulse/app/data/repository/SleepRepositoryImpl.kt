@@ -1,11 +1,11 @@
 package com.sleeppulse.app.data.repository
 
 import com.sleeppulse.shared.sleep.NightSummaryBuilder
-import com.sleeppulse.app.data.local.NightlySummaryDao
-import com.sleeppulse.app.data.local.NightlySummaryEntity
-import com.sleeppulse.app.data.local.SessionReadingEntity
-import com.sleeppulse.app.data.local.SleepSessionDao
-import com.sleeppulse.app.data.local.SleepSessionEntity
+import com.sleeppulse.shared.db.NightlySummaryDao
+import com.sleeppulse.shared.db.NightlySummaryEntity
+import com.sleeppulse.shared.db.SessionReadingEntity
+import com.sleeppulse.shared.db.SleepSessionDao
+import com.sleeppulse.shared.db.SleepSessionEntity
 import com.sleeppulse.shared.model.NightlySummary
 import com.sleeppulse.shared.model.SensorConnectionState
 import com.sleeppulse.shared.model.SensorReading
