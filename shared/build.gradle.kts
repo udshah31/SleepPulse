@@ -30,9 +30,12 @@ kotlin {
     if (enableIosTargets) {
         // iOS compilation requires Xcode and its command-line tools. Keep this
         // opt-in so Android/common builds remain usable on machines without it.
-        iosX64()
-        iosArm64()
-        iosSimulatorArm64()
+        listOf(iosX64(), iosArm64(), iosSimulatorArm64()).forEach { target ->
+            target.binaries.framework {
+                baseName = "SleepPulseShared"
+                isStatic = true
+            }
+        }
     }
 
     sourceSets {
@@ -68,4 +71,12 @@ dependencies {
         add("kspIosArm64", "androidx.room:room-compiler:2.8.4")
         add("kspIosSimulatorArm64", "androidx.room:room-compiler:2.8.4")
     }
+}
+
+// AGP 9's host-test lint model reads KSP2 output but does not declare the dependency itself.
+// Keep clean CI builds deterministic instead of relying on task execution order.
+tasks.matching {
+    it.name == "generateAndroidHostTestLintModel" || it.name == "lintAnalyzeAndroidHostTest"
+}.configureEach {
+    dependsOn("kspAndroidHostTest")
 }

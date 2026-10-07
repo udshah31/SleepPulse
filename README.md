@@ -6,8 +6,9 @@ A native Android sleep/recovery tracking companion app (Kotlin, Jetpack Compose)
 spirit of Eight Sleep or Whoop. It tracks a night from a heart-rate sensor (simulated, or a
 real BLE heart-rate strap), scores sleep and recovery, and keeps a 30-night history. A
 minimal Wear OS module (`:wear`) sits alongside the phone app (`:app`). The platform-independent
-core — models, scoring and analytics, night-summary construction, and the repository/sensor
-interfaces — lives in a Kotlin Multiplatform module (`:shared`), ready for a future iOS app.
+core — models, scoring and analytics, night-summary construction, the repository/sensor
+interfaces, and the Room database — lives in a Kotlin Multiplatform module (`:shared`). A
+native SwiftUI iOS Home dashboard in `iosApp/` now consumes the shared scoring core.
 
 ## Architecture
 
@@ -116,18 +117,37 @@ Requires the Android SDK at the path in `local.properties` (`sdk.dir`); JDK 17+;
 ./gradlew :shared:testAndroidHostTest # domain-core tests (shared/src/commonTest)
 ./gradlew :app:test                   # Android unit tests, hand-written fakes in app/src/test/.../testutil
 ./gradlew lint
+./gradlew :app:assembleDebug :wear:assembleDebug
 ```
 
 GitHub Actions (`.github/workflows/ci.yml`) runs lint, unit tests, and `assembleDebug` on
 pushes and PRs to `master`. Instrumented tests live in `app/src/androidTest` and are not run
 in CI.
 
+### Native iOS app
+
+The first native SwiftUI app is in `iosApp/`. It targets iOS 17+, uses a static
+`SleepPulseShared` framework for the shared score, and currently displays deterministic
+demo readings only. It does not yet implement iOS persistence, sensors, HealthKit,
+background tracking, or networking.
+
+With full Xcode selected and a simulator UUID available, run:
+
+```
+xcodebuild -project iosApp/SleepPulse.xcodeproj -scheme SleepPulse \
+  -destination 'platform=iOS Simulator,id=<simulator-uuid>' \
+  -derivedDataPath iosApp/build/DerivedData test CODE_SIGNING_ALLOWED=NO
+```
+
+See [`iosApp/README.md`](iosApp/README.md) for framework wiring and launch instructions.
+
 ## Known limitations
 
 - With a BLE strap, sleep stage is a simple HR/HRV threshold heuristic (the standard
   Heart Rate Service has no stage or movement data).
-- Only the domain core is shared (`:shared`); Android integrations (Room, BLE, Health Connect,
-  services, widget) stay in `:app`, and there is no iOS app yet.
+- Domain logic and the Room database are shared (`:shared`); Android UI, repository/sensor
+  implementations, BLE, Health Connect, services, and widgets stay in `:app`. The iOS app
+  currently contains only the SwiftUI Home dashboard scaffold.
 - The `:wear` module is a minimal shell.
 
 ## Project history
