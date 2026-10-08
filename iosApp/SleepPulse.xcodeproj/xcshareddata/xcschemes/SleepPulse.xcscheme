@@ -28,6 +28,12 @@
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       shouldUseLaunchSchemeArgsEnv = "YES">
       <Testables>
+         <TestableReference skipped = "NO">
+            <BuildableReference BuildableIdentifier = "primary"
+               BlueprintIdentifier = "B50000010000000000000001"
+               BuildableName = "SleepPulseUITests.xctest" BlueprintName = "SleepPulseUITests"
+               ReferencedContainer = "container:SleepPulse.xcodeproj" />
+         </TestableReference>
          <TestableReference
             skipped = "NO">
             <BuildableReference

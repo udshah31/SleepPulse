@@ -8,8 +8,9 @@ real BLE heart-rate strap), scores sleep and recovery, and keeps a 30-night hist
 minimal Wear OS module (`:wear`) sits alongside the phone app (`:app`). The platform-independent
 core — models, scoring and analytics, night-summary construction, the repository/sensor
 interfaces, and the Room database — lives in a Kotlin Multiplatform module (`:shared`). The
-shared module builds and its tests run on iOS, and a native SwiftUI iOS Home dashboard in
-`iosApp/` now consumes the shared scoring core.
+shared module builds and its tests run on iOS, and the native SwiftUI iOS app in `iosApp/`
+now consumes the shared scoring core and provides foreground-only simulated tracking backed
+by the shared Room database.
 
 ## Architecture
 
@@ -149,17 +150,21 @@ Use Kotlin/Native-safe common-test names: avoid `(`, `)`, and `,` in backtick fu
 
 ### Native iOS app
 
-The first native SwiftUI app is in `iosApp/`. It targets iOS 17+, uses a static
-`SleepPulseShared` framework for the shared score, and currently displays deterministic
-demo readings only. It does not yet implement iOS persistence, sensors, HealthKit,
-background tracking, or networking.
+The native SwiftUI app is in `iosApp/`. It targets iOS 17+, uses a static
+`SleepPulseShared` framework, and provides clearly labelled simulated tracking. Home and
+History share one app-scoped store. Start emits approximately one real-time reading per
+second, persists each reading in the existing version-5 Room schema, and calculates the
+live score from the last 40 recorded readings. Stop or backgrounding saves the full session
+into the latest 30 simulated local start dates; an interrupted session is recovered on the
+next launch. The app does not claim continuous background tracking, and HealthKit, BLE,
+alarms and networking remain future integrations.
 
 With full Xcode selected and a simulator UUID available, run:
 
 ```
 xcodebuild -project iosApp/SleepPulse.xcodeproj -scheme SleepPulse \
   -destination 'platform=iOS Simulator,id=<simulator-uuid>' \
-  -derivedDataPath iosApp/build/DerivedData test CODE_SIGNING_ALLOWED=NO
+  -derivedDataPath iosApp/build/DerivedData test CODE_SIGNING_ALLOWED=YES
 ```
 
 See [`iosApp/README.md`](iosApp/README.md) for framework wiring and launch instructions.
@@ -168,10 +173,10 @@ See [`iosApp/README.md`](iosApp/README.md) for framework wiring and launch instr
 
 - With a BLE strap, sleep stage is a simple HR/HRV threshold heuristic (the standard
   Heart Rate Service has no stage or movement data).
-- Domain logic and the Room database are shared (`:shared`); Android UI, database construction,
-  repository/sensor implementations, BLE, Health Connect, services, and widgets stay in
-  `:app`. The iOS app currently contains only the SwiftUI Home dashboard scaffold; its
-  persistence, sensors, HealthKit, background tracking, and platform adapters are future work.
+- Domain logic, the Room database and the iOS simulated repository/controller are shared
+  (`:shared`); Android UI, Android database construction, BLE, Health Connect, services and
+  widgets stay in `:app`. The iOS app intentionally stops simulated tracking when it enters
+  the background and only uses a finite background task to finish saving.
 - The `:wear` module is a minimal shell.
 
 ## Project history
