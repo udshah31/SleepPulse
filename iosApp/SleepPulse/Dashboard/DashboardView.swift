@@ -3,8 +3,8 @@ import SwiftUI
 struct DashboardView: View {
     @StateObject private var viewModel: DashboardViewModel
 
-    init(readings: [SleepReading] = DemoReadings.night, scoring: SleepScoring = SharedSleepScoring()) {
-        _viewModel = StateObject(wrappedValue: DashboardViewModel(readings: readings, scoring: scoring))
+    init(store: TrackingStore) {
+        _viewModel = StateObject(wrappedValue: DashboardViewModel(store: store))
     }
 
     var body: some View {
@@ -12,12 +12,13 @@ struct DashboardView: View {
             VStack(alignment: .leading, spacing: 20) {
                 header
                 scoreCard
+                trackingCard
                 latestReadingCard
                 CalmNightCard {
                     Label("Shared core", systemImage: "checkmark.seal.fill")
                         .font(.headline)
                         .foregroundStyle(CalmNightTheme.recovery)
-                    Text("This demo score is calculated by the SleepPulse Kotlin Multiplatform core.")
+                    Text("Scores and saved summaries are calculated by the SleepPulse Kotlin Multiplatform core.")
                         .font(.subheadline)
                         .foregroundStyle(CalmNightTheme.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -52,7 +53,7 @@ struct DashboardView: View {
                     .fill(CalmNightTheme.recovery)
                     .frame(width: 8, height: 8)
                     .accessibilityHidden(true)
-                Text("Demo data")
+                Text("Simulated data")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(CalmNightTheme.textSecondary)
             }
@@ -70,14 +71,14 @@ struct DashboardView: View {
                     Circle()
                         .stroke(CalmNightTheme.accent.opacity(0.18), lineWidth: 18)
                     Circle()
-                        .trim(from: 0, to: CGFloat(viewModel.state.score) / 100)
+                        .trim(from: 0, to: CGFloat(viewModel.state.score ?? 0) / 100)
                         .stroke(
                             CalmNightTheme.accent,
                             style: StrokeStyle(lineWidth: 18, lineCap: .round),
                         )
                         .rotationEffect(.degrees(-90))
                     VStack(spacing: 2) {
-                        Text("\(viewModel.state.score)")
+                        Text(viewModel.state.score.map(String.init) ?? "—")
                             .font(.system(size: 56, weight: .bold, design: .rounded))
                             .foregroundStyle(CalmNightTheme.textPrimary)
                         Text("out of 100")
@@ -88,15 +89,45 @@ struct DashboardView: View {
                 .frame(width: 210, height: 210)
                 .frame(maxWidth: .infinity)
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel("Sleep score \(viewModel.state.score) out of 100")
+                .accessibilityLabel(viewModel.state.score.map { "Sleep score \($0) out of 100" } ?? "Sleep score unavailable")
             }
+        }
+    }
+
+    private var trackingCard: some View {
+        CalmNightCard {
+            VStack(alignment: .leading, spacing: 14) {
+                Text(viewModel.state.phase.title).font(.headline)
+                Text("Recorded time \(viewModel.state.elapsedText)")
+                    .font(.title3.monospacedDigit())
+                    .accessibilityIdentifier("recordedTime")
+                Text("Simulated tracking — keep the app open. Sessions save when the app goes into the background.")
+                    .font(.subheadline).foregroundStyle(CalmNightTheme.textSecondary)
+                if let error = viewModel.state.error {
+                    Text(error).font(.subheadline).foregroundStyle(.orange)
+                    Button("Retry save") { viewModel.onIntent(.retry) }
+                        .buttonStyle(.borderedProminent).accessibilityIdentifier("retrySave")
+                } else {
+                    Button(viewModel.state.canStop ? "Stop and save" : "Start tracking") {
+                        viewModel.onIntent(viewModel.state.canStop ? .stop : .start)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(!viewModel.state.canStart && !viewModel.state.canStop)
+                    .accessibilityIdentifier("trackingControl")
+                }
+                if let notice = viewModel.state.notice {
+                    Text(notice).font(.subheadline).foregroundStyle(CalmNightTheme.recovery)
+                }
+            }
+            .foregroundStyle(CalmNightTheme.textPrimary)
+            .tint(CalmNightTheme.accent)
         }
     }
 
     private var latestReadingCard: some View {
         CalmNightCard {
             VStack(alignment: .leading, spacing: 16) {
-                Text("Latest demo reading")
+                Text("Latest simulated reading")
                     .font(.headline)
                     .foregroundStyle(CalmNightTheme.textSecondary)
 
@@ -139,6 +170,6 @@ private struct MetricCard: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(unit.isEmpty ? "\(title), \(value)" : "\(title), \(value) \(unit)")
+        .accessibilityLabel(value == "—" ? "\(title), unavailable" : (unit.isEmpty ? "\(title), \(value)" : "\(title), \(value) \(unit)"))
     }
 }
