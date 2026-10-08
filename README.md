@@ -10,7 +10,8 @@ core — models, scoring and analytics, night-summary construction, the reposito
 interfaces, and the Room database — lives in a Kotlin Multiplatform module (`:shared`). The
 shared module builds and its tests run on iOS, and the native SwiftUI iOS app in `iosApp/`
 now consumes the shared scoring core and provides foreground-only simulated tracking backed
-by the shared Room database.
+by the shared Room database. Home, History and Recovery share one application-scoped store;
+Recovery and History insights are computed by the shared Kotlin calculators.
 
 ## Architecture
 
@@ -93,10 +94,13 @@ Hilt wires the graph: `SleepPulseApp` (`@HiltAndroidApp`), `MainActivity`
 
 - **Dashboard** — animated sleep-score gauge, live HR/HRV charts, metric row and guidance
   banner, and a wind-down flow. Links to a Breathe exercise.
-- **History** — cached nights with trend arrows, sleep consistency/debt/variability
-  analytics, night tags with tag correlations, and CSV export.
-- **Recovery** — readiness/recovery score from last night vs. a rolling 7-night baseline
-  (needs 3+ baseline nights).
+- **History** — cached nights with bedtime consistency, seven-recorded-night sleep debt,
+  score-change indicators, and accessible 14-date score/duration charts. Charts preserve
+  calendar gaps and actual short-session durations.
+- **Recovery** — latest recorded-date recovery/readiness insights from the shared calculators.
+  Recovery needs 4 recorded dates (latest plus 3 preceding dates); trends compare the latest
+  7 recorded dates with the preceding 7 and disclose known-HRV coverage. Missing HRV remains
+  unavailable and recovery falls back to heart rate when the shared calculator permits it.
 - **Alarm** — bedtime/wake targets, smart-alarm window (with a hard-alarm fallback), and a
   wind-down reminder.
 - **Settings** — simulated vs. BLE source, BLE device scan, targets, AMOLED-black theme.
@@ -141,7 +145,7 @@ full Xcode selected and an iOS simulator runtime installed, run:
 ./gradlew -PenableIosTargets=true :shared:iosSimulatorArm64Test
 ```
 
-The shared iOS simulator suite passed with 74 tests on 2026-10-07. These tests exercise
+The shared iOS simulator suite passed with 97 tests on 2026-10-08. These tests exercise
 the shared library; they do not launch an iOS app. iOS tests are not currently in CI.
 This machine's Xcode installation lives on the Secondary volume, which must be mounted.
 Use `xcode-select -p` and `xcodebuild -version` to check the selected installation.
@@ -151,8 +155,8 @@ Use Kotlin/Native-safe common-test names: avoid `(`, `)`, and `,` in backtick fu
 ### Native iOS app
 
 The native SwiftUI app is in `iosApp/`. It targets iOS 17+, uses a static
-`SleepPulseShared` framework, and provides clearly labelled simulated tracking. Home and
-History share one app-scoped store. Start emits approximately one real-time reading per
+`SleepPulseShared` framework, and provides clearly labelled simulated tracking. Home, History
+and Recovery share one app-scoped store. Start emits approximately one real-time reading per
 second, persists each reading in the existing version-5 Room schema, and calculates the
 live score from the last 40 recorded readings. Stop or backgrounding saves the full session
 into the latest 30 simulated local start dates; an interrupted session is recovered on the

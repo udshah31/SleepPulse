@@ -1,4 +1,5 @@
 import Foundation
+import SleepPulseShared
 
 enum TrackingPhase: String {
     case recovering = "RECOVERING", idle = "IDLE", starting = "STARTING"
@@ -22,6 +23,7 @@ struct TrackingState: Equatable {
     var elapsedSeconds: Int64 = 0
     var latestReading: SleepReading?
     var nights: [SavedNight] = []
+    var insights: NightInsights?
     var error: String?
     var notice: String?
     var isForeground = true
@@ -29,6 +31,16 @@ struct TrackingState: Equatable {
     var canStart: Bool { phase == .idle && isForeground }
     var canStop: Bool { phase == .tracking }
     var elapsedText: String { String(format: "%02lld:%02lld", elapsedSeconds / 60, elapsedSeconds % 60) }
+    var isLoadingHistory: Bool { phase == .recovering || (insights == nil && error == nil) }
+    var insightsStatusText: String {
+        if isLoadingHistory { return "Loading saved-night insights…" }
+        if error != nil {
+            guard !nights.isEmpty, let insights else { return "Saved-night insights unavailable" }
+            return "Last loaded data · \(insights.latestDateText)"
+        }
+        guard !nights.isEmpty, let insights else { return "No saved night yet" }
+        return "Latest recorded date · \(insights.latestDateText)"
+    }
 }
 
 struct SavedNight: Equatable, Identifiable {
@@ -45,17 +57,36 @@ struct SavedNight: Equatable, Identifiable {
     var hrvText: String { averageHrv.map { "\(Int($0.rounded()))" } ?? "—" }
     var hrvAccessibilityText: String { averageHrv.map { "\(Int($0.rounded())) milliseconds" } ?? "unavailable" }
 
-    var dateText: String {
-        let parser = DateFormatter()
-        parser.calendar = Calendar(identifier: .gregorian)
-        parser.locale = Locale(identifier: "en_US_POSIX")
-        parser.timeZone = TimeZone(secondsFromGMT: 0)
-        parser.dateFormat = "yyyy-MM-dd"
-        guard let date = parser.date(from: isoDate) else { return isoDate }
-        let formatter = DateFormatter()
-        formatter.calendar = Calendar(identifier: .gregorian)
-        formatter.timeZone = TimeZone(secondsFromGMT: 0) // Date-only; never shift through local midnight.
-        formatter.dateStyle = .medium
-        return formatter.string(from: date)
+    var dateText: String { NightDateFormatting.text(isoDate) }
+}
+
+extension TrackingState {
+    init(snapshot: IosTrackingSnapshot, isForeground: Bool) {
+        self.init(
+            phase: TrackingPhase(rawValue: snapshot.phase) ?? .failed,
+            score: snapshot.score.map { Int($0.intValue) }, elapsedSeconds: snapshot.elapsedSeconds,
+            latestReading: snapshot.latest.map {
+                SleepReading(timestampMillis: $0.timestampMillis, heartRateBpm: $0.heartRateBpm,
+                    hrvMillis: $0.hrvMillis?.doubleValue, stage: ReadingStage(sharedName: $0.stage))
+            },
+            nights: snapshot.nights.map {
+                SavedNight(id: $0.epochDay, isoDate: $0.isoDate, score: Int($0.score),
+                    totalMinutes: Int($0.totalMinutes), deepMinutes: Int($0.deepMinutes),
+                    remMinutes: Int($0.remMinutes), averageHeartRate: Int($0.averageHeartRate), averageHrv: $0.averageHrv?.doubleValue)
+            },
+            insights: snapshot.insights.map(NightInsights.init),
+            error: snapshot.error, notice: snapshot.notice, isForeground: isForeground
+        )
+    }
+}
+
+private extension ReadingStage {
+    init(sharedName: String) {
+        switch sharedName {
+        case "AWAKE": self = .awake
+        case "DEEP": self = .deep
+        case "REM": self = .rem
+        default: self = .light
+        }
     }
 }

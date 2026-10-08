@@ -8,6 +8,7 @@ struct SleepPulseRootView: View {
         TabView {
             DashboardView(store: store).tabItem { Label("Home", systemImage: "moon.stars.fill") }
             HistoryView(store: store).tabItem { Label("History", systemImage: "clock.fill") }
+            RecoveryView(store: store).tabItem { Label("Recovery", systemImage: "heart.text.square.fill") }
         }
         .tint(CalmNightTheme.accent)
         .preferredColorScheme(.dark)

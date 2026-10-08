@@ -1,7 +1,7 @@
 # SleepPulse iOS App
 
-This directory contains the native SwiftUI iOS app for SleepPulse. It provides a Home
-dashboard and History tab for clearly labelled simulated tracking. The deterministic
+This directory contains the native SwiftUI iOS app for SleepPulse. It provides Home, History
+and Recovery tabs for clearly labelled simulated tracking. The deterministic
 simulator emits approximately one real-time reading per second, and the Kotlin
 Multiplatform core through `SleepPulseShared.framework` owns scoring, Room persistence,
 summary finalization and interrupted-session recovery.
@@ -10,6 +10,12 @@ Tracking is intentionally foreground-only: keep the app open while recording. En
 background stops the simulation and saves the durable session; returning to the foreground
 does not auto-resume it. The saved database lives in Application Support as
 `SleepPulse/sleeppulse-simulated.db`, and History keeps the latest 30 local start dates.
+Recovery compares the latest recorded date with up to seven preceding recorded dates after
+four dates exist. HRV and heart-rate trends compare two seven-recorded-night windows after
+14 dates exist; HRV coverage is shown and missing HRV remains unavailable. History debt uses
+the latest seven recorded nights against the shared 480-minute (8-hour) target, while bedtime
+consistency uses all retained dates. Its score and duration charts show up to 14 recorded
+dates, preserve calendar gaps, and keep actual short-session durations.
 BLE, HealthKit, alarms and continuous background tracking are not part of this milestone.
 
 ## Prerequisites
@@ -49,8 +55,9 @@ The XCTest target verifies the actual Swift/Kotlin boundary:
 - Real framework tests cover Start/Stop, save/reload, interrupted recovery, background saves,
   nullable HRV and lifecycle races.
 
-The UI test target runs a real 65-second session across Home and History, checks wall-clock
-elapsed time, background saving, relaunch persistence and large-text layout screenshots.
+The UI test target runs a real 65-second session across Home, History and Recovery, checks
+wall-clock elapsed time, background saving, relaunch persistence, chart accessibility labels,
+and large-text layout screenshots.
 
 ## Launch on a simulator
 
@@ -62,4 +69,6 @@ xcrun simctl launch <simulator-uuid> com.sleeppulse.ios
 ```
 
 The app shows the Calm Night palette, a circular 0–100 score gauge, simulated-data labels,
-recorded elapsed time, latest-reading cards and a native History list of saved summaries.
+recorded elapsed time, latest-reading cards, Recovery baseline/readiness cards, and History
+insight cards with accessible native Charts. Preview/test fixtures are explicit in-memory
+values calculated through the same Kotlin coordinator; they never seed the runtime database.

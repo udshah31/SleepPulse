@@ -12,12 +12,16 @@ final class TrackingStoreTests: XCTestCase {
         XCTAssertNil(store.state.score)
         let home = DashboardViewModel(store: store)
         let history = HistoryViewModel(store: store)
+        let recovery = RecoveryViewModel(store: store)
         store.start()
         try await waitUntil { home.state.latestReading != nil }
         XCTAssertNotNil(home.state.score)
         store.stop()
         store.stop()
         try await waitUntil { store.state.phase == .idle && history.nights.count == 1 }
+        XCTAssertEqual(recovery.state.insights?.recordedNights, 1)
+        XCTAssertEqual(recovery.state.nights, history.nights)
+        XCTAssertNil(recovery.state.insights?.recovery)
         XCTAssertEqual(history.nights.first?.durationText, "<1 min")
         await store.closeAndWait()
         let reopened = TrackingStore(databasePath: path)
@@ -25,6 +29,8 @@ final class TrackingStoreTests: XCTestCase {
         try await waitUntil { reopened.state.phase == .idle && reopened.state.nights.count == 1 }
         XCTAssertNil(reopened.state.latestReading)
         XCTAssertNil(reopened.state.score)
+        XCTAssertEqual(reopened.state.insights?.recordedNights, 1)
+        XCTAssertEqual(reopened.state.insights, recovery.state.insights)
         XCTAssertEqual(reopened.state.nights, history.nights)
     }
 

@@ -23,6 +23,7 @@ data class IosTrackingSnapshot(
     val nights: List<IosNightSnapshot> = emptyList(),
     val error: String? = null,
     val notice: String? = null,
+    val insights: IosNightInsightsSnapshot? = null,
 )
 
 class TrackingObservation internal constructor(private val job: Job) {

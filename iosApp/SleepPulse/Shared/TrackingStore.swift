@@ -45,22 +45,7 @@ final class TrackingStore: ObservableObject {
 
     private func receive(_ snapshot: IosTrackingSnapshot) {
         guard !closed else { return }
-        state = TrackingState(
-            phase: TrackingPhase(rawValue: snapshot.phase) ?? .failed,
-            score: snapshot.score.map { Int($0.intValue) },
-            elapsedSeconds: snapshot.elapsedSeconds,
-            latestReading: snapshot.latest.map {
-                SleepReading(timestampMillis: $0.timestampMillis, heartRateBpm: $0.heartRateBpm,
-                    hrvMillis: $0.hrvMillis?.doubleValue, stage: ReadingStage(sharedName: $0.stage))
-            },
-            nights: snapshot.nights.map {
-                SavedNight(id: $0.epochDay, isoDate: $0.isoDate, score: Int($0.score),
-                    totalMinutes: Int($0.totalMinutes), deepMinutes: Int($0.deepMinutes),
-                    remMinutes: Int($0.remMinutes), averageHeartRate: Int($0.averageHeartRate),
-                    averageHrv: $0.averageHrv?.doubleValue)
-            },
-            error: snapshot.error, notice: snapshot.notice, isForeground: foreground
-        )
+        state = TrackingState(snapshot: snapshot, isForeground: foreground)
         if state.phase == .tracking || state.phase == .failed || state.phase == .idle {
             pendingStart = false
         }
@@ -146,16 +131,5 @@ final class TrackingStore: ObservableObject {
     deinit {
         observation?.cancel()
         controller?.close()
-    }
-}
-
-private extension ReadingStage {
-    init(sharedName: String) {
-        switch sharedName {
-        case "AWAKE": self = .awake
-        case "DEEP": self = .deep
-        case "REM": self = .rem
-        default: self = .light
-        }
     }
 }

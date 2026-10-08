@@ -74,15 +74,17 @@ class IosTrackingController(private val databasePath: String) {
     private suspend fun observeRepository(repo: PersistedSleepRepository) {
         observing?.cancelAndJoin()
         observing = scope.launch {
-            combine(repo.sessionState, repo.recentNights()) { state, nights ->
+            // Room-derived analytics are computed on history changes, not every live reading.
+            val history = repo.recentNights().distinctUntilChanged().map(IosHistorySnapshotBuilder::build)
+            combine(repo.sessionState, history) { state, saved ->
                 val latest = state.readings.lastOrNull()
                 IosTrackingSnapshot(
                     phase = state.phase.name,
                     score = state.readings.takeIf { it.isNotEmpty() }?.let { SleepScoreCalculator.score(it) },
                     elapsedSeconds = state.elapsedSeconds,
                     latest = latest?.let { IosReadingSnapshot(it.timestampMillis, it.heartRateBpm, it.hrvMillis, it.sleepStage.name) },
-                    nights = nights.map { IosNightSnapshot(it.date.toEpochDays(), it.date.toString(), it.sleepScore,
-                        it.totalSleepMinutes, it.deepSleepMinutes, it.remSleepMinutes, it.avgHeartRateBpm, it.avgHrvMillis) },
+                    nights = saved.nights,
+                    insights = saved.insights,
                     error = state.error,
                     notice = state.notice,
                 )
