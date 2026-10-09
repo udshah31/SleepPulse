@@ -1,0 +1,169 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		F10000010000000000000003 /* AppStorageConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = F20000010000000000000003; };
+		F10000010000000000000004 /* AppStorageConfigurationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F20000010000000000000004; };
+		F10000010000000000000001 /* AppleHealthSleepSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = F20000010000000000000001; };
+		F10000010000000000000002 /* AppleHealthSleepSectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F20000010000000000000002; };
+		E10000010000000000000001 /* HealthKitCacheStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000010000000000000001; };
+		E10000010000000000000002 /* HealthKitSleepStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000010000000000000002; };
+		D10000010000000000000001 /* HealthKitSleepModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000010000000000000001; };
+		D10000010000000000000002 /* HealthKitSleepNormalizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000010000000000000002; };
+		D10000010000000000000003 /* HealthKitSleepNormalizerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000010000000000000003; };
+		D10000010000000000000004 /* HealthKitClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000010000000000000004; };
+		D10000010000000000000005 /* LiveHealthKitClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000010000000000000005; };
+		D10000010000000000000006 /* HealthKitClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000010000000000000006; };
+		D10000010000000000000007 /* HealthKitSleepStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000010000000000000007; };
+        C10000010000000000000007 = {isa = PBXBuildFile; fileRef = C20000010000000000000007; };
+        C10000010000000000000008 = {isa = PBXBuildFile; fileRef = C20000010000000000000008; };
+        C10000010000000000000009 = {isa = PBXBuildFile; fileRef = C20000010000000000000009; };
+		C10000010000000000000006 = {isa = PBXBuildFile; fileRef = C20000010000000000000006; };
+		C10000010000000000000002 = {isa = PBXBuildFile; fileRef = C20000010000000000000002; };
+		C10000010000000000000003 = {isa = PBXBuildFile; fileRef = C20000010000000000000003; };
+		C10000010000000000000004 = {isa = PBXBuildFile; fileRef = C20000010000000000000004; };
+		C10000010000000000000005 = {isa = PBXBuildFile; fileRef = C20000010000000000000005; };
+		C10000010000000000000001 = {isa = PBXBuildFile; fileRef = C20000010000000000000001; };
+		B10000010000000000000001 = {isa = PBXBuildFile; fileRef = B20000010000000000000001; };
+		A10000010000000000000001 /* SleepPulseApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000001 /* SleepPulseApp.swift */; };
+		A10000010000000000000002 /* SharedSleepScoringTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000002 /* SharedSleepScoringTests.swift */; };
+		A10000010000000000000003 /* SharedSleepScoring.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000005 /* SharedSleepScoring.swift */; };
+		A10000010000000000000004 /* DemoReadings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000006 /* DemoReadings.swift */; };
+		A10000010000000000000005 /* DashboardViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000007 /* DashboardViewModelTests.swift */; };
+		A10000010000000000000006 /* DashboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000008 /* DashboardViewModel.swift */; };
+		A10000010000000000000007 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000009 /* DashboardView.swift */; };
+		A10000010000000000000008 /* CalmNightTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000001000000000000000A /* CalmNightTheme.swift */; };
+/* End PBXBuildFile section */
+		A1000001000000000000000A = {isa = PBXBuildFile; fileRef = A2000001000000000000000C; };
+		A1000001000000000000000B = {isa = PBXBuildFile; fileRef = A2000001000000000000000D; };
+		A1000001000000000000000C = {isa = PBXBuildFile; fileRef = A2000001000000000000000E; };
+		A1000001000000000000000D = {isa = PBXBuildFile; fileRef = A2000001000000000000000F; };
+		A1000001000000000000000E = {isa = PBXBuildFile; fileRef = A20000010000000000000010; };
+		A10000010000000000000009 /* TrackingStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000001000000000000000B; };
+
+/* Begin PBXFileReference section */
+		F20000010000000000000003 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStorageConfiguration.swift; sourceTree = "<group>"; };
+		F20000010000000000000004 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStorageConfigurationTests.swift; sourceTree = "<group>"; };
+		F20000010000000000000001 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleHealthSleepSection.swift; sourceTree = "<group>"; };
+		F20000010000000000000002 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleHealthSleepSectionTests.swift; sourceTree = "<group>"; };
+		E20000010000000000000001 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitCacheStore.swift; sourceTree = "<group>"; };
+		E20000010000000000000002 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitSleepStore.swift; sourceTree = "<group>"; };
+		D20000010000000000000001 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitSleepModels.swift; sourceTree = "<group>"; };
+		D20000010000000000000002 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitSleepNormalizer.swift; sourceTree = "<group>"; };
+		D20000010000000000000003 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitSleepNormalizerTests.swift; sourceTree = "<group>"; };
+		D20000010000000000000004 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitClient.swift; sourceTree = "<group>"; };
+		D20000010000000000000005 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveHealthKitClient.swift; sourceTree = "<group>"; };
+		D20000010000000000000006 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitClientTests.swift; sourceTree = "<group>"; };
+		D20000010000000000000007 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitSleepStoreTests.swift; sourceTree = "<group>"; };
+		D20000010000000000000008 = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SleepPulse.entitlements; sourceTree = "<group>"; };
+        C20000010000000000000007 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecoveryView.swift; sourceTree = "<group>"; };
+        C20000010000000000000008 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryTrendsView.swift; sourceTree = "<group>"; };
+        C20000010000000000000009 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NightInsightViews.swift; sourceTree = "<group>"; };
+		C20000010000000000000006 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecoveryViewModel.swift; sourceTree = "<group>"; };
+		C20000010000000000000002 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NightInsightsModels.swift; sourceTree = "<group>"; };
+		C20000010000000000000003 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NightDateFormatting.swift; sourceTree = "<group>"; };
+		C20000010000000000000004 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryChartPoint.swift; sourceTree = "<group>"; };
+		C20000010000000000000005 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoNights.swift; sourceTree = "<group>"; };
+		C20000010000000000000001 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NightInsightsTests.swift; sourceTree = "<group>"; };
+		B20000010000000000000001 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackingFlowTests.swift; sourceTree = "<group>"; };
+		B20000010000000000000002 = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SleepPulseUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A20000010000000000000001 /* SleepPulseApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepPulseApp.swift; sourceTree = "<group>"; };
+		A20000010000000000000002 /* SharedSleepScoringTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedSleepScoringTests.swift; sourceTree = "<group>"; };
+		A20000010000000000000003 /* SleepPulse.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SleepPulse.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A20000010000000000000004 /* SleepPulseTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SleepPulseTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A20000010000000000000005 /* SharedSleepScoring.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedSleepScoring.swift; sourceTree = "<group>"; };
+		A20000010000000000000006 /* DemoReadings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoReadings.swift; sourceTree = "<group>"; };
+		A20000010000000000000007 /* DashboardViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardViewModelTests.swift; sourceTree = "<group>"; };
+		A20000010000000000000008 /* DashboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardViewModel.swift; sourceTree = "<group>"; };
+		A20000010000000000000009 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		A2000001000000000000000A /* CalmNightTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalmNightTheme.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+		A2000001000000000000000C = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackingModels.swift; sourceTree = "<group>"; };
+		A2000001000000000000000D = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackingStore.swift; sourceTree = "<group>"; };
+		A2000001000000000000000E = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryViewModel.swift; sourceTree = "<group>"; };
+		A2000001000000000000000F = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
+		A20000010000000000000010 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepPulseRootView.swift; sourceTree = "<group>"; };
+		A2000001000000000000000B = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackingStoreTests.swift; sourceTree = "<group>"; };
+
+/* Begin PBXFrameworksBuildPhase section */
+		B30000010000000000000001 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		A30000010000000000000001 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		A30000010000000000000002 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		D40000010000000000000001 /* HealthKit */ = {isa = PBXGroup; children = (D20000010000000000000001, D20000010000000000000002, D20000010000000000000004, D20000010000000000000005, E20000010000000000000001, E20000010000000000000002); path = HealthKit; sourceTree = "<group>"; };
+		C40000010000000000000001 /* Recovery */ = {isa = PBXGroup; children = (C20000010000000000000006, C20000010000000000000007); path = Recovery; sourceTree = "<group>"; };
+		B40000010000000000000001 = {isa = PBXGroup; children = (B20000010000000000000001); path = SleepPulseUITests; sourceTree = "<group>"; };
+		A40000010000000000000001 = {isa = PBXGroup; children = (A40000010000000000000002, A40000010000000000000003, A40000010000000000000004, B40000010000000000000001); sourceTree = "<group>"; };
+		A40000010000000000000002 /* SleepPulse */ = {isa = PBXGroup; children = (A20000010000000000000001, F20000010000000000000003, A40000010000000000000005, A40000010000000000000006, A40000010000000000000007, A40000010000000000000008, A40000010000000000000009, A4000001000000000000000A, C40000010000000000000001, D40000010000000000000001, D20000010000000000000008); path = SleepPulse; sourceTree = "<group>"; };
+		A40000010000000000000003 /* SleepPulseTests */ = {isa = PBXGroup; children = (A20000010000000000000002, A20000010000000000000007, A2000001000000000000000B, C20000010000000000000001, D20000010000000000000003, D20000010000000000000006, D20000010000000000000007, F20000010000000000000002, F20000010000000000000004); path = SleepPulseTests; sourceTree = "<group>"; };
+		A40000010000000000000004 /* Products */ = {isa = PBXGroup; children = (A20000010000000000000003, A20000010000000000000004, B20000010000000000000002); name = Products; sourceTree = "<group>"; };
+		A40000010000000000000005 /* Shared */ = {isa = PBXGroup; children = (A20000010000000000000005, A2000001000000000000000C, A2000001000000000000000D, C20000010000000000000002, C20000010000000000000003, C20000010000000000000009); path = Shared; sourceTree = "<group>"; };
+		A40000010000000000000006 /* Demo */ = {isa = PBXGroup; children = (A20000010000000000000006, C20000010000000000000005); path = Demo; sourceTree = "<group>"; };
+		A40000010000000000000007 /* Dashboard */ = {isa = PBXGroup; children = (A20000010000000000000008, A20000010000000000000009); path = Dashboard; sourceTree = "<group>"; };
+		A40000010000000000000008 /* Theme */ = {isa = PBXGroup; children = (A2000001000000000000000A); path = Theme; sourceTree = "<group>"; };
+/* End PBXGroup section */
+		A40000010000000000000009 /* History */ = {isa = PBXGroup; children = (A2000001000000000000000E, A2000001000000000000000F, C20000010000000000000004, C20000010000000000000008, F20000010000000000000001); path = History; sourceTree = "<group>"; };
+		A4000001000000000000000A /* Navigation */ = {isa = PBXGroup; children = (A20000010000000000000010); path = Navigation; sourceTree = "<group>"; };
+
+/* Begin PBXNativeTarget section */
+		B50000010000000000000001 = {isa = PBXNativeTarget; buildConfigurationList = B60000010000000000000001; buildPhases = (B30000010000000000000001, B90000010000000000000001); buildRules = (); dependencies = (BB0000010000000000000001); name = SleepPulseUITests; productName = SleepPulseUITests; productReference = B20000010000000000000002; productType = "com.apple.product-type.bundle.ui-testing"; };
+		A50000010000000000000001 /* SleepPulse */ = {isa = PBXNativeTarget; buildConfigurationList = A60000010000000000000001; buildPhases = (A70000010000000000000001, A30000010000000000000001, A80000010000000000000001, A90000010000000000000001); buildRules = (); dependencies = (); name = SleepPulse; productName = SleepPulse; productReference = A20000010000000000000003; productType = "com.apple.product-type.application"; };
+		A50000010000000000000002 /* SleepPulseTests */ = {isa = PBXNativeTarget; buildConfigurationList = A60000010000000000000002; buildPhases = (A30000010000000000000002, A90000010000000000000002); buildRules = (); dependencies = (AB0000010000000000000001); name = SleepPulseTests; productName = SleepPulseTests; productReference = A20000010000000000000004; productType = "com.apple.product-type.bundle.unit-test"; };
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		AA0000010000000000000001 /* Project object */ = {isa = PBXProject; attributes = {LastUpgradeCheck = 2600; TargetAttributes = {A50000010000000000000001 = {SystemCapabilities = {com.apple.HealthKit = {enabled = 1;};};}; B50000010000000000000001 = {TestTargetID = A50000010000000000000001;};};}; buildConfigurationList = A60000010000000000000003; compatibilityVersion = "Xcode 16.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = (en, Base); mainGroup = A40000010000000000000001; productRefGroup = A40000010000000000000004; projectDirPath = ""; projectRoot = ""; targets = (A50000010000000000000001, A50000010000000000000002, B50000010000000000000001); };
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A80000010000000000000001 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		A80000010000000000000002 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		A70000010000000000000001 /* Build shared framework */ = {isa = PBXShellScriptBuildPhase; alwaysOutOfDate = 1; buildActionMask = 2147483647; files = (); inputPaths = (); name = "Build shared framework"; outputPaths = (); runOnlyForDeploymentPostprocessing = 0; shellPath = /bin/sh; shellScript = "\"$SRCROOT/scripts/build_shared_framework.sh\"\n"; showEnvVarsInLog = 0; };
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		B90000010000000000000001 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (B10000010000000000000001); runOnlyForDeploymentPostprocessing = 0; };
+		A90000010000000000000001 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000010000000000000001, A10000010000000000000003, A10000010000000000000004, A10000010000000000000006, A10000010000000000000007, A10000010000000000000008, A1000001000000000000000A, A1000001000000000000000B, A1000001000000000000000C, A1000001000000000000000D, A1000001000000000000000E, C10000010000000000000002, C10000010000000000000003, C10000010000000000000004, C10000010000000000000005, C10000010000000000000006, C10000010000000000000007, C10000010000000000000008, C10000010000000000000009, D10000010000000000000001, D10000010000000000000002, D10000010000000000000004, D10000010000000000000005, E10000010000000000000001, E10000010000000000000002, F10000010000000000000001, F10000010000000000000003); runOnlyForDeploymentPostprocessing = 0; };
+		A90000010000000000000002 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000010000000000000002, A10000010000000000000005, A10000010000000000000009, C10000010000000000000001, D10000010000000000000003, D10000010000000000000006, D10000010000000000000007, F10000010000000000000002, F10000010000000000000004); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		BB0000010000000000000001 = {isa = PBXTargetDependency; target = A50000010000000000000001; targetProxy = BC0000010000000000000001; };
+		AB0000010000000000000001 = {isa = PBXTargetDependency; target = A50000010000000000000001; targetProxy = AC0000010000000000000001; };
+/* End PBXTargetDependency section */
+
+/* Begin PBXContainerItemProxy section */
+		BC0000010000000000000001 = {isa = PBXContainerItemProxy; containerPortal = AA0000010000000000000001; proxyType = 1; remoteGlobalIDString = A50000010000000000000001; remoteInfo = SleepPulse; };
+		AC0000010000000000000001 = {isa = PBXContainerItemProxy; containerPortal = AA0000010000000000000001; proxyType = 1; remoteGlobalIDString = A50000010000000000000001; remoteInfo = SleepPulse; };
+/* End PBXContainerItemProxy section */
+
+/* Begin XCBuildConfiguration section */
+		BD0000010000000000000001 = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; CODE_SIGNING_ALLOWED = NO; GENERATE_INFOPLIST_FILE = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; PRODUCT_BUNDLE_IDENTIFIER = com.sleeppulse.ios.uitests; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = iphoneos; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; TEST_TARGET_NAME = SleepPulse; }; name = Debug; };
+		BD0000010000000000000002 = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; CODE_SIGNING_ALLOWED = NO; GENERATE_INFOPLIST_FILE = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; PRODUCT_BUNDLE_IDENTIFIER = com.sleeppulse.ios.uitests; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = iphoneos; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; TEST_TARGET_NAME = SleepPulse; }; name = Release; };
+		AD0000010000000000000001 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; CODE_SIGN_ENTITLEMENTS = SleepPulse/SleepPulse.entitlements; CODE_SIGNING_ALLOWED = NO; CURRENT_PROJECT_VERSION = 1; DEVELOPMENT_TEAM = ""; ENABLE_TESTABILITY = YES; FRAMEWORK_SEARCH_PATHS = ("$(inherited)", "$(SRCROOT)/build/KotlinFrameworks/$(CONFIGURATION)/$(SDK_NAME)"); GENERATE_INFOPLIST_FILE = YES; INFOPLIST_KEY_CFBundleDisplayName = SleepPulse; INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness"; INFOPLIST_KEY_NSHealthShareUsageDescription = "SleepPulse reads sleep dates, durations, and stages from Apple Health to show them in History."; INFOPLIST_KEY_UILaunchScreen_Generation = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks"); MARKETING_VERSION = 1.0; OTHER_LDFLAGS = ("$(inherited)", "-framework", SleepPulseShared); PRODUCT_BUNDLE_IDENTIFIER = com.sleeppulse.ios; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = iphoneos; SWIFT_EMIT_LOC_STRINGS = YES; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Debug; };
+		AD0000010000000000000002 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; CODE_SIGN_ENTITLEMENTS = SleepPulse/SleepPulse.entitlements; CODE_SIGNING_ALLOWED = NO; CURRENT_PROJECT_VERSION = 1; DEVELOPMENT_TEAM = ""; FRAMEWORK_SEARCH_PATHS = ("$(inherited)", "$(SRCROOT)/build/KotlinFrameworks/$(CONFIGURATION)/$(SDK_NAME)"); GENERATE_INFOPLIST_FILE = YES; INFOPLIST_KEY_CFBundleDisplayName = SleepPulse; INFOPLIST_KEY_NSHealthShareUsageDescription = "SleepPulse reads sleep dates, durations, and stages from Apple Health to show them in History."; INFOPLIST_KEY_UILaunchScreen_Generation = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks"); MARKETING_VERSION = 1.0; OTHER_LDFLAGS = ("$(inherited)", "-framework", SleepPulseShared); PRODUCT_BUNDLE_IDENTIFIER = com.sleeppulse.ios; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = iphoneos; SWIFT_EMIT_LOC_STRINGS = YES; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Release; };
+		AD0000010000000000000003 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {BUNDLE_LOADER = "$(TEST_HOST)"; CODE_SIGNING_ALLOWED = NO; FRAMEWORK_SEARCH_PATHS = ("$(inherited)", "$(SRCROOT)/build/KotlinFrameworks/$(CONFIGURATION)/$(SDK_NAME)"); GENERATE_INFOPLIST_FILE = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@loader_path/Frameworks"); OTHER_LDFLAGS = ("$(inherited)", "-framework", SleepPulseShared); PRODUCT_BUNDLE_IDENTIFIER = com.sleeppulse.ios.tests; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = iphoneos; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SleepPulse.app/SleepPulse"; }; name = Debug; };
+		AD0000010000000000000004 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {BUNDLE_LOADER = "$(TEST_HOST)"; CODE_SIGNING_ALLOWED = NO; FRAMEWORK_SEARCH_PATHS = ("$(inherited)", "$(SRCROOT)/build/KotlinFrameworks/$(CONFIGURATION)/$(SDK_NAME)"); GENERATE_INFOPLIST_FILE = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@loader_path/Frameworks"); OTHER_LDFLAGS = ("$(inherited)", "-framework", SleepPulseShared); PRODUCT_BUNDLE_IDENTIFIER = com.sleeppulse.ios.tests; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = iphoneos; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SleepPulse.app/SleepPulse"; }; name = Release; };
+		AD0000010000000000000005 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGNING_ALLOWED = NO; IPHONEOS_DEPLOYMENT_TARGET = 17.0; SDKROOT = iphoneos; SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG"; SWIFT_VERSION = 5.0; }; name = Debug; };
+		AD0000010000000000000006 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGNING_ALLOWED = NO; IPHONEOS_DEPLOYMENT_TARGET = 17.0; SDKROOT = iphoneos; SWIFT_VERSION = 5.0; }; name = Release; };
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		B60000010000000000000001 = {isa = XCConfigurationList; buildConfigurations = (BD0000010000000000000001, BD0000010000000000000002); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		A60000010000000000000001 = {isa = XCConfigurationList; buildConfigurations = (AD0000010000000000000001, AD0000010000000000000002); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		A60000010000000000000002 = {isa = XCConfigurationList; buildConfigurations = (AD0000010000000000000003, AD0000010000000000000004); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		A60000010000000000000003 = {isa = XCConfigurationList; buildConfigurations = (AD0000010000000000000005, AD0000010000000000000006); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+/* End XCConfigurationList section */
+	};
+	rootObject = AA0000010000000000000001;
+}

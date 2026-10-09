@@ -1,5 +1,41 @@
 # SleepPulse Kotlin Multiplatform Shared Core Implementation Plan
 
+## Current status (2026-10-07)
+
+The shared-core extraction is complete. Subsequent changes moved Room into `:shared`,
+upgraded the toolchain, and validated the shared library on the iOS simulator.
+The task list and 2026-10-06 verification record below describe the original extraction;
+their Gradle scaffolding and task names are historical, not instructions for the current build.
+
+- Toolchain: Kotlin 2.3.21, AGP 9.0.1, Gradle 9.1.0, KSP 2.3.11, Hilt 2.60.1, Room 2.8.4.
+- `:shared` owns models, calculations, contracts, and the Room entities, DAOs, database,
+  migrations, and exported schemas (`shared/schemas/`). Room KMP and `androidx.sqlite`
+  are permitted in `commonMain`; Android framework, Compose, Hilt, and Java-time imports are not.
+- `:app` owns Android UI, database construction with the bundled SQLite driver, repository
+  and sensor implementations, BLE, Health Connect, services, alarms, notifications, and widgets.
+- The shared Android target now uses `com.android.kotlin.multiplatform.library` and
+  `androidLibrary { withHostTest {} }`. Run `:shared:testAndroidHostTest`, not the old
+  `:shared:testDebugUnitTest` task.
+- CI includes `:shared:testAndroidHostTest` and `:app:test`.
+- The original Xcode blocker is resolved: full Xcode is installed on the Secondary volume,
+  and commit `c80a7ad` records all 74 common tests passing on the iOS simulator after making
+  test names Kotlin/Native-safe. There is still no iOS app, and iOS tests are not in CI.
+
+### Current verification commands
+
+```bash
+./gradlew :shared:testAndroidHostTest :app:test lint :app:assembleDebug :wear:assembleDebug
+./gradlew -PenableIosTargets=true :shared:compileKotlinIosSimulatorArm64
+./gradlew -PenableIosTargets=true :shared:iosSimulatorArm64Test
+git diff --check
+```
+
+iOS validation requires full Xcode selected with `xcode-select`, an installed simulator runtime,
+and the Secondary volume mounted on this machine. See `README.md` for the current architecture
+and build guidance.
+
+## Historical implementation plan (2026-10-06)
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Extract SleepPulse's platform-independent models, sleep calculations, analytics, and repository/sensor contracts into a validated Kotlin Multiplatform `:shared` module while preserving the Android app and Wear module.
@@ -405,13 +441,12 @@ On an available emulator or device, verify startup, Dashboard navigation, simula
 - Placeholder scan: every task has concrete files, interfaces, commands, and expected outcomes; no implementation step is left unfinished.
 - Type consistency: shared model types are introduced in Task 2 before builder/calculators in Tasks 3–4; shared interfaces are introduced in Task 5 after their model dependencies; Android consumers are updated before old files are deleted.
 
-## Verification record (2026-10-06)
+## Historical verification record (2026-10-06)
 
 - Boundary audit (Task 6 Steps 1–2): `commonMain` has no Android/Java-time/app imports; every migrated type is defined only in `:shared`; no stale imports of the old locations.
 - `:shared:compileKotlinMetadata`, `:shared:compileDebugKotlinAndroid`, `:app:compileDebugKotlin`: pass.
-- iOS compilation deferred: this machine has only the Command Line Tools, and Kotlin/Native needs full Xcode (`xcodebuild -version` fails).
+- At this point iOS compilation was deferred because only the Command Line Tools were installed. This blocker was subsequently resolved; see the current status above.
 - `:shared:testDebugUnitTest` 74 pass; `:app:testDebugUnitTest` 153 pass; `lint`, `:app:assembleDebug`, `:wear:assembleDebug` pass; `git diff --check` clean.
 - No Room schema or database-version change.
-- CI now runs `:shared:testDebugUnitTest` alongside `:app:test`.
+- At this point CI ran `:shared:testDebugUnitTest` alongside `:app:test`; the current shared task is `:shared:testAndroidHostTest`.
 - Task 7 Step 5 (Pixel 8a emulator, Android 17, upgraded in place from a DB v4 install): startup, Dashboard, simulated connect/disconnect (night recorded), History, Recovery, Alarm, Settings, Breathe all work. It found one migration regression — History crashed (`Type of the key 2026-09-30 is not supported`) because its LazyColumn keyed on `kotlinx.datetime.LocalDate`, which isn't Bundle-storable; fixed by keying on `toEpochDays()`.
-
