@@ -70,6 +70,103 @@ final class HealthKitSleepNormalizerTests: XCTestCase {
         XCTAssertEqual(episodes[1].start, date("2026-10-07T22:00:00Z"))
     }
 
+    func testUnspecifiedSleepCoveringDetailedStagesCountsAsleepOnlyOnce() throws {
+        let samples = [
+            sample("unspecified", source: "watch", stage: .asleepUnspecified,
+                   start: "2026-10-07T22:00:00Z", end: "2026-10-08T06:00:00Z"),
+            sample("core", source: "watch", stage: .core, start: "2026-10-07T22:00:00Z", end: "2026-10-08T02:00:00Z"),
+            sample("deep", source: "watch", stage: .deep, start: "2026-10-08T02:00:00Z", end: "2026-10-08T04:00:00Z"),
+            sample("rem", source: "watch", stage: .rem, start: "2026-10-08T04:00:00Z", end: "2026-10-08T06:00:00Z")
+        ]
+
+        let episodes = HealthKitSleepNormalizer.episodes(from: samples)
+        XCTAssertEqual(episodes.count, 1)
+        let episode = try XCTUnwrap(episodes.first)
+        XCTAssertEqual(episode.asleepMinutes, 480)
+        XCTAssertEqual(episode.coreMinutes, 240)
+        XCTAssertEqual(episode.deepMinutes, 120)
+        XCTAssertEqual(episode.remMinutes, 120)
+        XCTAssertNil(episode.inBedMinutes)
+        XCTAssertNil(episode.awakeMinutes)
+    }
+
+    func testAsleepFloorsMinutesOnlyAfterCombiningFractionalStageDurations() throws {
+        let start = date("2026-10-07T22:00:00Z")
+        for stageSeconds in [30.0, 40.0] {
+            let samples = [
+                HealthKitSleepSample(id: "core", sourceIdentifier: "watch", sourceName: "Watch", stage: .core,
+                    start: start, end: start.addingTimeInterval(stageSeconds)),
+                HealthKitSleepSample(id: "deep", sourceIdentifier: "watch", sourceName: "Watch", stage: .deep,
+                    start: start.addingTimeInterval(stageSeconds), end: start.addingTimeInterval(stageSeconds * 2))
+            ]
+
+            let episodes = HealthKitSleepNormalizer.episodes(from: samples)
+            XCTAssertEqual(episodes.count, 1)
+            let episode = try XCTUnwrap(episodes.first)
+            XCTAssertEqual(episode.asleepMinutes, 1, "Adjacent \(stageSeconds)-second stages")
+            XCTAssertEqual(episode.coreMinutes, 0)
+            XCTAssertEqual(episode.deepMinutes, 0)
+            XCTAssertNil(episode.remMinutes)
+        }
+    }
+
+    func testAsleepUnionIsPermutationStableAndExcludesNonAsleepIntervalsAndOtherSources() throws {
+        let samples = [
+            sample("bed", source: "watch", stage: .inBed, start: "2026-10-07T21:00:00Z", end: "2026-10-08T02:00:00Z"),
+            sample("core", source: "watch", stage: .core, start: "2026-10-07T22:00:00Z", end: "2026-10-07T23:00:00Z"),
+            sample("deep", source: "watch", stage: .deep, start: "2026-10-07T22:30:00Z", end: "2026-10-07T23:30:00Z"),
+            sample("rem", source: "watch", stage: .rem, start: "2026-10-07T23:00:00Z", end: "2026-10-08T00:00:00Z"),
+            sample("awake", source: "watch", stage: .awake, start: "2026-10-08T00:00:00Z", end: "2026-10-08T00:30:00Z"),
+            sample("unknown", source: "watch", stage: .unknown, start: "2026-10-08T00:00:00Z", end: "2026-10-08T00:30:00Z"),
+            sample("unspecified", source: "watch", stage: .asleepUnspecified,
+                   start: "2026-10-08T00:30:00Z", end: "2026-10-08T01:00:00Z"),
+            sample("phone", source: "phone", stage: .asleepUnspecified,
+                   start: "2026-10-07T21:00:00Z", end: "2026-10-08T02:00:00Z")
+        ]
+        let baseline = HealthKitSleepNormalizer.episodes(from: samples)
+        let permutations = [samples, Array(samples.reversed()), Array(samples.dropFirst(3) + samples.prefix(3))]
+        for permutation in permutations {
+            let episodes = HealthKitSleepNormalizer.episodes(from: permutation)
+            XCTAssertEqual(episodes, baseline)
+            XCTAssertEqual(episodes.count, 2)
+            XCTAssertEqual(Set(episodes.map(\.id)).count, 2, "Identical bounds from different sources need distinct IDs")
+            let watch = try XCTUnwrap(episodes.first { $0.sourceIdentifier == "watch" })
+            let phone = try XCTUnwrap(episodes.first { $0.sourceIdentifier == "phone" })
+            // 22:00–00:00 union plus 00:30–01:00; the gap and in-bed padding are not asleep.
+            XCTAssertEqual(watch.asleepMinutes, 150)
+            XCTAssertEqual(watch.inBedMinutes, 300)
+            XCTAssertEqual(watch.awakeMinutes, 30)
+            XCTAssertEqual(watch.coreMinutes, 60)
+            XCTAssertEqual(watch.deepMinutes, 60)
+            XCTAssertEqual(watch.remMinutes, 60)
+            XCTAssertEqual(phone.asleepMinutes, 300)
+            XCTAssertNil(phone.coreMinutes)
+            XCTAssertNil(phone.deepMinutes)
+            XCTAssertNil(phone.remMinutes)
+        }
+    }
+
+    func testMissingAsleepRemainsNilWhileExplicitZeroRemainsZero() throws {
+        let excluded = [
+            sample("bed", source: "watch", stage: .inBed, start: "2026-10-07T22:00:00Z", end: "2026-10-07T23:00:00Z"),
+            sample("awake", source: "watch", stage: .awake, start: "2026-10-07T22:00:00Z", end: "2026-10-07T23:00:00Z"),
+            sample("unknown", source: "watch", stage: .unknown, start: "2026-10-07T22:00:00Z", end: "2026-10-07T23:00:00Z")
+        ]
+        let missing = try XCTUnwrap(HealthKitSleepNormalizer.episodes(from: excluded).first)
+        XCTAssertNil(missing.asleepMinutes)
+        XCTAssertNil(missing.coreMinutes)
+        XCTAssertNil(missing.deepMinutes)
+        XCTAssertNil(missing.remMinutes)
+
+        let zero = sample("zero", source: "watch", stage: .asleepUnspecified,
+                          start: "2026-10-07T22:00:00Z", end: "2026-10-07T22:00:00Z")
+        let explicit = try XCTUnwrap(HealthKitSleepNormalizer.episodes(from: excluded + [zero]).first)
+        XCTAssertEqual(explicit.asleepMinutes, 0)
+        XCTAssertNil(explicit.coreMinutes)
+        XCTAssertNil(explicit.deepMinutes)
+        XCTAssertNil(explicit.remMinutes)
+    }
+
     func testOverlappingTimesFromDifferentSourcesRemainSeparate() {
         let samples = [
             sample("watch", source: "watch", name: "Apple Watch", stage: .deep,
@@ -130,10 +227,29 @@ final class HealthKitSleepNormalizerTests: XCTestCase {
         XCTAssertEqual(first, second)
         XCTAssertEqual(first[0].start, date("2026-10-08T01:00:00Z"))
         XCTAssertEqual(first.map(\.start), [date("2026-10-08T01:00:00Z"), date("2026-10-07T22:00:00Z")])
-        XCTAssertEqual(first.map(\.id), [
-            "watch|1791421200000|1791424800000",
-            "watch|1791410400000|1791414000000"
-        ])
+        XCTAssertEqual(Set(first.map(\.id)).count, 2)
+    }
+
+    func testSeparatedSubmillisecondEpisodesHaveDistinctStableIDsAcrossOrderAndTimezone() {
+        let base = date("2026-10-07T22:00:00Z")
+        let early = HealthKitSleepSample(id: "early", sourceIdentifier: "watch", sourceName: "Watch", stage: .core,
+            start: base.addingTimeInterval(0.00005), end: base.addingTimeInterval(0.0001))
+        let late = HealthKitSleepSample(id: "late", sourceIdentifier: "watch", sourceName: "Watch", stage: .deep,
+            start: base.addingTimeInterval(0.0002), end: base.addingTimeInterval(0.0003))
+        let originalTimezone = NSTimeZone.default
+        defer { NSTimeZone.default = originalTimezone }
+
+        NSTimeZone.default = TimeZone(secondsFromGMT: -12 * 3_600)!
+        let first = HealthKitSleepNormalizer.episodes(from: [early, late])
+        NSTimeZone.default = TimeZone(secondsFromGMT: 14 * 3_600)!
+        let reordered = HealthKitSleepNormalizer.episodes(from: [late, early])
+
+        XCTAssertLessThan(early.end, late.start)
+        XCTAssertEqual(first.count, 2)
+        XCTAssertEqual(first.map(\.start), [late.start, early.start])
+        XCTAssertEqual(first.map(\.end), [late.end, early.end])
+        XCTAssertEqual(Set(first.map(\.id)).count, 2)
+        XCTAssertEqual(first, reordered)
     }
 
     func testNativeValuesRoundTripThroughCodable() throws {

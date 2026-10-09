@@ -100,6 +100,62 @@ final class TrackingStoreTests: XCTestCase {
         XCTAssertEqual(night.hrvAccessibilityText, "unavailable")
     }
 
+    func testAppleHealthImportAndStaleCacheStaySeparateFromSimulatedTrackingAndInsights() async throws {
+        let store = TrackingStore(databasePath: temporaryPath())
+        defer { store.close() }
+        let history = HistoryViewModel(store: store)
+        let recovery = RecoveryViewModel(store: store)
+        let client = FakeHealthKitClient()
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let cache = HealthKitCacheStore(url: directory.appendingPathComponent("healthkit.json"))
+        addTeardownBlock { try FileManager.default.removeItem(at: directory) }
+        let end = Date(timeIntervalSince1970: 1_791_460_800)
+        client.sampleResult = .success((1...4).map { day in
+            let start = end.addingTimeInterval(-Double(day) * 86_400)
+            return HealthKitSleepSample(id: "watch-\(day)", sourceIdentifier: "watch", sourceName: "Apple Watch",
+                stage: .asleepUnspecified, start: start, end: start.addingTimeInterval(8 * 3_600))
+        })
+        let health = HealthKitSleepStore(client: client, cache: cache, now: { end })
+        try await waitUntil { store.state.phase == .idle }
+        let initialInsights = recovery.state.insights
+        store.start()
+        try await waitUntil { store.state.latestReading != nil }
+        XCTAssertEqual(client.requestReadAccessCallCount, 0, "Simulated Start must not request HealthKit access")
+        XCTAssertTrue(client.readWindows.isEmpty)
+
+        await health.connect().value
+        XCTAssertEqual(health.state.phase, .loaded)
+        XCTAssertEqual(health.state.episodes.count, 4)
+        XCTAssertEqual(client.requestReadAccessCallCount, 1)
+        XCTAssertEqual(store.state.phase, .tracking)
+        XCTAssertTrue(store.state.canStop)
+        XCTAssertTrue(history.nights.isEmpty, "Imported dates must not seed simulated History/charts")
+        XCTAssertEqual(recovery.state.insights, initialInsights, "Four imported dates must not create a Recovery baseline")
+
+        store.stop()
+        try await waitUntil { store.state.phase == .idle && history.nights.count == 1 }
+        let savedState = store.state
+        let savedNights = history.nights
+        let savedInsights = recovery.state.insights
+        client.sampleResult = .failure(HealthKitClientError.queryFailed("Device locked"))
+        await health.refresh().value
+        XCTAssertEqual(health.state.phase, .stale)
+        XCTAssertEqual(health.state.episodes.count, 4)
+        XCTAssertEqual(store.state, savedState)
+        XCTAssertEqual(history.nights, savedNights)
+        XCTAssertEqual(recovery.state.insights, savedInsights)
+
+        client.sampleResult = .success([])
+        await health.refresh().value
+        XCTAssertEqual(health.state.phase, .empty)
+        XCTAssertEqual(client.requestReadAccessCallCount, 1, "Refresh must not request access again")
+        XCTAssertEqual(store.state, savedState)
+        XCTAssertEqual(history.nights, savedNights)
+        XCTAssertEqual(recovery.state.insights, savedInsights)
+        XCTAssertEqual(recovery.state.insights?.recordedNights, 1)
+        XCTAssertNil(recovery.state.insights?.recovery)
+    }
+
     private func temporaryPath() -> String {
         FileManager.default.temporaryDirectory.appendingPathComponent("sleeppulse-\(UUID().uuidString).db").path
     }

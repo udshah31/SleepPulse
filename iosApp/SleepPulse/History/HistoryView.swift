@@ -2,18 +2,28 @@ import SwiftUI
 
 struct HistoryView: View {
     @StateObject private var viewModel: HistoryViewModel
+    @ObservedObject var healthKitStore: HealthKitSleepStore
 
-    init(store: TrackingStore) {
+    init(store: TrackingStore, healthKitStore: HealthKitSleepStore) {
         _viewModel = StateObject(wrappedValue: HistoryViewModel(store: store))
+        self.healthKitStore = healthKitStore
     }
 
     var body: some View {
-        HistoryContent(state: viewModel.state)
+        HistoryContent(state: viewModel.state) {
+            AppleHealthSleepSection(store: healthKitStore)
+        }
     }
 }
 
-struct HistoryContent: View {
+struct HistoryContent<AdditionalContent: View>: View {
     let state: TrackingState
+    private let additionalContent: AdditionalContent
+
+    init(state: TrackingState, @ViewBuilder additionalContent: () -> AdditionalContent) {
+        self.state = state
+        self.additionalContent = additionalContent()
+    }
 
     var body: some View {
         ScrollView {
@@ -37,12 +47,19 @@ struct HistoryContent: View {
                         SavedNightRow(night: night, change: state.insights?.scoreChanges[night.id])
                     }
                 }
+                additionalContent
             }
             .frame(maxWidth: 720).padding(20).frame(maxWidth: .infinity)
         }
         .background(CalmNightTheme.background.ignoresSafeArea())
         .foregroundStyle(CalmNightTheme.textPrimary)
         .scrollIndicators(.hidden)
+    }
+}
+
+extension HistoryContent where AdditionalContent == EmptyView {
+    init(state: TrackingState) {
+        self.init(state: state) { EmptyView() }
     }
 }
 

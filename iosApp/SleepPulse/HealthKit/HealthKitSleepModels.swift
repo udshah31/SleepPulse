@@ -34,6 +34,8 @@ struct HealthKitSleepEpisode: Codable, Equatable, Identifiable {
 }
 
 struct HealthKitSleepCache: Codable, Equatable {
+    static let currentFormatVersion = 1
+
     let formatVersion: Int
     let episodes: [HealthKitSleepEpisode]
     let fetchedAt: Date
@@ -58,6 +60,7 @@ struct HealthKitSleepState: Codable, Equatable {
     let windowStart: Date?
     let windowEnd: Date?
     let error: String?
+    let openSettingsURL: URL?
 
     init(
         phase: HealthKitSleepPhase,
@@ -65,7 +68,8 @@ struct HealthKitSleepState: Codable, Equatable {
         fetchedAt: Date? = nil,
         windowStart: Date? = nil,
         windowEnd: Date? = nil,
-        error: String? = nil
+        error: String? = nil,
+        openSettingsURL: URL? = nil
     ) {
         self.phase = phase
         self.episodes = episodes
@@ -73,5 +77,6 @@ struct HealthKitSleepState: Codable, Equatable {
         self.windowStart = windowStart
         self.windowEnd = windowEnd
         self.error = error
+        self.openSettingsURL = openSettingsURL
     }
 }

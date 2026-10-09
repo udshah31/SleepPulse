@@ -10,8 +10,9 @@ core — models, scoring and analytics, night-summary construction, the reposito
 interfaces, and the Room database — lives in a Kotlin Multiplatform module (`:shared`). The
 shared module builds and its tests run on iOS, and the native SwiftUI iOS app in `iosApp/`
 now consumes the shared scoring core and provides foreground-only simulated tracking backed
-by the shared Room database. Home, History and Recovery share one application-scoped store;
-Recovery and History insights are computed by the shared Kotlin calculators.
+by the shared Room database. Home, History and Recovery share one simulated-tracking store;
+Recovery and History insights are computed by the shared Kotlin calculators. iOS History also
+offers a separate, read-only Apple Health sleep import backed by a native app-scoped store.
 
 ## Architecture
 
@@ -160,18 +161,56 @@ and Recovery share one app-scoped store. Start emits approximately one real-time
 second, persists each reading in the existing version-5 Room schema, and calculates the
 live score from the last 40 recorded readings. Stop or backgrounding saves the full session
 into the latest 30 simulated local start dates; an interrupted session is recovered on the
-next launch. The app does not claim continuous background tracking, and HealthKit, BLE,
-alarms and networking remain future integrations.
+next launch. Tracking is foreground-only; BLE, alarms and networking remain future integrations.
+
+History's **From Apple Health** section imports only HealthKit **sleep analysis**, read-only.
+**Connect Apple Health** explicitly requests access and then imports the last **30 calendar
+days**, ending at the request's query time. Launching the app, opening History, or starting
+simulated tracking does not request permission or query HealthKit. **Refresh Apple Health**
+manually replaces the whole window without another authorization request; there is no
+background sync. Samples overlapping a window boundary retain their original intervals.
+
+Imported episodes preserve each source's name/identifier. Overlapping sources stay separate;
+they are not combined into a canonical night. Missing stages are **Unavailable**, while known
+zero/subminute durations display **<1 min**. These native records do not enter shared Room,
+the simulated tracking controls, scores, Recovery baseline, History insights, or charts.
+
+The separate Application Support cache (`SleepPulse/healthkit-sleep-cache.json`) atomically
+replaces episodes, fetched time, and import-window metadata only after a successful query,
+normalization, encoding, and write. Failures retain the last successful snapshot with stale
+wording and retry guidance, including a previously empty snapshot. A successful empty read
+replaces old records and says **No Apple Health sleep records found**: HealthKit deliberately
+does not reveal read denial, so empty data is not proof of denied access (nor is a completed
+authorization request proof of a grant). Cached results load on relaunch without querying.
+
+The Xcode app target declares the HealthKit capability/entitlement and
+`NSHealthShareUsageDescription`; it requests no write, heart-rate, or HRV access. Physical-device
+validation requires an authorized installation, a development team/provisioning profile with
+HealthKit enabled, a compatible unlocked device, and Apple Health sleep data. Simulator/fake
+tests do not establish that an actual permission grant or real-data import works on a device.
 
 With full Xcode selected and a simulator UUID available, run:
 
 ```
+ANDROID_HOME=/Users/udaysah/Library/Android/sdk \
+JAVA_HOME=$(/usr/libexec/java_home -v 17) \
 xcodebuild -project iosApp/SleepPulse.xcodeproj -scheme SleepPulse \
   -destination 'platform=iOS Simulator,id=<simulator-uuid>' \
-  -derivedDataPath iosApp/build/DerivedData test CODE_SIGNING_ALLOWED=YES
+  -derivedDataPath iosApp/build/DerivedData \
+  -parallel-testing-enabled NO -collect-test-diagnostics never \
+  test CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- \
+  SYMROOT="$PWD/iosApp/build/DerivedData/Build/Products" \
+  OBJROOT="$PWD/iosApp/build/DerivedData/Build/Intermediates.noindex"
 ```
 
-See [`iosApp/README.md`](iosApp/README.md) for framework wiring and launch instructions.
+Set `ANDROID_HOME` to your SDK location (especially in worktrees without `local.properties`).
+System UI tests use a unique `SLEEPPULSE_UI_TEST_STORAGE_ID` UUID in each app's launch environment.
+The DEBUG-only app-root override isolates both the simulated DB and native Health cache under
+`Application Support/SleepPulse/UITests/<UUID>/`, preserving that state for intentional relaunches.
+It never resets or reuses normal user data; Release ignores the override. Each test creates its
+own recording when saved/chart data is required. See the iOS README for validation/failure behavior.
+See [`iosApp/README.md`](iosApp/README.md) for framework wiring, test constraints, launch
+instructions, and the physical-device HealthKit checklist.
 
 ## Known limitations
 

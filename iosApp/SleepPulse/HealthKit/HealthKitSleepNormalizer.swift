@@ -70,9 +70,8 @@ enum HealthKitSleepNormalizer {
         let coreMinutes = minutes(for: .core, in: samples)
         let deepMinutes = minutes(for: .deep, in: samples)
         let remMinutes = minutes(for: .rem, in: samples)
-        let unspecifiedMinutes = minutes(for: .asleepUnspecified, in: samples)
-        let asleepValues = [coreMinutes, deepMinutes, remMinutes, unspecifiedMinutes].compactMap { $0 }
-        let asleepMinutes = asleepValues.isEmpty ? nil : asleepValues.reduce(0, +)
+        // Union all explicit asleep intervals before flooring; categories may overlap.
+        let asleepMinutes = minutes(for: [.core, .deep, .rem, .asleepUnspecified], in: samples)
 
         return HealthKitSleepEpisode(
             id: identifier(sourceIdentifier: sourceIdentifier, start: start, end: end),
@@ -93,8 +92,15 @@ enum HealthKitSleepNormalizer {
         for stage: HealthKitSleepStage,
         in samples: [NormalizedSample]
     ) -> Int? {
+        minutes(for: [stage], in: samples)
+    }
+
+    private static func minutes(
+        for stages: [HealthKitSleepStage],
+        in samples: [NormalizedSample]
+    ) -> Int? {
         let intervals = samples
-            .filter { $0.sample.stage == stage }
+            .filter { stages.contains($0.sample.stage) }
             .map { ($0.start, $0.end) }
             .sorted { $0.0 < $1.0 }
         guard !intervals.isEmpty else { return nil }
@@ -116,8 +122,8 @@ enum HealthKitSleepNormalizer {
     }
 
     private static func identifier(sourceIdentifier: String, start: Date, end: Date) -> String {
-        let startMillis = Int64((start.timeIntervalSince1970 * 1_000).rounded())
-        let endMillis = Int64((end.timeIntervalSince1970 * 1_000).rounded())
-        return "\(sourceIdentifier)|\(startMillis)|\(endMillis)"
+        let startBits = start.timeIntervalSinceReferenceDate.bitPattern
+        let endBits = end.timeIntervalSinceReferenceDate.bitPattern
+        return "\(sourceIdentifier)|\(startBits)|\(endBits)"
     }
 }
